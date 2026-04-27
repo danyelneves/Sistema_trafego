@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maranet · Central de Tráfego</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- =================== HEADER =================== -->
+  <header class="app-header fade-in">
+    <div class="header-left">
+      <div class="badge">NVia Holding · Maranet Telecom</div>
+      <h1>Central de <span>Tráfego</span></h1>
+      <div class="subtitle" id="period-label"><span class="pulse"></span>Carregando…</div>
+    </div>
+    <div class="header-right">
+      <div class="user-chip" id="user-chip"><b>●</b> …</div>
+      <button class="btn" id="btn-present" title="Modo apresentação">▶ Apresentar</button>
+      <button class="btn" id="btn-logout" title="Sair">Sair</button>
+    </div>
+  </header>
+
+  <!-- =================== FILTER BAR =================== -->
+  <div class="filter-bar fade-in">
+    <div class="filter-group" id="period-group">
+      <button class="btn active" data-mode="year">Ano todo</button>
+      <button class="btn"        data-mode="s1">1º SEM</button>
+      <button class="btn"        data-mode="s2">2º SEM</button>
+      <button class="btn"        data-mode="month">Mês</button>
+    </div>
+
+    <div class="row">
+      <select id="month-select" title="Mês específico">
+        <option value="">— mês —</option>
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+        <option value="3">Março</option><option value="4">Abril</option>
+        <option value="5">Maio</option><option value="6">Junho</option>
+        <option value="7">Julho</option><option value="8">Agosto</option>
+        <option value="9">Setembro</option><option value="10">Outubro</option>
+        <option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+      <select id="year-select" title="Ano">
+        <option>2024</option><option>2025</option><option selected>2026</option><option>2027</option>
+      </select>
+    </div>
+
+    <div></div>
+
+    <div class="row right filter-actions">
+      <button class="btn" id="btn-notes"     title="Anotações">✎ Notas</button>
+      <button class="btn" id="btn-goals"     title="Metas">◎ Metas</button>
+      <button class="btn" id="btn-campaigns" title="Gerenciar campanhas">⚙ Campanhas</button>
+      <button class="btn" id="btn-users"     title="Usuários">👥 Usuários</button>
+      <button class="btn" id="btn-alerts"    title="Alertas por e-mail">🔔 Alertas</button>
+      <button class="btn" id="btn-sync"      title="Sincronizar Google Ads / Meta">⚡ Sincronizar</button>
+      <button class="btn" id="btn-import"    title="Importar CSV">⬇ CSV</button>
+      <button class="btn" id="btn-export-csv"  title="Exportar CSV">CSV</button>
+      <button class="btn" id="btn-export-json" title="Backup JSON">JSON</button>
+      <button class="btn" id="btn-export-pdf"  title="Imprimir / PDF">PDF</button>
+      <button class="btn primary" id="btn-entry">↑ Inserir Dados</button>
+    </div>
+  </div>
+
+  <!-- =================== SOURCE TABS =================== -->
+  <div class="source-tabs fade-in">
+    <button class="tab active" data-source="all"><span class="dot"></span> Consolidado</button>
+    <button class="tab"        data-source="google"><span class="dot"></span> Google Ads</button>
+    <button class="tab"        data-source="meta"><span class="dot"></span> Meta Ads</button>
+  </div>
+
+  <!-- =================== HEALTH PANEL =================== -->
+  <div id="health-panel" class="fade-in"></div>
+
+  <!-- =================== KPIs =================== -->
+  <div class="kpi-grid fade-in" id="kpi-grid"></div>
+
+  <!-- =================== CHARTS =================== -->
+  <div class="charts-grid fade-in">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Impressões por Mês</div>
+          <div class="chart-subtitle" data-print-period id="period-print">ano</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--google)"></div>Google</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--meta)"></div>Meta</div>
+        </div>
+      </div>
+      <canvas id="chartImpressoes"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Distribuição de Verba</div>
+          <div class="chart-subtitle">Investimento por canal</div>
+        </div>
+      </div>
+      <canvas id="chartVerba"></canvas>
+    </div>
+  </div>
+
+  <div class="charts-row fade-in">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Cliques &amp; CTR</div>
+          <div class="chart-subtitle">Evolução mensal</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>Cliques</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--laranja)"></div>CTR %</div>
+        </div>
+      </div>
+      <canvas id="chartCliques"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Conversões</div>
+          <div class="chart-subtitle">Leads mensais por canal</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#E8057E"></div>Google</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--meta)"></div>Meta</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#facc15;border-radius:0;width:14px;height:2px"></div>Meta</div>
+        </div>
+      </div>
+      <canvas id="chartConv"></canvas>
+    </div>
+  </div>
+
+  <!-- =================== TABELA DETALHE =================== -->
+  <div class="table-card fade-in">
+    <div class="table-header">
+      <div>
+        <div class="chart-title">Detalhamento por Mês e Canal</div>
+        <div class="chart-subtitle">Todos os meses com dado · <span class="muted">• = há anotação</span></div>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Mês</th><th>Canal</th><th>Impressões</th><th>Cliques</th><th>CTR</th>
+            <th>Conversões</th><th>Investimento</th><th>CPL</th><th>Desempenho</th>
+          </tr>
+        </thead>
+        <tbody id="detail-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- =================== TABELA CAMPANHAS =================== -->
+  <div class="table-card fade-in" id="campaign-table-container"></div>
+
+
+  <!-- =================== FOOTER =================== -->
+  <footer class="app-footer fade-in">
+    <div>Dashboard · <strong>Maranet Telecom</strong> · NVia Holding e Participações</div>
+    <div id="last-update">—</div>
+  </footer>
+</div>
+
+<!-- =================================================================
+     MODAL · Entrada de Dados
+     ================================================================= -->
+<div class="modal-overlay" id="modal-entry">
+  <div class="modal">
+    <h2>Inserir Dados</h2>
+    <div class="modal-subtitle">Exportados do Looker Studio, Google Ads ou Meta Ads Manager.</div>
+
+    <div class="modal-tabs">
+      <button class="mt-btn active" data-mode="monthly">Por mês</button>
+      <button class="mt-btn"        data-mode="daily">Por dia</button>
+    </div>
+
+    <!-- Por mês (consolidado) -->
+    <div id="entry-monthly">
+      <div class="form-grid">
+        <div class="field">
+          <label>Ano</label>
+          <select id="entry-year">
+            <option>2024</option><option>2025</option><option selected>2026</option><option>2027</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Mês</label>
+          <select id="entry-month">
+            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+            <option value="3">Março</option><option value="4">Abril</option>
+            <option value="5">Maio</option><option value="6">Junho</option>
+            <option value="7">Julho</option><option value="8">Agosto</option>
+            <option value="9">Setembro</option><option value="10">Outubro</option>
+            <option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+        </div>
+
+        <div class="form-section">Google Ads · campanha</div>
+        <div class="field full"><label>Campanha Google</label>
+          <select id="entry-g-campaign"></select>
+        </div>
+        <div class="field"><label>Impressões</label>   <input type="number" id="entry-g-imp"  placeholder="0"></div>
+        <div class="field"><label>Cliques</label>      <input type="number" id="entry-g-cli"  placeholder="0"></div>
+        <div class="field"><label>Conversões</label>   <input type="number" id="entry-g-conv" placeholder="0"></div>
+        <div class="field"><label>Investimento (R$)</label><input type="number" id="entry-g-inv" step="0.01" placeholder="0,00"></div>
+        <div class="field full"><label>Receita atribuída (R$, opcional)</label><input type="number" id="entry-g-rev" step="0.01" placeholder="0,00"></div>
+
+        <div class="form-section">Meta Ads · campanha</div>
+        <div class="field full"><label>Campanha Meta</label>
+          <select id="entry-m-campaign"></select>
+        </div>
+        <div class="field"><label>Impressões</label>   <input type="number" id="entry-m-imp"  placeholder="0"></div>
+        <div class="field"><label>Cliques</label>      <input type="number" id="entry-m-cli"  placeholder="0"></div>
+        <div class="field"><label>Leads / Conversões</label><input type="number" id="entry-m-conv" placeholder="0"></div>
+        <div class="field"><label>Investimento (R$)</label><input type="number" id="entry-m-inv" step="0.01" placeholder="0,00"></div>
+        <div class="field full"><label>Receita atribuída (R$, opcional)</label><input type="number" id="entry-m-rev" step="0.01" placeholder="0,00"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="entry-close">Cancelar</button>
+        <button class="btn teal" id="entry-save-monthly">Salvar mês</button>
+      </div>
+    </div>
+
+    <!-- Por dia -->
+    <div id="entry-daily" class="hidden">
+      <div class="form-grid">
+        <div class="field full"><label>Data</label>
+          <input type="date" id="entry-daily-date">
+        </div>
+
+        <div class="form-section">Google Ads</div>
+        <div class="field"><label>Impressões</label>   <input type="number" id="entry-dg-imp"  placeholder="0"></div>
+        <div class="field"><label>Cliques</label>      <input type="number" id="entry-dg-cli"  placeholder="0"></div>
+        <div class="field"><label>Conversões</label>   <input type="number" id="entry-dg-conv" placeholder="0"></div>
+        <div class="field"><label>Investimento (R$)</label><input type="number" id="entry-dg-inv" step="0.01" placeholder="0,00"></div>
+
+        <div class="form-section">Meta Ads</div>
+        <div class="field"><label>Impressões</label>   <input type="number" id="entry-dm-imp"  placeholder="0"></div>
+        <div class="field"><label>Cliques</label>      <input type="number" id="entry-dm-cli"  placeholder="0"></div>
+        <div class="field"><label>Conversões</label>   <input type="number" id="entry-dm-conv" placeholder="0"></div>
+        <div class="field"><label>Investimento (R$)</label><input type="number" id="entry-dm-inv" step="0.01" placeholder="0,00"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="entry-close-2" onclick="document.getElementById('modal-entry').classList.remove('open')">Cancelar</button>
+        <button class="btn teal" id="entry-save-daily">Salvar dia</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · Campanhas ================================================================= -->
+<div class="modal-overlay" id="modal-campaigns">
+  <div class="modal">
+    <h2>Campanhas</h2>
+    <div class="modal-subtitle">Cadastre e gerencie as campanhas do Google Ads e Meta Ads.</div>
+    <div class="form-grid">
+      <div class="form-section">Nova campanha</div>
+      <div class="field">
+        <label>Canal</label>
+        <select id="camp-new-channel"><option value="google">Google Ads</option><option value="meta">Meta Ads</option></select>
+      </div>
+      <div class="field">
+        <label>Nome</label>
+        <input id="camp-new-name" placeholder="Ex: Fibra Residencial — Pesquisa">
+      </div>
+      <div class="field full"><label>Objetivo</label>
+        <input id="camp-new-obj" placeholder="Leads, Conversões, Tráfego…">
+      </div>
+    </div>
+    <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
+      <button class="btn teal" id="camp-create">+ Criar</button>
+    </div>
+    <div class="form-section" style="margin-top:24px">Campanhas cadastradas</div>
+    <table class="mini-table">
+      <thead><tr><th>Canal</th><th>Nome</th><th>Objetivo</th><th>Status</th><th></th></tr></thead>
+      <tbody id="camp-tbody"></tbody>
+    </table>
+    <div class="modal-actions"><button class="btn" id="camp-close">Fechar</button></div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · Metas ================================================================= -->
+<div class="modal-overlay" id="modal-goals">
+  <div class="modal">
+    <h2>Metas</h2>
+    <div class="modal-subtitle">Defina alvos mensais. KPIs exibem semáforo automático com base nestas metas.</div>
+    <div class="form-grid">
+      <div class="form-section">Nova meta</div>
+      <div class="field"><label>Ano</label><select id="goal-new-year"><option>2025</option><option selected>2026</option><option>2027</option></select></div>
+      <div class="field"><label>Mês</label>
+        <select id="goal-new-month">
+          <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
+          <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
+          <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
+          <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+        </select>
+      </div>
+      <div class="field"><label>Canal</label>
+        <select id="goal-new-channel"><option value="all">Total</option><option value="google">Google</option><option value="meta">Meta</option></select>
+      </div>
+      <div class="field"><label>Métrica</label>
+        <select id="goal-new-metric">
+          <option value="cpl">CPL</option><option value="conversions">Conversões</option>
+          <option value="spend">Investimento</option><option value="ctr">CTR</option>
+          <option value="roas">ROAS</option><option value="impressions">Impressões</option>
+          <option value="clicks">Cliques</option>
+        </select>
+      </div>
+      <div class="field"><label>Alvo</label><input type="number" step="0.01" id="goal-new-target" placeholder="Ex: 45"></div>
+      <div class="field"><label>Direção</label>
+        <select id="goal-new-direction">
+          <option value="min">Mínimo (alcançar)</option><option value="max">Máximo (não ultrapassar)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
+      <button class="btn teal" id="goal-create">+ Salvar meta</button>
+    </div>
+    <div class="form-section" style="margin-top:24px">Metas cadastradas
+      <select id="goal-year" style="float:right;margin-top:-6px">
+        <option>2025</option><option selected>2026</option><option>2027</option>
+      </select>
+    </div>
+    <table class="mini-table">
+      <thead><tr><th>Período</th><th>Canal</th><th>Métrica</th><th>Alvo</th><th>Direção</th><th></th></tr></thead>
+      <tbody id="goal-tbody"></tbody>
+    </table>
+    <div class="modal-actions"><button class="btn" id="goal-close">Fechar</button></div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · Notas ================================================================= -->
+<div class="modal-overlay" id="modal-notes">
+  <div class="modal">
+    <h2>Anotações</h2>
+    <div class="modal-subtitle">Observações de contexto: campanhas pausadas, eventos, sazonalidade.</div>
+    <div class="form-grid">
+      <div class="form-section">Nova anotação</div>
+      <div class="field"><label>Ano</label><select id="note-new-year"><option>2025</option><option selected>2026</option><option>2027</option></select></div>
+      <div class="field"><label>Mês</label>
+        <select id="note-new-month">
+          <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
+          <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
+          <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
+          <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+        </select>
+      </div>
+      <div class="field"><label>Dia (opcional)</label><input type="number" min="1" max="31" id="note-new-day" placeholder="—"></div>
+      <div class="field"><label>Canal</label>
+        <select id="note-new-channel"><option value="all">Total</option><option value="google">Google</option><option value="meta">Meta</option></select>
+      </div>
+      <div class="field"><label>Tag</label><input id="note-new-tag" placeholder="ajuste / evento / campanha"></div>
+      <div class="field"></div>
+      <div class="field full"><label>Texto</label>
+        <textarea id="note-new-text" rows="2" placeholder="Ex: Campanha de aniversário iniciou dia 12."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
+      <button class="btn teal" id="note-create">+ Salvar nota</button>
+    </div>
+    <div class="form-section" style="margin-top:24px">Anotações
+      <select id="note-filter-year" style="float:right;margin-top:-6px">
+        <option>2025</option><option selected>2026</option><option>2027</option>
+      </select>
+    </div>
+    <table class="mini-table">
+      <thead><tr><th>Data</th><th>Canal</th><th>Tag</th><th>Texto</th><th></th></tr></thead>
+      <tbody id="note-tbody"></tbody>
+    </table>
+    <div class="modal-actions"><button class="btn" id="note-close">Fechar</button></div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · Usuários ================================================================= -->
+<div class="modal-overlay" id="modal-users">
+  <div class="modal">
+    <h2>Usuários</h2>
+    <div class="modal-subtitle">Gerencie acessos ao sistema. Role <strong>admin</strong> = acesso total. <strong>viewer</strong> = somente leitura.</div>
+    <div class="form-grid">
+      <div class="form-section">Novo usuário</div>
+      <div class="field"><label>Username</label><input id="user-new-username" placeholder="joao.silva"></div>
+      <div class="field"><label>Senha</label><input type="password" id="user-new-password" placeholder="mín. 6 caracteres"></div>
+      <div class="field"><label>Nome de exibição</label><input id="user-new-name" placeholder="João Silva"></div>
+      <div class="field"><label>Perfil</label>
+        <select id="user-new-role"><option value="viewer">Viewer</option><option value="admin">Admin</option></select>
+      </div>
+    </div>
+    <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
+      <button class="btn teal" id="user-create">+ Criar usuário</button>
+    </div>
+    <div class="form-section" style="margin-top:24px">Usuários cadastrados</div>
+    <table class="mini-table">
+      <thead><tr><th>Username</th><th>Nome</th><th>Perfil</th><th>Nova senha</th><th></th></tr></thead>
+      <tbody id="user-tbody"></tbody>
+    </table>
+    <div class="modal-actions"><button class="btn" id="user-close">Fechar</button></div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · Importação CSV ================================================================= -->
+<div class="modal-overlay" id="modal-import">
+  <div class="modal modal-wide">
+    <h2>Importar CSV</h2>
+    <div class="modal-subtitle">Cole o conteúdo do CSV abaixo. Separador: vírgula ou ponto-e-vírgula.</div>
+    <div class="form-section">Formato esperado</div>
+    <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4ecb71;background:rgba(0,173,167,0.05);border:1px solid rgba(0,173,167,0.15);border-radius:6px;padding:10px;margin-bottom:12px;overflow-x:auto;white-space:nowrap">
+      campaign_name,channel,date,impressions,clicks,conversions,spend,revenue
+    </div>
+    <div class="form-section">Dados</div>
+    <textarea id="import-csv" rows="10" style="font-family:'DM Mono',monospace;font-size:12px;width:100%;box-sizing:border-box" placeholder="campaign_name,channel,date,impressions,clicks,conversions,spend,revenue&#10;Fibra Residencial — Pesquisa,google,2026-04-15,15000,320,12,1800,0"></textarea>
+    <div id="import-result" style="margin-top:10px;font-size:13px;min-height:20px"></div>
+    <div class="modal-actions">
+      <button class="btn" id="import-close">Fechar</button>
+      <button class="btn" id="import-clear">Limpar</button>
+      <button class="btn teal" id="import-run">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · Sincronização ================================================================= -->
+<div class="modal-overlay" id="modal-sync">
+  <div class="modal">
+    <h2>Sincronizar Ads</h2>
+    <div class="modal-subtitle">Busca dados diretamente das APIs do Google Ads e Meta Ads para o período selecionado.</div>
+
+    <div class="form-section">Período de sincronização</div>
+    <div class="form-grid">
+      <div class="field"><label>De</label><input type="date" id="sync-from"></div>
+      <div class="field"><label>Até</label><input type="date" id="sync-to"></div>
+    </div>
+
+    <div class="form-section" style="margin-top:20px">Google Ads
+      <span id="sync-google-status" style="float:right;font-size:11px;font-weight:400"></span>
+    </div>
+    <div class="modal-actions" style="justify-content:flex-start;margin-top:8px">
+      <button class="btn teal" id="sync-google-run">⚡ Sincronizar Google</button>
+    </div>
+
+    <div class="form-section" style="margin-top:20px">Meta Ads
+      <span id="sync-meta-status" style="float:right;font-size:11px;font-weight:400"></span>
+    </div>
+    <div class="modal-actions" style="justify-content:flex-start;margin-top:8px">
+      <button class="btn" style="background:rgba(8,102,255,0.15);border-color:rgba(8,102,255,0.4);color:#4d90ff" id="sync-meta-run">⚡ Sincronizar Meta</button>
+    </div>
+
+    <div id="sync-result" style="margin-top:14px;font-size:13px;min-height:20px"></div>
+    <div class="modal-actions"><button class="btn" id="sync-close">Fechar</button></div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · Alertas ================================================================= -->
+<div class="modal-overlay" id="modal-alerts">
+  <div class="modal modal-wide">
+    <h2>Alertas por E-mail</h2>
+    <div class="modal-subtitle">Receba notificações automáticas quando um KPI ultrapassar o limiar definido.</div>
+    <div id="alerts-smtp-status" style="font-size:12px;margin-bottom:12px"></div>
+
+    <div class="form-section">Novo alerta</div>
+    <div class="form-grid">
+      <div class="field"><label>Métrica</label>
+        <select id="alerts-new-metric">
+          <option value="cpl">CPL</option><option value="conversions">Conversões</option>
+          <option value="spend">Investimento</option><option value="ctr">CTR</option>
+          <option value="roas">ROAS</option><option value="impressions">Impressões</option>
+          <option value="clicks">Cliques</option>
+        </select>
+      </div>
+      <div class="field"><label>Canal</label>
+        <select id="alerts-new-channel"><option value="all">Total</option><option value="google">Google</option><option value="meta">Meta</option></select>
+      </div>
+      <div class="field"><label>Direção</label>
+        <select id="alerts-new-direction"><option value="min">Abaixo do mínimo</option><option value="max">Acima do máximo</option></select>
+      </div>
+      <div class="field"><label>Limiar</label><input type="number" step="0.01" id="alerts-new-threshold" placeholder="Ex: 50"></div>
+      <div class="field full"><label>E-mail destinatário</label><input type="email" id="alerts-new-email" placeholder="gerente@empresa.com"></div>
+    </div>
+    <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
+      <button class="btn teal" id="alerts-create">+ Criar alerta</button>
+    </div>
+
+    <div class="form-section" style="margin-top:24px">Alertas cadastrados</div>
+    <table class="mini-table">
+      <thead><tr><th>Métrica</th><th>Canal</th><th>Limiar</th><th>E-mail</th><th>Status</th><th></th></tr></thead>
+      <tbody id="alerts-tbody"></tbody>
+    </table>
+
+    <div class="form-section" style="margin-top:24px">Testar envio</div>
+    <div class="form-grid">
+      <div class="field full" style="flex-direction:row;gap:8px;align-items:flex-end">
+        <div style="flex:1"><label>E-mail de teste</label><input type="email" id="alerts-test-email" placeholder="seu@email.com"></div>
+        <button class="btn" id="alerts-test" style="margin-bottom:0;white-space:nowrap">Enviar teste</button>
+      </div>
+    </div>
+
+    <div class="modal-actions"><button class="btn" id="alerts-close">Fechar</button></div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · Drill-down Campanha ================================================================= -->
+<div class="modal-overlay" id="modal-drill">
+  <div class="modal modal-xl">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+      <h2 id="drill-title" style="margin:0">Campanha</h2>
+      <span id="drill-channel" class="drill-channel-badge"></span>
+    </div>
+    <div class="modal-subtitle">Série diária de métricas · clique em Fechar para voltar ao dashboard.</div>
+
+    <div id="drill-totals" style="margin-bottom:16px"></div>
+
+    <div style="position:relative;height:220px;margin-bottom:16px">
+      <canvas id="drill-chart"></canvas>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th><th>Impressões</th><th>Cliques</th><th>CTR</th>
+            <th>Conversões</th><th>Investimento</th><th>CPL</th><th>ROAS</th>
+          </tr>
+        </thead>
+        <tbody id="drill-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="modal-actions"><button class="btn" id="drill-close">Fechar</button></div>
+  </div>
+</div>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>

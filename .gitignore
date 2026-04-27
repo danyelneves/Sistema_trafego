@@ -1,0 +1,23 @@
+# ── Ambiente ──────────────────────────────
+.env
+.env.local
+.env.production
+
+# ── Node ──────────────────────────────────
+node_modules/
+
+# ── SQLite (legado) ───────────────────────
+*.db
+*.db-shm
+*.db-wal
+db/backups/
+
+# ── Logs ──────────────────────────────────
+logs/
+*.log
+
+# ── Vercel ────────────────────────────────
+.vercel/
+
+# ── macOS ─────────────────────────────────
+.DS_Store

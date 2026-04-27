@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maranet · Entrar</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="login-wrap">
+    <form class="login-card fade-in" id="login-form">
+      <div class="badge">NVia Holding · Maranet Telecom</div>
+      <h1>Central de <span style="color:var(--teal)">Tráfego</span></h1>
+      <div class="subtitle"><span class="pulse"></span>Acesso restrito</div>
+
+      <div class="field">
+        <label for="u">Usuário</label>
+        <input id="u" name="username" autocomplete="username" required autofocus>
+      </div>
+      <div class="field">
+        <label for="p">Senha</label>
+        <input id="p" name="password" type="password" autocomplete="current-password" required>
+      </div>
+
+      <button class="btn-login" type="submit">Entrar</button>
+      <div class="err" id="err"></div>
+    </form>
+  </div>
+
+<script>
+const form = document.getElementById('login-form');
+const err  = document.getElementById('err');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  err.textContent = '';
+  const body = { username: document.getElementById('u').value.trim(),
+                 password: document.getElementById('p').value };
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      credentials: 'include',
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'erro');
+    location.href = '/';
+  } catch (e) {
+    err.textContent = e.message === 'credenciais inválidas'
+      ? 'Usuário ou senha inválidos.'
+      : 'Erro ao entrar: ' + e.message;
+  }
+});
+</script>
+</body>
+</html>
