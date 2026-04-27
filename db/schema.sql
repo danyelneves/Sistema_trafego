@@ -98,7 +98,6 @@ CREATE TABLE IF NOT EXISTS settings (
 
 INSERT INTO settings(key, value) VALUES
   ('brand.name',    'Maranet Telecom'),
-  ('brand.holding', 'NVia Holding e Participações'),
   ('brand.tagline', 'Central de Tráfego'),
   ('theme.primary', '#00ADA7')
 ON CONFLICT (key) DO NOTHING;

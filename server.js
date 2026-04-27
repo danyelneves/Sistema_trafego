@@ -90,7 +90,7 @@ if (require.main === module) {
     console.log('');
     console.log('╔════════════════════════════════════════════╗');
     console.log('║  Maranet · Central de Tráfego              ║');
-    console.log('║  NVia Holding e Participações              ║');
+    console.log('║  Maranet Telecom                           ║');
     console.log('╚════════════════════════════════════════════╝');
     console.log(`→ servidor: http://localhost:${PORT}`);
     console.log(`→ node:     ${process.version}`);
