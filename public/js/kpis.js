@@ -409,7 +409,7 @@ export function renderPacingPanel(container, monthlyRows, goals, year, month, ch
         <div>Projeção Final: <span class="mono">${fmtBRL(projSpend)}</span></div>
       </div>
       <div class="pacing-track">
-        ${isCurrentMonth ? \`<div class="pacing-time-marker" style="left: ${Math.min(100, Math.max(0, timePctLabel))}%;"></div>\` : ''}
+        ${isCurrentMonth ? `<div class="pacing-time-marker" style="left: ${Math.min(100, Math.max(0, timePctLabel))}%;"></div>` : ''}
         <div class="pacing-bar ${statusCls}" style="width: ${Math.min(100, Math.max(0, spendPctLabel))}%;"></div>
       </div>
     </div>
