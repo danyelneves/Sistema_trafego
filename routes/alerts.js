@@ -23,9 +23,9 @@ router.get('/config', async (req, res) => {
 });
 
 router.post('/config', requireAdmin, async (req, res) => {
-  const { metric, channel = 'all', threshold, direction = 'min', email, webhook_url, window_days = 0 } = req.body || {};
-  if (!metric || threshold == null || (!email && !webhook_url))
-    return res.status(400).json({ error: 'metric, threshold e (email ou webhook_url) são obrigatórios' });
+  const { metric, channel = 'all', threshold, direction = 'min', email, webhook_url, whatsapp, window_days = 0 } = req.body || {};
+  if (!metric || threshold == null || (!email && !webhook_url && !whatsapp))
+    return res.status(400).json({ error: 'metric, threshold e (email, webhook ou whatsapp) são obrigatórios' });
   if (!METRICS.includes(metric))       return res.status(400).json({ error: `metric inválido (${METRICS.join(', ')})` });
   if (!CHANNELS.includes(channel))     return res.status(400).json({ error: `channel inválido (${CHANNELS.join(', ')})` });
   if (!DIRECTIONS.includes(direction)) return res.status(400).json({ error: 'direction deve ser min ou max' });
@@ -33,10 +33,10 @@ router.post('/config', requireAdmin, async (req, res) => {
 
   try {
     const row = await db.get(
-      `INSERT INTO alert_configs (metric, channel, threshold, direction, email, webhook_url, window_days)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO alert_configs (metric, channel, threshold, direction, email, webhook_url, whatsapp, window_days)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      metric, channel, Number(threshold), direction, email?.trim() || '', webhook_url?.trim() || null, Number(window_days)
+      metric, channel, Number(threshold), direction, email?.trim() || '', webhook_url?.trim() || null, whatsapp?.trim() || null, Number(window_days)
     );
     res.status(201).json(row);
   } catch (e) { res.status(500).json({ error: e.message }); }

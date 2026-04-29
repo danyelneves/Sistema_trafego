@@ -4,6 +4,8 @@
  * Em produção (Vercel): chamado pelo Vercel Cron Job via GET /api/cron/alerts
  * Em desenvolvimento local: pode-se chamar manualmente ou manter o setInterval
  */
+const fetch  = require('node-fetch');
+const { sendWhatsApp } = require('./whatsapp');
 const db     = require('../db');
 const mailer = require('./mailer');
 
@@ -99,17 +101,24 @@ async function runChecks() {
       );
       if (already) continue;
 
-      await mailer.sendKpiAlert({
-        to:        alert.email,
-        metric:    alert.metric,
-        value,
-        target:    alert.threshold,
-        direction: alert.direction,
-        channel:   alert.channel,
-        period,
-        fmtValue:  fmtValue(alert.metric, value),
-        fmtTarget: fmtValue(alert.metric, alert.threshold),
-      });
+      if (alert.email) {
+        await mailer.sendKpiAlert({
+          to:        alert.email,
+          metric:    alert.metric,
+          value,
+          target:    alert.threshold,
+          direction: alert.direction,
+          channel:   alert.channel,
+          period,
+          fmtValue:  fmtValue(alert.metric, value),
+          fmtTarget: fmtValue(alert.metric, alert.threshold),
+        });
+      }
+
+      if (alert.whatsapp) {
+        const msg = `🚨 *Maranet Alerta: ${alert.channel.toUpperCase()}* 🚨\nA métrica *${METRICS_MAP[alert.metric]}* atingiu ${fmtValue(alert.metric, value)}.\nMeta configurada: ${alert.direction === 'min' ? 'Mínimo' : 'Máximo'} de ${fmtValue(alert.metric, alert.threshold)}.`;
+        await sendWhatsApp(alert.whatsapp, msg);
+      }
 
       if (alert.webhook_url) {
         try {

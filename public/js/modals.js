@@ -484,8 +484,9 @@ export function mountAlertsModal() {
           <td>${chanLabel(a.channel)}</td>
           <td>${a.direction === 'min' ? 'mín' : 'máx'} ${a.threshold}</td>
           <td style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis">
-            ${escapeAttr(a.email)}
-            ${a.webhook_url ? '<br><span style="color:#00ADA7">Webhook Ativo</span>' : ''}
+            ${a.email ? escapeAttr(a.email) : ''}
+            ${a.whatsapp ? `<br><span style="color:#25D366"><i class="ph ph-whatsapp-logo"></i> ${escapeAttr(a.whatsapp)}</span>` : ''}
+            ${a.webhook_url ? '<br><span style="color:#00ADA7"><i class="ph ph-link"></i> Webhook Ativo</span>' : ''}
             ${a.window_days ? `<br><span style="color:#a8a29e">Últimos ${a.window_days} dias</span>` : ''}
           </td>
           <td><span style="color:${a.active ? '#4ecb71' : '#ff6464'}">${a.active ? 'Ativo' : 'Inativo'}</span></td>
@@ -533,11 +534,12 @@ export function mountAlertsModal() {
       channel:   $('#alerts-new-channel').value,
       threshold: Number($('#alerts-new-threshold').value),
       direction: $('#alerts-new-direction').value,
-      email:     $('#alerts-new-email').value.trim(),
+      email:     $('#alerts-new-email').value.trim() || undefined,
+      whatsapp:  $('#alerts-new-whatsapp').value.trim() || undefined,
       webhook_url: $('#alerts-new-webhook').value.trim() || undefined,
       window_days: Number($('#alerts-new-window').value) || 0,
     };
-    if (!body.email && !body.webhook_url) { toast('Informe um E-mail ou Webhook', { error: true }); return; }
+    if (!body.email && !body.webhook_url && !body.whatsapp) { toast('Informe um E-mail, WhatsApp ou Webhook', { error: true }); return; }
     if (!body.threshold) { toast('O limiar (threshold) é obrigatório', { error: true }); return; }
     try { await api.createAlertConfig(body); toast('Alerta criado'); refresh(); }
     catch (e) { toast('Erro: ' + e.message, { error: true }); }
