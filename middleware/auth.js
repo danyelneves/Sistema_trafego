@@ -30,9 +30,9 @@ async function requireAuth(req, res, next) {
   }
 
   try {
-    const row = await db.get('SELECT current_workspace_id FROM users WHERE id = $1', user.id);
+    const row = await db.get('SELECT workspace_id FROM users WHERE id = $1', user.id);
     if (!row) return res.status(401).json({ error: 'user not found' });
-    user.workspace_id = row.current_workspace_id || 1;
+    user.workspace_id = row.workspace_id || 1;
     req.user = user;
     next();
   } catch (err) {
