@@ -40,6 +40,7 @@ export const api = {
   demographics: (q)      => call('/api/metrics/demographics', { query: q }),
   placements:   (q)      => call('/api/metrics/placements', { query: q }),
   ads:        (q)        => call('/api/metrics/ads', { query: q }),
+  aiInsights: (q)        => call('/api/ai/insights', { query: q }),
 
   goals:        (q)      => call('/api/goals', { query: q }),
   upsertGoal:   (body)   => call('/api/goals', { method: 'POST', body }),

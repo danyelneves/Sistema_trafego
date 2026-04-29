@@ -4,7 +4,7 @@
 import { api }          from './api.js';
 import * as charts      from './charts.js';
 import { renderCampaignTable, renderDetailTable, renderDemographics, renderAds } from './tables.js';
-import { renderKPIs, renderHealthPanel, renderSocialKPIs, renderPacingPanel }          from './kpis.js';
+import { renderKPIs, renderHealthPanel, renderSocialKPIs, renderPacingPanel, renderAIInsights } from './kpis.js';
 import {
   mountEntryModal, mountCampaignsModal, mountGoalsModal, mountNotesModal,
   mountUsersModal, mountImportModal, mountAlertsModal,
@@ -208,7 +208,7 @@ async function refresh() {
   if (state.channel !== 'all') qDemo.channel = state.channel;
 
   try {
-    const [kpis, monthly, byCamp, notes, goals, demographics, placements, ads] = await Promise.all([
+    const [kpis, monthly, byCamp, notes, goals, demographics, placements, ads, aiInsights] = await Promise.all([
       api.kpis(qKpi),
       api.monthly(qMonthly),
       api.byCampaign(qByCamp),
@@ -217,6 +217,7 @@ async function refresh() {
       api.demographics(qDemo),
       api.placements(qDemo),
       api.ads(qDemo),
+      api.aiInsights({ channel: state.channel })
     ]);
 
     state.lastMonthly = monthly.rows || [];
@@ -260,6 +261,9 @@ async function refresh() {
     charts.renderDemographicCharts(demographics);
     charts.renderPlacementCharts(placements);
     renderAds(ads);
+    
+    // AI Insights
+    renderAIInsights(aiInsights);
 
     lastSyncTime = new Date();
     updateSyncTime();

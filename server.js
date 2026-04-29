@@ -52,6 +52,7 @@ app.use('/api/drill',      require('./routes/drill'));
 app.use('/api/sync',       require('./routes/sync').router);
 app.use('/api/cron',       require('./routes/cron'));
 app.use('/api/instagram',  require('./routes/instagram'));
+app.use('/api/ai',         require('./routes/ai'));
 app.use('/api/webhook',    require('./routes/webhook'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now(), node: process.version }));

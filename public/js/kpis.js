@@ -421,3 +421,53 @@ export function renderPacingPanel(container, monthlyRows, goals, year, month, ch
     </div>
   `;
 }
+
+// =========================================================================
+// AI CONSULTANT
+// =========================================================================
+export function renderAIInsights(aiData) {
+  const panel = document.getElementById('ai-insights-panel');
+  const content = document.getElementById('ai-insights-content');
+  
+  if (!panel || !content) return;
+  if (!aiData || !aiData.insights || aiData.insights.length === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = 'block';
+  content.innerHTML = '';
+
+  const colors = {
+    success: { bg: 'rgba(0,255,163,0.1)', border: '#00ffa3', icon: 'ph-trend-up', text: '#00ffa3' },
+    warning: { bg: 'rgba(235,118,23,0.1)', border: '#eb7617', icon: 'ph-warning', text: '#eb7617' },
+    danger:  { bg: 'rgba(232,5,126,0.1)', border: '#e8057e', icon: 'ph-siren', text: '#e8057e' },
+    info:    { bg: 'rgba(8,102,255,0.1)', border: '#0866ff', icon: 'ph-info', text: '#0866ff' },
+  };
+
+  aiData.insights.forEach(insight => {
+    const theme = colors[insight.type] || colors.info;
+    const card = document.createElement('div');
+    card.style.background = theme.bg;
+    card.style.border = `1px solid ${theme.border}`;
+    card.style.borderRadius = '6px';
+    card.style.padding = '12px';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.gap = '8px';
+
+    card.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <i class="ph ${theme.icon}" style="color:${theme.text}; font-size:18px;"></i>
+        <strong style="color:#e8f4f8; font-size:14px; font-family:'DM Mono'">${insight.title || insight.metric}</strong>
+      </div>
+      <div style="color:#6b9aaa; font-size:13px; line-height:1.4;">${insight.message}</div>
+      <div style="margin-top:auto; padding-top:8px;">
+        <span style="background:${theme.border}; color:#0c1d27; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:bold;">
+          Ação sugerida: ${insight.action}
+        </span>
+      </div>
+    `;
+    content.appendChild(card);
+  });
+}
