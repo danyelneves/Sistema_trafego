@@ -128,6 +128,50 @@ export function mountSyncModal({ onSaved } = {}) {
             </div>
             <div class="sync-feedback" id="meta-feedback"></div>
           </div>
+
+          <!-- Webhook CRM -->
+          <div class="sync-section" style="margin-top:24px; border-color: var(--teal)">
+            <div class="sync-section-header">
+              <div class="sync-platform-icon" style="background:var(--teal);color:#000">W</div>
+              <div>
+                <div class="sync-platform-title">Webhook CRM (Vendas)</div>
+                <div class="sync-platform-sub">Receba conversões via Hotmart, RD Station, etc.</div>
+              </div>
+            </div>
+
+            <div class="sync-fields">
+              <div class="sync-field-group">
+                <label>URL de Disparo</label>
+                <div style="display:flex;gap:8px">
+                  <input type="text" id="w-webhookUrl" readonly style="background:var(--bg-card);color:var(--teal);flex:1;font-family:monospace" onclick="this.select()">
+                  <button class="btn outline" id="btn-copy-webhook" title="Copiar URL">📋 Copiar</button>
+                </div>
+              </div>
+              <div class="sync-field-group" style="margin-top:10px">
+                <label>Token Secreto (usado na URL ?token=...)</label>
+                <div style="display:flex;gap:8px">
+                  <input type="text" id="w-webhookSecret" placeholder="Ex: e281f9a0c1" style="flex:1">
+                  <button class="btn" id="btn-save-webhook">💾 Salvar Token</button>
+                </div>
+                <div id="webhook-feedback" class="sync-feedback"></div>
+              </div>
+            </div>
+
+            <div class="sync-help">
+              <details>
+                <summary>Como enviar vendas?</summary>
+                <p style="margin-top:8px;font-size:13px;color:var(--muted)">Faça um POST para a URL acima com este payload (JSON):</p>
+                <pre style="background:#000;color:#fff;padding:12px;border-radius:4px;font-size:12px;margin-top:8px;overflow-x:auto;">
+{
+  "client_name": "João",
+  "contract_value": 150.00,
+  "status": "won",
+  "utm_source": "meta",
+  "utm_campaign": "minha_campanha"
+}</pre>
+              </details>
+            </div>
+          </div>
         </div>
 
         <!-- ═══════════ ABA IMPORT ═══════════ -->
@@ -467,8 +511,10 @@ export function mountSyncModal({ onSaved } = {}) {
     overlay.querySelectorAll('.sync-tab,.sync-panel').forEach(el => el.classList.remove('active'));
     q('.sync-tab[data-tab="config"]').classList.add('active');
     q('#sync-panel-config').classList.add('active');
+    
     await loadStatus();
-  }
+
+  });
 
   return { open, close };
 }

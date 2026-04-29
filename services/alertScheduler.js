@@ -20,14 +20,23 @@ function fmtValue(metric, v) {
   return v.toLocaleString('pt-BR');
 }
 
-async function aggKpi(channel) {
+async function aggKpi(channel, window_days = 0) {
   const now   = new Date();
   const year  = now.getFullYear();
   const month = now.getMonth() + 1;
   const pad   = n => String(n).padStart(2, '0');
-  const from  = `${year}-${pad(month)}-01`;
-  const end   = new Date(year, month, 0).getDate();
-  const to    = `${year}-${pad(month)}-${pad(end)}`;
+  
+  let from, to;
+  if (window_days > 0) {
+    const past = new Date(now);
+    past.setDate(now.getDate() - window_days);
+    from = `${past.getFullYear()}-${pad(past.getMonth() + 1)}-${pad(past.getDate())}`;
+    to   = `${year}-${pad(month)}-${pad(now.getDate())}`;
+  } else {
+    from  = `${year}-${pad(month)}-01`;
+    const end   = new Date(year, month, 0).getDate();
+    to    = `${year}-${pad(month)}-${pad(end)}`;
+  }
 
   const args = [from, to];
   let channelClause = '';
@@ -74,7 +83,7 @@ async function runChecks() {
 
   for (const alert of alerts) {
     try {
-      const kpis  = await aggKpi(alert.channel);
+      const kpis  = await aggKpi(alert.channel, alert.window_days);
       const value = kpis[alert.metric];
       if (value === undefined) continue;
 
@@ -101,6 +110,18 @@ async function runChecks() {
         fmtValue:  fmtValue(alert.metric, value),
         fmtTarget: fmtValue(alert.metric, alert.threshold),
       });
+
+      if (alert.webhook_url) {
+        try {
+          await fetch(alert.webhook_url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: `🚨 *Maranet Alerta: ${alert.channel.toUpperCase()}* 🚨\nA métrica *${METRICS_MAP[alert.metric]}* atingiu ${fmtValue(alert.metric, value)}.\nMeta configurada: ${alert.direction === 'min' ? 'Mínimo' : 'Máximo'} de ${fmtValue(alert.metric, alert.threshold)}.`
+            })
+          });
+        } catch (e) { console.error('[WEBHOOK] Erro ao enviar:', e.message); }
+      }
 
       await db.run(
         `INSERT INTO alert_log (alert_id, year, month, value) VALUES ($1, $2, $3, $4)

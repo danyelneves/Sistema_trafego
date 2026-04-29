@@ -3,8 +3,8 @@
  */
 import { api }          from './api.js';
 import * as charts      from './charts.js';
-import { renderCampaignTable, renderDetailTable } from './tables.js';
-import { renderKPIs, renderHealthPanel }          from './kpis.js';
+import { renderCampaignTable, renderDetailTable, renderDemographics, renderAds } from './tables.js';
+import { renderKPIs, renderHealthPanel, renderSocialKPIs, renderPacingPanel }          from './kpis.js';
 import {
   mountEntryModal, mountCampaignsModal, mountGoalsModal, mountNotesModal,
   mountUsersModal, mountImportModal, mountAlertsModal,
@@ -27,6 +27,7 @@ const state = {
   lastByCamp:   [],
   lastGoals:    [],
 };
+let lastSyncTime = null;
 
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -56,6 +57,25 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
     importModal = mountImportModal({ onSaved: refresh });
     syncModal   = mountSyncModal  ({ onSaved: refresh });
     alertsModal = mountAlertsModal();
+    
+    // Configura seletor de workspaces
+    const wsSelect = $('#workspace-select');
+    if (wsSelect) {
+      wsSelect.style.display = 'inline-block';
+      try {
+        const workspaces = await api.getWorkspaces();
+        wsSelect.innerHTML = workspaces.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+        // Seleciona o atual (vem do servidor, podemos ter que adivinhar ou ter api.me() retornando workspace_id)
+        if (currentUser.workspace_id) wsSelect.value = currentUser.workspace_id;
+      } catch (e) { console.warn('Erro ao carregar workspaces', e); }
+
+      wsSelect.addEventListener('change', async (e) => {
+        try {
+          await api.switchWorkspace(e.target.value);
+          window.location.reload();
+        } catch (err) { toast('Erro ao trocar workspace', { error: true }); }
+      });
+    }
   }
 
   // ---- Botões do header ----
@@ -64,20 +84,38 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   $('#btn-goals')     .addEventListener('click', () => goalsModal.open());
   $('#btn-notes')     .addEventListener('click', () => notesModal.open());
   $('#btn-logout')    .addEventListener('click', async () => { await api.logout(); location.href = '/login'; });
+  
+  const btnRefresh = $('#btn-refresh');
+  if (btnRefresh) {
+    btnRefresh.addEventListener('click', async () => {
+      btnRefresh.textContent = '↻ ...';
+      await refresh();
+      btnRefresh.textContent = '↻ Atualizar';
+    });
+  }
 
   // Botões admin
   const btnUsers  = $('#btn-users');
   const btnImport = $('#btn-import');
   const btnSync   = $('#btn-sync');
   const btnAlerts = $('#btn-alerts');
+  const btnViewer = $('#btn-viewer-link');
 
   if (currentUser?.role !== 'admin') {
-    [btnUsers, btnImport, btnSync, btnAlerts].forEach(b => b && (b.style.display = 'none'));
+    [btnUsers, btnImport, btnSync, btnAlerts, btnViewer, $('#btn-entry'), $('#btn-campaigns'), $('#btn-goals'), $('#btn-notes'), $('#btn-export-json')].forEach(b => b && (b.style.display = 'none'));
+    document.body.classList.add('viewer-mode');
   } else {
     btnUsers?.addEventListener ('click', () => usersModal.open());
     btnImport?.addEventListener('click', () => importModal.open());
     btnSync?.addEventListener  ('click', () => syncModal.open());
     btnAlerts?.addEventListener('click', () => alertsModal.open());
+    btnViewer?.addEventListener('click', async () => {
+      try {
+        const { link } = await api.getViewerLink();
+        navigator.clipboard.writeText(link);
+        toast('Link de Diretoria copiado para a área de transferência!');
+      } catch (e) { toast('Erro ao gerar link: ' + e.message, { error: true }); }
+    });
   }
 
   // ---- Exportações ----
@@ -162,13 +200,19 @@ async function refresh() {
   if (state.month)             qByCamp.month   = state.month;
   if (state.channel !== 'all') qByCamp.channel = state.channel;
 
+  const qDemo = { year: state.year };
+  if (state.month)             qDemo.month   = state.month;
+  if (state.channel !== 'all') qDemo.channel = state.channel;
+
   try {
-    const [kpis, monthly, byCamp, notes, goals] = await Promise.all([
+    const [kpis, monthly, byCamp, notes, goals, demographics, ads] = await Promise.all([
       api.kpis(qKpi),
       api.monthly(qMonthly),
       api.byCampaign(qByCamp),
       api.notes({ year: state.year }),
       api.goals({ year: state.year, ...(state.month ? { month: state.month } : {}) }),
+      api.demographics(qDemo),
+      api.ads(qDemo),
     ]);
 
     state.lastMonthly = monthly.rows || [];
@@ -180,9 +224,13 @@ async function refresh() {
     // KPIs com sparklines
     const goalsNorm = goalsRelevantToPeriod(goals);
     renderKPIs($('#kpi-grid'), kpis, state.channel, goalsNorm, state.lastMonthly);
+    renderSocialKPIs($('#social-grid'), kpis, state.channel);
 
     // Painel de saúde
     renderHealthPanel($('#health-panel'), state.lastByCamp, goalsNorm);
+
+    // Calculadora de Pacing (apenas visível ao filtrar por Mês)
+    renderPacingPanel($('#pacing-panel'), state.lastMonthly, goalsNorm, state.year, state.month, state.channel);
 
     // Gráficos
     charts.renderAll({
@@ -203,7 +251,12 @@ async function refresh() {
       (camp) => window.__drillModal?.open(camp, state.year, state.month)
     );
 
-    $('#last-update').textContent = 'Atualizado: ' + new Date().toLocaleString('pt-BR');
+    // Demographics & Ads
+    renderDemographics(demographics);
+    renderAds(ads);
+
+    lastSyncTime = new Date();
+    updateSyncTime();
 
   } catch (e) { toast('Erro ao carregar: ' + e.message, { error: true }); }
 }
@@ -268,3 +321,16 @@ function buildCsvRows(monthlyRows, notes) {
     nota:             (notes.find(n => n.month === r.month && (n.channel === r.channel || n.channel === 'all'))?.text) || '',
   }));
 }
+
+function updateSyncTime() {
+  const el = $('#sync-time b');
+  if (!el || !lastSyncTime) return;
+  const diff = Math.floor((new Date() - lastSyncTime) / 1000);
+  if (diff < 60) el.textContent = 'agora mesmo';
+  else if (diff < 3600) el.textContent = `${Math.floor(diff/60)} min atrás`;
+  else el.textContent = `${Math.floor(diff/3600)}h atrás`;
+  
+  const footerUpdate = $('#last-update');
+  if (footerUpdate) footerUpdate.textContent = 'Atualizado: ' + lastSyncTime.toLocaleString('pt-BR');
+}
+setInterval(updateSyncTime, 30000);

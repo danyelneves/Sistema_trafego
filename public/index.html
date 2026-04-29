@@ -20,8 +20,11 @@
       <div class="subtitle" id="period-label"><span class="pulse"></span>Carregando…</div>
     </div>
     <div class="header-right">
+      <div class="user-chip" id="sync-time" title="Tempo desde a última atualização dos dados">Sync: <b>--</b></div>
+      <button class="btn teal" id="btn-refresh" title="Atualizar dados em tempo real">↻ Atualizar</button>
+      <select id="workspace-select" style="display:none; margin-right:10px; background: #0b0b0b; color: var(--fg); border: 1px solid var(--border); padding: 5px 10px;" title="Trocar de Cliente (Workspace)"></select>
       <div class="user-chip" id="user-chip"><b>●</b> …</div>
-      <button class="btn" id="btn-present" title="Modo apresentação">▶ Apresentar</button>
+      <button class="btn" id="btn-present" title="Modo apresentação">▶</button>
       <button class="btn" id="btn-logout" title="Sair">Sair</button>
     </div>
   </header>
@@ -58,6 +61,7 @@
       <button class="btn" id="btn-campaigns" title="Gerenciar campanhas">⚙ Campanhas</button>
       <button class="btn" id="btn-users"     title="Usuários">👥 Usuários</button>
       <button class="btn" id="btn-alerts"    title="Alertas por e-mail">🔔 Alertas</button>
+      <button class="btn" id="btn-viewer-link" title="Gerar link de acesso para Diretoria">🔗 Link Diretoria</button>
       <button class="btn" id="btn-sync"      title="Sincronizar Google Ads / Meta">⚡ Sincronizar</button>
       <button class="btn" id="btn-import"    title="Importar CSV">⬇ CSV</button>
       <button class="btn" id="btn-export-csv"  title="Exportar CSV">CSV</button>
@@ -74,11 +78,17 @@
     <button class="tab"        data-source="meta"><span class="dot"></span> Meta Ads</button>
   </div>
 
+  <!-- =================== PACING PANEL =================== -->
+  <div id="pacing-panel" class="fade-in"></div>
+
   <!-- =================== HEALTH PANEL =================== -->
   <div id="health-panel" class="fade-in"></div>
 
   <!-- =================== KPIs =================== -->
   <div class="kpi-grid fade-in" id="kpi-grid"></div>
+
+  <!-- =================== SOCIAL KPIs (META/IG) =================== -->
+  <div class="kpi-grid fade-in" id="social-grid" style="display:none; margin-top:20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;"></div>
 
   <!-- =================== CHARTS =================== -->
   <div class="charts-grid fade-in">
@@ -104,6 +114,22 @@
         </div>
       </div>
       <canvas id="chartVerba"></canvas>
+    </div>
+  </div>
+
+  <div class="charts-row fade-in">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Evolução do Investimento</div>
+          <div class="chart-subtitle">Gasto mensal (R$)</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--google)"></div>Google</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--meta)"></div>Meta</div>
+        </div>
+      </div>
+      <canvas id="chartSpend"></canvas>
     </div>
   </div>
 
@@ -138,6 +164,104 @@
     </div>
   </div>
 
+  <div class="charts-row fade-in">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Custo por Lead (CPL)</div>
+          <div class="chart-subtitle">Evolução de custo mensal (R$)</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--google)"></div>Google</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--meta)"></div>Meta</div>
+        </div>
+      </div>
+      <canvas id="chartCpl"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Funil de Conversão</div>
+          <div class="chart-subtitle">Taxa de retenção (Total)</div>
+        </div>
+      </div>
+      <canvas id="chartFunnel"></canvas>
+    </div>
+  </div>
+
+  <div class="charts-row fade-in" id="row-chart-social">
+    <div class="chart-card" style="grid-column: 1 / -1;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Engajamento Social</div>
+          <div class="chart-subtitle">Visualizações de Vídeo vs Stories (Meta Ads)</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#0866FF"></div>Reels/Vídeos</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#E8057E"></div>Stories</div>
+        </div>
+      </div>
+      <canvas id="chartSocial"></canvas>
+    </div>
+  </div>
+
+  <!-- =================== DADOS DEMOGRÁFICOS =================== -->
+  <div class="charts-row fade-in" id="row-demographics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="table-card" style="margin-top:0">
+      <div class="table-header">
+        <div>
+          <div class="chart-title">Top Regiões / Cidades</div>
+          <div class="chart-subtitle">Onde o dinheiro rende mais</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto; max-height: 300px; overflow-y: auto;">
+        <table>
+          <thead>
+            <tr><th>Região</th><th>Canal</th><th>Invest.</th><th>Leads</th><th>CPL</th></tr>
+          </thead>
+          <tbody id="demo-region-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="table-card" style="margin-top:0">
+      <div class="table-header">
+        <div>
+          <div class="chart-title">Demográfico (Idade/Gênero)</div>
+          <div class="chart-subtitle">Público de maior conversão</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto; max-height: 300px; overflow-y: auto;">
+        <table>
+          <thead>
+            <tr><th>Perfil</th><th>Canal</th><th>Invest.</th><th>Leads</th><th>CPL</th></tr>
+          </thead>
+          <tbody id="demo-age-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== DADOS AD-LEVEL =================== -->
+  <div class="charts-row fade-in" id="row-ads" style="margin-top:20px;">
+    <div class="table-card" style="margin-top:0">
+      <div class="table-header">
+        <div>
+          <div class="chart-title">Galeria de Criativos / Anúncios</div>
+          <div class="chart-subtitle">Os ativos de mídia que estão trazendo mais conversões</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto; max-height: 400px; overflow-y: auto;">
+        <table>
+          <thead>
+            <tr><th style="width:60px">Miniatura</th><th>Criativo (Ad)</th><th>Campanha</th><th>Canal</th><th>Invest.</th><th>Leads</th><th>Vendas (CRM)</th><th>CAC</th></tr>
+          </thead>
+          <tbody id="ads-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- =================== TABELA DETALHE =================== -->
   <div class="table-card fade-in">
     <div class="table-header">
@@ -151,7 +275,7 @@
         <thead>
           <tr>
             <th>Mês</th><th>Canal</th><th>Impressões</th><th>Cliques</th><th>CTR</th>
-            <th>Conversões</th><th>Investimento</th><th>CPL</th><th>Desempenho</th>
+            <th>Leads</th><th>Vendas</th><th>Investimento</th><th>CPL</th><th>CAC</th><th>Desempenho</th>
           </tr>
         </thead>
         <tbody id="detail-tbody"></tbody>
@@ -481,7 +605,9 @@
         <select id="alerts-new-direction"><option value="min">Abaixo do mínimo</option><option value="max">Acima do máximo</option></select>
       </div>
       <div class="field"><label>Limiar</label><input type="number" step="0.01" id="alerts-new-threshold" placeholder="Ex: 50"></div>
+      <div class="field"><label>Janela (Dias)</label><input type="number" id="alerts-new-window" placeholder="Vazio = Mês atual" title="Avaliar os últimos X dias em vez do mês inteiro"></div>
       <div class="field full"><label>E-mail destinatário</label><input type="email" id="alerts-new-email" placeholder="gerente@empresa.com"></div>
+      <div class="field full"><label>Webhook (Slack / Telegram)</label><input type="url" id="alerts-new-webhook" placeholder="https://..."></div>
     </div>
     <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
       <button class="btn teal" id="alerts-create">+ Criar alerta</button>
@@ -492,6 +618,14 @@
       <thead><tr><th>Métrica</th><th>Canal</th><th>Limiar</th><th>E-mail</th><th>Status</th><th></th></tr></thead>
       <tbody id="alerts-tbody"></tbody>
     </table>
+
+    <div class="form-section" style="margin-top:24px">Histórico de Disparos (Últimos 30 dias)</div>
+    <div style="max-height: 200px; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px;">
+      <table class="mini-table" style="margin: 0; border: none;">
+        <thead><tr><th>Data</th><th>Métrica</th><th>Limiar</th><th>Valor Atingido</th></tr></thead>
+        <tbody id="alerts-log-tbody"></tbody>
+      </table>
+    </div>
 
     <div class="form-section" style="margin-top:24px">Testar envio</div>
     <div class="form-grid">

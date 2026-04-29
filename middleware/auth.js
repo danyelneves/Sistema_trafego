@@ -15,13 +15,29 @@ function verifyToken(token) {
   catch { return null; }
 }
 
+const db = require('../db');
+
 /** Exige autenticação (API JSON). */
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const token = req.cookies?.auth;
   const user  = token && verifyToken(token);
   if (!user) return res.status(401).json({ error: 'unauthorized' });
-  req.user = user;
-  next();
+
+  if (user.role === 'viewer') {
+    user.workspace_id = user.workspace_id || 1;
+    req.user = user;
+    return next();
+  }
+
+  try {
+    const row = await db.get('SELECT current_workspace_id FROM users WHERE id = $1', user.id);
+    if (!row) return res.status(401).json({ error: 'user not found' });
+    user.workspace_id = row.current_workspace_id || 1;
+    req.user = user;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }
 
 /** Só deixa passar admin; viewer é bloqueado em escrita. */

@@ -477,30 +477,54 @@ export function mountAlertsModal() {
 
     if (!data.alerts.length) {
       tbody.innerHTML = `<tr><td colspan="7" class="muted" style="text-align:center;padding:18px">Nenhum alerta cadastrado.</td></tr>`;
-      return;
+    } else {
+      tbody.innerHTML = data.alerts.map(a => `
+        <tr>
+          <td>${metricLabel(a.metric)}</td>
+          <td>${chanLabel(a.channel)}</td>
+          <td>${a.direction === 'min' ? 'mín' : 'máx'} ${a.threshold}</td>
+          <td style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis">
+            ${escapeAttr(a.email)}
+            ${a.webhook_url ? '<br><span style="color:#00ADA7">Webhook Ativo</span>' : ''}
+            ${a.window_days ? `<br><span style="color:#a8a29e">Últimos ${a.window_days} dias</span>` : ''}
+          </td>
+          <td><span style="color:${a.active ? '#4ecb71' : '#ff6464'}">${a.active ? 'Ativo' : 'Inativo'}</span></td>
+          <td class="row right">
+            <button class="btn small" data-toggle="${a.id}" data-active="${a.active}">${a.active ? 'Pausar' : 'Ativar'}</button>
+            <button class="btn small del-btn" data-del="${a.id}">Excluir</button>
+          </td>
+        </tr>
+      `).join('');
     }
-    tbody.innerHTML = data.alerts.map(a => `
-      <tr>
-        <td>${metricLabel(a.metric)}</td>
-        <td>${chanLabel(a.channel)}</td>
-        <td>${a.direction === 'min' ? 'mín' : 'máx'} ${a.threshold}</td>
-        <td style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis">${escapeAttr(a.email)}</td>
-        <td><span style="color:${a.active ? '#4ecb71' : '#ff6464'}">${a.active ? 'Ativo' : 'Inativo'}</span></td>
-        <td class="row right">
-          <button class="btn small" data-toggle="${a.id}" data-active="${a.active}">${a.active ? 'Pausar' : 'Ativar'}</button>
-          <button class="btn small del-btn" data-del="${a.id}">Excluir</button>
-        </td>
-      </tr>
-    `).join('');
+
     tbody.querySelectorAll('[data-toggle]').forEach(b => b.addEventListener('click', async () => {
       try { await api.toggleAlert(Number(b.dataset.toggle), b.dataset.active === '1' ? 0 : 1); refresh(); }
-      catch (e) { toast('Erro: ' + e.message, { error: true }); }
+      catch (e) { toast('Erro: ' + e.message, { error:true }); }
     }));
     tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
-      if (!confirm('Excluir este alerta?')) return;
-      try { await api.deleteAlertConfig(Number(b.dataset.del)); refresh(); }
-      catch (e) { toast('Erro: ' + e.message, { error: true }); }
+      if (confirm('Excluir alerta?')) {
+        try { await api.deleteAlert(Number(b.dataset.del)); refresh(); }
+        catch (e) { toast('Erro: ' + e.message, { error:true }); }
+      }
     }));
+
+    // Carregar Logs
+    try {
+      const logs = await api.alertLog();
+      const logTbody = $('#alerts-log-tbody');
+      if (!logs.length) {
+        logTbody.innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center;padding:18px">Nenhum alerta disparado recentemente.</td></tr>`;
+      } else {
+        logTbody.innerHTML = logs.map(l => `
+          <tr>
+            <td style="font-size:12px">${new Date(l.created_at).toLocaleString('pt-BR')}</td>
+            <td>${metricLabel(l.metric)} (${chanLabel(l.channel)})</td>
+            <td>${l.direction === 'min' ? 'mín' : 'máx'} ${l.threshold}</td>
+            <td style="color:var(--bad);font-weight:bold">${l.triggered_value}</td>
+          </tr>
+        `).join('');
+      }
+    } catch (e) { console.error('Erro ao carregar logs:', e); }
   }
 
   $('#alerts-create').addEventListener('click', async () => {
@@ -510,8 +534,11 @@ export function mountAlertsModal() {
       threshold: Number($('#alerts-new-threshold').value),
       direction: $('#alerts-new-direction').value,
       email:     $('#alerts-new-email').value.trim(),
+      webhook_url: $('#alerts-new-webhook').value.trim() || undefined,
+      window_days: Number($('#alerts-new-window').value) || 0,
     };
-    if (!body.email || !body.threshold) { toast('E-mail e limiar são obrigatórios', { error: true }); return; }
+    if (!body.email && !body.webhook_url) { toast('Informe um E-mail ou Webhook', { error: true }); return; }
+    if (!body.threshold) { toast('O limiar (threshold) é obrigatório', { error: true }); return; }
     try { await api.createAlertConfig(body); toast('Alerta criado'); refresh(); }
     catch (e) { toast('Erro: ' + e.message, { error: true }); }
   });

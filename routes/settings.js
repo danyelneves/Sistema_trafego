@@ -13,6 +13,13 @@ router.get('/', async (req, res) => {
     const rows = await db.all('SELECT key, value FROM settings');
     const obj = {};
     rows.forEach(r => { obj[r.key] = r.value; });
+
+    if (!obj['webhook.secret']) {
+      const token = require('crypto').randomBytes(16).toString('hex');
+      await db.run("INSERT INTO settings(key, value) VALUES ('webhook.secret', $1)", token);
+      obj['webhook.secret'] = token;
+    }
+
     res.json(obj);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

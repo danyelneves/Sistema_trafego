@@ -9,33 +9,36 @@ const db = require('../db');
 
 const API_VERSION = 'v20';
 
-function getCredentials() {
+async function getCredentials(workspaceId) {
   // Lê do banco primeiro, fallback para env
-  const setting = (key) => {
-    try { return db.prepare('SELECT value FROM settings WHERE key=?').get(key)?.value || ''; }
+  const setting = async (key) => {
+    try { 
+      const row = await db.get('SELECT value FROM workspace_settings WHERE workspace_id=$1 AND key=$2', workspaceId, key);
+      return row?.value || ''; 
+    }
     catch { return ''; }
   };
 
-  const customerId = (setting('google.customerId') || process.env.GOOGLE_ADS_CUSTOMER_ID || '').replace(/-/g, '');
+  const customerId = ((await setting('google.customerId')) || process.env.GOOGLE_ADS_CUSTOMER_ID || '').replace(/-/g, '');
   // loginCustomerId = MCC se configurado, senão usa o próprio customerId
-  const loginCustomerId = (setting('google.loginCustomerId') || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || customerId).replace(/-/g, '');
+  const loginCustomerId = ((await setting('google.loginCustomerId')) || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || customerId).replace(/-/g, '');
   return {
-    developerToken:  setting('google.developerToken') || process.env.GOOGLE_ADS_DEVELOPER_TOKEN || '',
-    clientId:        setting('google.clientId')       || process.env.GOOGLE_ADS_CLIENT_ID       || '',
-    clientSecret:    setting('google.clientSecret')   || process.env.GOOGLE_ADS_CLIENT_SECRET   || '',
-    refreshToken:    setting('google.refreshToken')   || process.env.GOOGLE_ADS_REFRESH_TOKEN   || '',
+    developerToken:  await setting('google.developerToken') || process.env.GOOGLE_ADS_DEVELOPER_TOKEN || '',
+    clientId:        await setting('google.clientId')       || process.env.GOOGLE_ADS_CLIENT_ID       || '',
+    clientSecret:    await setting('google.clientSecret')   || process.env.GOOGLE_ADS_CLIENT_SECRET   || '',
+    refreshToken:    await setting('google.refreshToken')   || process.env.GOOGLE_ADS_REFRESH_TOKEN   || '',
     customerId,
     loginCustomerId,
   };
 }
 
-function isConfigured() {
-  const c = getCredentials();
+async function isConfigured(workspaceId) {
+  const c = await getCredentials(workspaceId);
   return !!(c.developerToken && c.clientId && c.clientSecret && c.refreshToken && c.customerId);
 }
 
-function getMissingFields() {
-  const c = getCredentials();
+async function getMissingFields(workspaceId) {
+  const c = await getCredentials(workspaceId);
   const missing = [];
   if (!c.developerToken) missing.push('Developer Token');
   if (!c.clientId)       missing.push('Client ID');
@@ -65,8 +68,8 @@ async function getAccessToken(creds) {
 }
 
 /** Gera URL de autorização OAuth2 para obter refresh token. */
-function getAuthUrl(redirectUri) {
-  const c = getCredentials();
+async function getAuthUrl(workspaceId, redirectUri) {
+  const c = await getCredentials(workspaceId);
   const params = new URLSearchParams({
     client_id:     c.clientId,
     redirect_uri:  redirectUri,
@@ -79,8 +82,8 @@ function getAuthUrl(redirectUri) {
 }
 
 /** Troca authorization code por refresh_token. */
-async function exchangeCode(code, redirectUri) {
-  const c = getCredentials();
+async function exchangeCode(workspaceId, code, redirectUri) {
+  const c = await getCredentials(workspaceId);
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method:  'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -95,14 +98,18 @@ async function exchangeCode(code, redirectUri) {
   if (!res.ok) throw new Error(`Exchange code falhou: ${await res.text()}`);
   const data = await res.json();
   // Salva refresh token no banco
-  db.prepare('INSERT OR REPLACE INTO settings(key,value) VALUES(?,?)').run('google.refreshToken', data.refresh_token);
+  await db.run(
+    `INSERT INTO workspace_settings(workspace_id, key, value) VALUES($1,$2,$3)
+     ON CONFLICT(workspace_id, key) DO UPDATE SET value = EXCLUDED.value`,
+    workspaceId, 'google.refreshToken', data.refresh_token
+  );
   return data;
 }
 
 /** Executa GAQL e retorna rows. */
-async function query(gaql) {
-  const c = getCredentials();
-  if (!isConfigured()) throw new Error('Google Ads não configurado. Acesse Configurações de Integração.');
+async function query(workspaceId, gaql) {
+  const c = await getCredentials(workspaceId);
+  if (!(await isConfigured(workspaceId))) throw new Error('Google Ads não configurado. Acesse Configurações de Integração.');
   const accessToken = await getAccessToken(c);
   const res = await fetch(
     `https://googleads.googleapis.com/${API_VERSION}/customers/${c.customerId}/googleAds:search`,
@@ -129,8 +136,8 @@ async function query(gaql) {
  * @param {string} fromDate  YYYY-MM-DD
  * @param {string} toDate    YYYY-MM-DD
  */
-async function fetchMetrics(fromDate, toDate) {
-  const results = await query(`
+async function fetchMetrics(workspaceId, fromDate, toDate) {
+  const results = await query(workspaceId, `
     SELECT
       campaign.id,
       campaign.name,
@@ -161,19 +168,81 @@ async function fetchMetrics(fromDate, toDate) {
   }));
 }
 
-async function fetchCampaigns() {
-  const results = await query(`
-    SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type
+/**
+ * Busca métricas de Campanhas para test-connection
+ */
+async function fetchCampaigns(workspaceId) {
+  return await query(workspaceId, `
+    SELECT campaign.id, campaign.name
     FROM campaign
     WHERE campaign.status != 'REMOVED'
-    ORDER BY campaign.name
+    LIMIT 10
+  `);
+}
+
+/**
+ * Busca dados demográficos (Location)
+ */
+async function fetchDemographics(workspaceId, fromDate, toDate) {
+  const results = await query(workspaceId, `
+    SELECT
+      campaign.id,
+      campaign.name,
+      segments.date,
+      geographic_view.location_type,
+      geographic_view.country_criterion_id,
+      segments.geo_target_city,
+      metrics.impressions,
+      metrics.clicks,
+      metrics.conversions,
+      metrics.cost_micros
+    FROM geographic_view
+    WHERE segments.date BETWEEN '${fromDate}' AND '${toDate}'
+      AND campaign.status != 'REMOVED'
   `);
   return results.map(r => ({
-    id:        String(r.campaign.id),
-    name:      r.campaign.name,
-    status:    r.campaign.status,
-    objective: r.campaign.advertisingChannelType,
+    campaignId:   String(r.campaign.id),
+    campaignName: r.campaign.name,
+    date:         r.segments.date,
+    type:         'region',
+    dimension:    r.segments.geoTargetCity || 'Unknown',
+    impressions:  r.metrics.impressions || 0,
+    clicks:       r.metrics.clicks || 0,
+    conversions:  r.metrics.conversions || 0,
+    spend:        (r.metrics.costMicros || 0) / 1_000_000,
   }));
 }
 
-module.exports = { isConfigured, getMissingFields, getAuthUrl, exchangeCode, fetchMetrics, fetchCampaigns, query };
+/**
+ * Busca dados a nível de anúncio (Criativos)
+ */
+async function fetchAds(workspaceId, fromDate, toDate) {
+  const results = await query(workspaceId, `
+    SELECT
+      campaign.id,
+      campaign.name,
+      ad_group_ad.ad.id,
+      ad_group_ad.ad.name,
+      segments.date,
+      metrics.impressions,
+      metrics.clicks,
+      metrics.conversions,
+      metrics.cost_micros
+    FROM ad_group_ad
+    WHERE segments.date BETWEEN '${fromDate}' AND '${toDate}'
+      AND campaign.status != 'REMOVED'
+  `);
+  return results.map(r => ({
+    campaignId:   String(r.campaign.id),
+    campaignName: r.campaign.name,
+    adId:         String(r.adGroupAd.ad.id),
+    adName:       r.adGroupAd.ad.name || 'Ad ' + r.adGroupAd.ad.id,
+    date:         r.segments.date,
+    impressions:  r.metrics.impressions || 0,
+    clicks:       r.metrics.clicks || 0,
+    conversions:  r.metrics.conversions || 0,
+    spend:        (r.metrics.costMicros || 0) / 1_000_000,
+  }));
+}
+
+module.exports = { isConfigured, getMissingFields, getAuthUrl, exchangeCode, fetchMetrics, fetchCampaigns, fetchDemographics, fetchAds, query };

@@ -30,6 +30,7 @@ if (process.env.JWT_SECRET === DEFAULT_SECRET || !process.env.JWT_SECRET) {
 }
 
 app.disable('x-powered-by');
+app.set('trust proxy', 1); // Garante que req.protocol seja 'https' no Vercel
 app.use(express.json({ limit: '4mb' }));
 app.use(cookieParser());
 app.use(requestLogger);
@@ -37,19 +38,21 @@ app.use(requestLogger);
 // ------------------------------------------------------------
 // API Routes
 // ------------------------------------------------------------
-app.use('/api/auth',      require('./routes/auth'));
-app.use('/api/campaigns', require('./routes/campaigns'));
-app.use('/api/metrics',   require('./routes/metrics'));
-app.use('/api/goals',     require('./routes/goals'));
-app.use('/api/notes',     require('./routes/notes'));
-app.use('/api/settings',  require('./routes/settings'));
-app.use('/api/users',     require('./routes/users'));
-app.use('/api/alerts',    require('./routes/alerts'));
-app.use('/api/import',    require('./routes/import'));
-app.use('/api/drill',     require('./routes/drill'));
-app.use('/api/sync',      require('./routes/sync'));
-app.use('/api/cron',      require('./routes/cron'));
-app.use('/api/instagram', require('./routes/instagram'));
+app.use('/api/auth',       require('./routes/auth'));
+app.use('/api/workspaces', require('./routes/workspaces'));
+app.use('/api/campaigns',  require('./routes/campaigns'));
+app.use('/api/metrics',    require('./routes/metrics'));
+app.use('/api/goals',      require('./routes/goals'));
+app.use('/api/notes',      require('./routes/notes'));
+app.use('/api/settings',   require('./routes/settings'));
+app.use('/api/users',      require('./routes/users'));
+app.use('/api/alerts',     require('./routes/alerts'));
+app.use('/api/import',     require('./routes/import'));
+app.use('/api/drill',      require('./routes/drill'));
+app.use('/api/sync',       require('./routes/sync'));
+app.use('/api/cron',       require('./routes/cron'));
+app.use('/api/instagram',  require('./routes/instagram'));
+app.use('/api/webhook',    require('./routes/webhook'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now(), node: process.version }));
 

@@ -7,34 +7,33 @@ const db = require('../db');
 const API_VERSION = 'v21.0';
 const BASE_URL    = `https://graph.facebook.com/${API_VERSION}`;
 
-async function getSetting(key) {
-  try { const r = await db.get('SELECT value FROM settings WHERE key=$1', key); return r?.value || ''; }
+async function getSetting(workspaceId, key) {
+  try { const r = await db.get('SELECT value FROM workspace_settings WHERE workspace_id=$1 AND key=$2', workspaceId, key); return r?.value || ''; }
   catch { return ''; }
 }
 
-async function getCredentials() {
+async function getCredentials(workspaceId) {
   return {
-    accessToken: await getSetting('meta.accessToken') || process.env.META_ACCESS_TOKEN || '',
-    adAccountId: await getSetting('meta.adAccountId') || process.env.META_AD_ACCOUNT_ID || '',
+    accessToken: await getSetting(workspaceId, 'meta.accessToken') || process.env.META_ACCESS_TOKEN || '',
+    adAccountId: await getSetting(workspaceId, 'meta.adAccountId') || process.env.META_AD_ACCOUNT_ID || '',
   };
 }
 
-async function isConfigured() {
-  const c = await getCredentials();
+async function isConfigured(workspaceId) {
+  const c = await getCredentials(workspaceId);
   return !!(c.accessToken && c.adAccountId);
 }
 
-function getMissingFields() {
-  const at = process.env.META_ACCESS_TOKEN;
-  const ai = process.env.META_AD_ACCOUNT_ID;
+async function getMissingFields(workspaceId) {
+  const c = await getCredentials(workspaceId);
   const missing = [];
-  if (!at) missing.push('Access Token');
-  if (!ai) missing.push('Ad Account ID');
+  if (!c.accessToken) missing.push('Access Token');
+  if (!c.adAccountId) missing.push('Ad Account ID');
   return missing;
 }
 
-async function graphGet(path, params = {}) {
-  const { accessToken } = await getCredentials();
+async function graphGet(workspaceId, path, params = {}) {
+  const { accessToken } = await getCredentials(workspaceId);
   if (!accessToken) throw new Error('Meta: Access Token não configurado.');
 
   const url = new URL(`${BASE_URL}/${path}`);
@@ -51,12 +50,12 @@ async function graphGet(path, params = {}) {
   return res.json();
 }
 
-async function testConnection() {
-  const { accessToken, adAccountId } = await getCredentials();
+async function testConnection(workspaceId) {
+  const { accessToken, adAccountId } = await getCredentials(workspaceId);
   if (!accessToken) throw new Error('Access Token não configurado');
-  const tokenInfo = await graphGet('me', { fields: 'id,name' });
+  const tokenInfo = await graphGet(workspaceId, 'me', { fields: 'id,name' });
   let accountInfo = null;
-  if (adAccountId) accountInfo = await graphGet(adAccountId, { fields: 'id,name,currency,account_status' });
+  if (adAccountId) accountInfo = await graphGet(workspaceId, adAccountId, { fields: 'id,name,currency,account_status' });
   return { user: tokenInfo, account: accountInfo };
 }
 
@@ -72,9 +71,9 @@ function actionVal(actions = [], ...types) {
 /**
  * Busca métricas gerais diárias por campanha (com campos Instagram extras).
  */
-async function fetchMetrics(fromDate, toDate) {
-  const { adAccountId } = await getCredentials();
-  if (!await isConfigured()) throw new Error('Meta Marketing API não configurada.');
+async function fetchMetrics(workspaceId, fromDate, toDate) {
+  const { adAccountId } = await getCredentials(workspaceId);
+  if (!await isConfigured(workspaceId)) throw new Error('Meta Marketing API não configurada.');
 
   const fields = [
     'campaign_id','campaign_name','date_start',
@@ -130,9 +129,9 @@ async function fetchMetrics(fromDate, toDate) {
 /**
  * Busca breakdown por publisher_platform + placement (Feed, Stories, Reels, etc.)
  */
-async function fetchPlacementBreakdown(fromDate, toDate) {
-  const { adAccountId } = await getCredentials();
-  if (!await isConfigured()) throw new Error('Meta Marketing API não configurada.');
+async function fetchPlacementBreakdown(workspaceId, fromDate, toDate) {
+  const { adAccountId } = await getCredentials(workspaceId);
+  if (!await isConfigured(workspaceId)) throw new Error('Meta Marketing API não configurada.');
 
   const fields = [
     'campaign_id','campaign_name','date_start',
@@ -179,4 +178,107 @@ async function fetchCampaigns() {
   return (data.data || []).map(c => ({ id: c.id, name: c.name, status: c.status, objective: c.objective }));
 }
 
-module.exports = { isConfigured, getMissingFields, testConnection, fetchMetrics, fetchPlacementBreakdown, fetchCampaigns };
+/**
+ * Busca breakdown demográfico (Região, Idade, Gênero)
+ */
+async function fetchDemographics(fromDate, toDate) {
+  const { adAccountId } = await getCredentials();
+  if (!await isConfigured()) return [];
+
+  const fields = 'campaign_id,campaign_name,date_start,impressions,clicks,spend,actions';
+  const baseParams = {
+    fields,
+    time_range: JSON.stringify({ since: fromDate, until: toDate }),
+    time_increment: 1,
+    level: 'campaign',
+    limit: 500,
+  };
+
+  const fetchBreakdown = async (breakdowns, mapper) => {
+    let allData = [], after = null;
+    do {
+      const params = { ...baseParams, breakdowns };
+      if (after) params.after = after;
+      const data = await graphGet(workspaceId, `${adAccountId}/insights`, params);
+      allData = allData.concat(data.data || []);
+      after = (data.paging?.cursors?.after && data.paging?.next) ? data.paging.cursors.after : null;
+    } while (after);
+    return allData.map(mapper);
+  };
+
+  // Region
+  const regionData = await fetchBreakdown('region', r => ({
+    campaignId:   r.campaign_id,
+    campaignName: r.campaign_name,
+    date:         r.date_start,
+    type:         'region',
+    dimension:    r.region || 'Unknown',
+    impressions:  Number(r.impressions) || 0,
+    clicks:       Number(r.clicks) || 0,
+    spend:        Number(r.spend) || 0,
+    conversions:  actionVal(r.actions || [], 'lead','offsite_conversion.fb_pixel_lead','onsite_conversion.lead_grouped'),
+  }));
+
+  // Age & Gender
+  const ageGenderData = await fetchBreakdown('age,gender', r => {
+    const age = {
+      campaignId:   r.campaign_id,
+      campaignName: r.campaign_name,
+      date:         r.date_start,
+      type:         'age',
+      dimension:    r.age || 'Unknown',
+      impressions:  Number(r.impressions) || 0,
+      clicks:       Number(r.clicks) || 0,
+      spend:        Number(r.spend) || 0,
+      conversions:  actionVal(r.actions || [], 'lead','offsite_conversion.fb_pixel_lead','onsite_conversion.lead_grouped'),
+    };
+    const gender = { ...age, type: 'gender', dimension: r.gender || 'Unknown' };
+    return [age, gender];
+  });
+
+  return [...regionData, ...ageGenderData.flat()];
+}
+
+/**
+ * Busca métricas a nível de Anúncio (Criativos)
+ */
+async function fetchAds(fromDate, toDate) {
+  const { adAccountId } = await getCredentials();
+  if (!await isConfigured()) return [];
+
+  const fields = [
+    'campaign_id','campaign_name',
+    'ad_id','ad_name',
+    'date_start',
+    'impressions','clicks','spend','actions',
+  ].join(',');
+
+  let allData = [], after = null;
+  do {
+    const params = {
+      fields,
+      time_range:     JSON.stringify({ since: fromDate, until: toDate }),
+      time_increment: 1,
+      level:          'ad',
+      limit:          500,
+    };
+    if (after) params.after = after;
+    const data = await graphGet(`${adAccountId}/insights`, params);
+    allData = allData.concat(data.data || []);
+    after = (data.paging?.cursors?.after && data.paging?.next) ? data.paging.cursors.after : null;
+  } while (after);
+
+  return allData.map(r => ({
+    campaignId:   r.campaign_id,
+    campaignName: r.campaign_name,
+    adId:         r.ad_id,
+    adName:       r.ad_name,
+    date:         r.date_start,
+    impressions:  Number(r.impressions) || 0,
+    clicks:       Number(r.clicks)      || 0,
+    spend:        Number(r.spend) || 0,
+    conversions:  actionVal(r.actions || [], 'lead','offsite_conversion.fb_pixel_lead','onsite_conversion.lead_grouped'),
+  }));
+}
+
+module.exports = { isConfigured, getMissingFields, testConnection, fetchMetrics, fetchDemographics, fetchCampaigns, fetchAds };

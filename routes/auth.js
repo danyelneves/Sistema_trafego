@@ -84,4 +84,29 @@ router.get('/me', requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
 
+router.get('/viewer-link', requireAuth, require('../middleware/auth').requireAdmin, (req, res) => {
+  const IS_PROD = process.env.NODE_ENV === 'production';
+  const token = signToken({ id: 0, username: 'diretoria', role: 'viewer', name: 'Diretoria' });
+  const host = req.get('host');
+  const protocol = IS_PROD ? 'https' : req.protocol;
+  res.json({ link: `${protocol}://${host}/api/auth/login-link?token=${token}` });
+});
+
+router.get('/login-link', (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).send('Token inválido');
+  const { verifyToken } = require('../middleware/auth');
+  const user = verifyToken(token);
+  if (!user || user.role !== 'viewer') return res.status(401).send('Token inválido ou expirado');
+  
+  const IS_PROD = process.env.NODE_ENV === 'production';
+  res.cookie('auth', token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure:   IS_PROD,
+    maxAge:   30 * 24 * 60 * 60 * 1000, // 30 dias para o link de diretoria
+  });
+  res.redirect('/');
+});
+
 module.exports = router;

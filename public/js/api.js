@@ -23,6 +23,7 @@ export const api = {
   me:         ()         => call('/api/auth/me'),
   logout:     ()         => call('/api/auth/logout', { method: 'POST' }),
   settings:   ()         => call('/api/settings'),
+  getViewerLink: ()      => call('/api/auth/viewer-link'),
 
   campaigns:      (q)    => call('/api/campaigns', { query: q }),
   createCampaign: (body) => call('/api/campaigns', { method: 'POST', body }),
@@ -36,6 +37,8 @@ export const api = {
   summary:    (q)        => call('/api/metrics/summary', { query: q }),
   byCampaign: (q)        => call('/api/metrics/by-campaign', { query: q }),
   kpis:       (q)        => call('/api/metrics/kpis', { query: q }),
+  demographics: (q)      => call('/api/metrics/demographics', { query: q }),
+  ads:        (q)        => call('/api/metrics/ads', { query: q }),
 
   goals:        (q)      => call('/api/goals', { query: q }),
   upsertGoal:   (body)   => call('/api/goals', { method: 'POST', body }),
@@ -50,6 +53,10 @@ export const api = {
   createUser:   (body)         => call('/api/users', { method: 'POST', body }),
   updateUser:   (id, body)     => call(`/api/users/${id}`, { method: 'PATCH', body }),
   deleteUser:   (id)           => call(`/api/users/${id}`, { method: 'DELETE' }),
+
+  // Workspaces
+  getWorkspaces:   ()          => call('/api/workspaces'),
+  switchWorkspace: (wId)       => call('/api/workspaces/switch', { method: 'POST', body: { workspace_id: wId } }),
 
   // Alertas
   alertConfigs:       ()       => call('/api/alerts/config'),

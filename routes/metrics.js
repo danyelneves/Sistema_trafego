@@ -27,7 +27,13 @@ const AGG = `
   COALESCE(SUM(m.clicks),0)::bigint      AS clicks,
   COALESCE(SUM(m.conversions),0)::bigint AS conversions,
   COALESCE(SUM(m.spend),0)::numeric      AS spend,
-  COALESCE(SUM(m.revenue),0)::numeric    AS revenue
+  COALESCE(SUM(m.revenue),0)::numeric    AS revenue,
+  COALESCE(SUM(m.sales),0)::bigint       AS sales,
+  COALESCE(SUM(m.reach),0)::bigint       AS reach,
+  COALESCE(SUM(m.video_views),0)::bigint AS video_views,
+  COALESCE(SUM(m.story_views),0)::bigint AS story_views,
+  COALESCE(SUM(m.link_clicks),0)::bigint AS link_clicks,
+  COALESCE(SUM(m.post_engagement),0)::bigint AS post_engagement
 `;
 
 function deriveKpis(r) {
@@ -36,12 +42,25 @@ function deriveKpis(r) {
   const conv = Number(r.conversions) || 0;
   const spend= Number(r.spend)       || 0;
   const rev  = Number(r.revenue)     || 0;
-  const ctr  = imp  ? cli/imp    : 0;
-  const cpc  = cli  ? spend/cli  : 0;
-  const cvr  = cli  ? conv/cli   : 0;
-  const cpl  = conv ? spend/conv : 0;
-  const roas = spend? rev/spend  : 0;
-  return { ...r, impressions: imp, clicks: cli, conversions: conv, spend, revenue: rev, ctr, cpc, cvr, cpl, roas };
+  const sales= Number(r.sales)       || 0;
+  const reach= Number(r.reach)       || 0;
+  const videoViews = Number(r.video_views) || 0;
+  const storyViews = Number(r.story_views) || 0;
+  const linkClicks = Number(r.link_clicks) || 0;
+  const postEngagement = Number(r.post_engagement) || 0;
+
+  const ctr  = imp   ? cli/imp    : 0;
+  const cpc  = cli   ? spend/cli  : 0;
+  const cvr  = cli   ? conv/cli   : 0;
+  const cpl  = conv  ? spend/conv : 0;
+  const cac  = sales ? spend/sales: 0;
+  const roas = spend ? rev/spend  : 0;
+  return { 
+    ...r, 
+    impressions: imp, clicks: cli, conversions: conv, spend, revenue: rev, sales,
+    reach, videoViews, storyViews, linkClicks, postEngagement,
+    ctr, cpc, cvr, cpl, cac, roas 
+  };
 }
 
 // ----------------------------------------------------------------
@@ -52,14 +71,13 @@ router.get('/daily', async (req, res) => {
   const limit  = Math.min(Number(req.query.limit)  || 500, 5000);
   const offset = Number(req.query.offset) || 0;
 
-  const args = [];
-  let i = () => args.length;
-  let where = 'WHERE 1=1';
+  const args = [req.user.workspace_id];
+  let where = 'WHERE c.workspace_id = $1';
 
-  if (from)        { args.push(from);             where += ` AND m.date >= $${i()}`; }
-  if (to)          { args.push(to);               where += ` AND m.date <= $${i()}`; }
-  if (campaign_id) { args.push(Number(campaign_id)); where += ` AND m.campaign_id = $${i()}`; }
-  if (channel && channel !== 'all') { args.push(channel); where += ` AND c.channel = $${i()}`; }
+  if (from)        { args.push(from);             where += ` AND m.date >= $${args.length}`; }
+  if (to)          { args.push(to);               where += ` AND m.date <= $${args.length}`; }
+  if (campaign_id) { args.push(Number(campaign_id)); where += ` AND m.campaign_id = $${args.length}`; }
+  if (channel && channel !== 'all') { args.push(channel); where += ` AND c.channel = $${args.length}`; }
 
   const base = `
     FROM metrics_daily m
@@ -166,7 +184,7 @@ router.get('/monthly', async (req, res) => {
   const year = Number(req.query.year) || new Date().getFullYear();
   const { channel } = req.query;
 
-  const args = [year];
+  const args = [req.user.workspace_id, year];
   let channelClause = '';
   if (channel && channel !== 'all') { args.push(channel); channelClause = ` AND c.channel = $${args.length}`; }
 
@@ -178,7 +196,7 @@ router.get('/monthly', async (req, res) => {
         ${AGG}
       FROM metrics_daily m
       JOIN campaigns c ON c.id = m.campaign_id
-      WHERE EXTRACT(year FROM m.date) = $1
+      WHERE c.workspace_id = $1 AND EXTRACT(year FROM m.date) = $2
       ${channelClause}
       GROUP BY EXTRACT(month FROM m.date), c.channel
       ORDER BY month, c.channel
@@ -197,28 +215,28 @@ router.get('/summary', async (req, res) => {
 
   try {
     if (month) {
-      const args = [year, month];
+      const args = [req.user.workspace_id, year, month];
       let channelClause = '';
       if (channel && channel !== 'all') { args.push(channel); channelClause = ` AND c.channel = $${args.length}`; }
 
       const rows = (await db.all(`
         SELECT m.date::text, c.channel, ${AGG}
         FROM metrics_daily m JOIN campaigns c ON c.id = m.campaign_id
-        WHERE EXTRACT(year FROM m.date) = $1 AND EXTRACT(month FROM m.date) = $2
+        WHERE c.workspace_id = $1 AND EXTRACT(year FROM m.date) = $2 AND EXTRACT(month FROM m.date) = $3
         ${channelClause}
         GROUP BY m.date, c.channel ORDER BY m.date, c.channel
       `, ...args)).map(deriveKpis);
       return res.json({ year, month, granularity: 'daily', rows });
     }
 
-    const args = [year];
+    const args = [req.user.workspace_id, year];
     let channelClause = '';
     if (channel && channel !== 'all') { args.push(channel); channelClause = ` AND c.channel = $${args.length}`; }
 
     const rows = (await db.all(`
       SELECT c.channel, ${AGG}
       FROM metrics_daily m JOIN campaigns c ON c.id = m.campaign_id
-      WHERE EXTRACT(year FROM m.date) = $1
+      WHERE c.workspace_id = $1 AND EXTRACT(year FROM m.date) = $2
       ${channelClause}
       GROUP BY c.channel
     `, ...args)).map(deriveKpis);
@@ -234,8 +252,8 @@ router.get('/by-campaign', async (req, res) => {
   const month = req.query.month ? Number(req.query.month) : null;
   const { channel } = req.query;
 
-  const args = [];
-  let where = 'WHERE 1=1';
+  const args = [req.user.workspace_id];
+  let where = 'WHERE c.workspace_id = $1';
   if (year)  { args.push(year);  where += ` AND (m.date IS NULL OR EXTRACT(year FROM m.date) = $${args.length})`; }
   if (month) { args.push(month); where += ` AND (m.date IS NULL OR EXTRACT(month FROM m.date) = $${args.length})`; }
   if (channel && channel !== 'all') { args.push(channel); where += ` AND c.channel = $${args.length}`; }
@@ -271,20 +289,22 @@ function rangeForPeriod({ year, month, semester }) {
   return { from: `${year}-01-01`, to: `${year}-12-31` };
 }
 
-async function aggRange(from, to, channel) {
-  const args = [from, to];
+async function aggRange(from, to, channel, workspaceId) {
+  const args = [workspaceId, from, to];
   let channelClause = '';
   if (channel && channel !== 'all') { args.push(channel); channelClause = ` AND c.channel = $${args.length}`; }
 
   const r = await db.get(`
     SELECT ${AGG}
     FROM metrics_daily m JOIN campaigns c ON c.id = m.campaign_id
-    WHERE m.date BETWEEN $1 AND $2
+    WHERE c.workspace_id = $1 AND m.date BETWEEN $2 AND $3
     ${channelClause}
   `, ...args) || {};
   return deriveKpis({
     impressions: r.impressions || 0, clicks: r.clicks || 0,
     conversions: r.conversions || 0, spend: r.spend || 0, revenue: r.revenue || 0,
+    reach: r.reach || 0, video_views: r.video_views || 0, story_views: r.story_views || 0,
+    link_clicks: r.link_clicks || 0, post_engagement: r.post_engagement || 0
   });
 }
 
@@ -296,7 +316,7 @@ router.get('/kpis', async (req, res) => {
 
   try {
     const cur  = rangeForPeriod({ year, month, semester });
-    const curTotals = await aggRange(cur.from, cur.to, channel);
+    const curTotals = await aggRange(cur.from, cur.to, channel, req.user.workspace_id);
 
     let prev;
     if (month) {
@@ -309,16 +329,124 @@ router.get('/kpis', async (req, res) => {
     } else {
       prev = rangeForPeriod({ year: year - 1 });
     }
-    const prevTotals = await aggRange(prev.from, prev.to, channel);
+    const prevTotals = await aggRange(prev.from, prev.to, channel, req.user.workspace_id);
 
     const yoyRange = month
       ? rangeForPeriod({ year: year - 1, month })
       : semester
         ? rangeForPeriod({ year: year - 1, semester })
         : rangeForPeriod({ year: year - 1 });
-    const yoyTotals = await aggRange(yoyRange.from, yoyRange.to, channel);
+    const yoyTotals = await aggRange(yoyRange.from, yoyRange.to, channel, req.user.workspace_id);
 
     res.json({ period: { year, month, semester, channel: channel || 'all', ...cur }, current: curTotals, previous: prevTotals, yoy: yoyTotals });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ----------------------------------------------------------------
+// GET /api/metrics/demographics
+// ----------------------------------------------------------------
+router.get('/demographics', async (req, res) => {
+  const year  = Number(req.query.year) || new Date().getFullYear();
+  const month = req.query.month ? Number(req.query.month) : null;
+  const { channel, type } = req.query;
+
+  const args = [req.user.workspace_id, year];
+  let where = `WHERE c.workspace_id = $1 AND EXTRACT(year FROM m.date) = $2`;
+  if (month) { args.push(month); where += ` AND EXTRACT(month FROM m.date) = $${args.length}`; }
+  if (channel && channel !== 'all') { args.push(channel); where += ` AND c.channel = $${args.length}`; }
+  if (type) { args.push(type); where += ` AND m.type = $${args.length}`; }
+
+  try {
+    const rows = await db.all(`
+      SELECT m.type, m.dimension, c.channel,
+        COALESCE(SUM(m.impressions),0)::bigint AS impressions,
+        COALESCE(SUM(m.clicks),0)::bigint      AS clicks,
+        COALESCE(SUM(m.conversions),0)::bigint AS conversions,
+        COALESCE(SUM(m.spend),0)::numeric      AS spend
+      FROM metrics_demographics m
+      JOIN campaigns c ON c.id = m.campaign_id
+      ${where}
+      GROUP BY m.type, m.dimension, c.channel
+      ORDER BY spend DESC
+    `, ...args);
+    
+    const data = rows.map(r => {
+      const spend = Number(r.spend);
+      const conversions = Number(r.conversions);
+      const clicks = Number(r.clicks);
+      const impressions = Number(r.impressions);
+      return {
+        ...r,
+        spend, conversions, clicks, impressions,
+        cpl: conversions ? spend / conversions : 0,
+        ctr: impressions ? clicks / impressions : 0,
+        cpc: clicks ? spend / clicks : 0,
+      };
+    });
+
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ----------------------------------------------------------------
+// GET /api/metrics/ads
+// ----------------------------------------------------------------
+router.get('/ads', async (req, res) => {
+  const year  = Number(req.query.year) || new Date().getFullYear();
+  const month = req.query.month ? Number(req.query.month) : null;
+  const { channel } = req.query;
+
+  const args = [req.user.workspace_id, year];
+  let where = `WHERE c.workspace_id = $1 AND EXTRACT(year FROM m.date) = $2`;
+  let salesWhere = `s.workspace_id = $1 AND EXTRACT(year FROM s.created_at) = $2`;
+  
+  if (month) { 
+    args.push(month); 
+    where += ` AND EXTRACT(month FROM m.date) = $${args.length}`; 
+    salesWhere += ` AND EXTRACT(month FROM s.created_at) = $${args.length}`;
+  }
+  if (channel && channel !== 'all') { 
+    args.push(channel); 
+    where += ` AND c.channel = $${args.length}`; 
+    salesWhere += ` AND s.channel = $${args.length}`;
+  }
+
+  try {
+    const rows = await db.all(`
+      SELECT m.ad_id, m.ad_name, m.thumbnail_url, c.channel, c.name AS campaign_name,
+        COALESCE(SUM(m.impressions),0)::bigint AS impressions,
+        COALESCE(SUM(m.clicks),0)::bigint      AS clicks,
+        COALESCE(SUM(m.conversions),0)::bigint AS conversions,
+        COALESCE(SUM(m.spend),0)::numeric      AS spend,
+        (SELECT COUNT(id) FROM sales s WHERE (s.utm_content = m.ad_id OR s.utm_content = m.ad_name) AND s.status IN ('won','closed') AND ${salesWhere}) AS crm_sales,
+        (SELECT COALESCE(SUM(contract_value),0) FROM sales s WHERE (s.utm_content = m.ad_id OR s.utm_content = m.ad_name) AND s.status IN ('won','closed') AND ${salesWhere}) AS crm_revenue
+      FROM metrics_ads m
+      JOIN campaigns c ON c.id = m.campaign_id
+      ${where}
+      GROUP BY m.ad_id, m.ad_name, m.thumbnail_url, c.channel, c.name
+      ORDER BY spend DESC
+      LIMIT 100
+    `, ...args);
+    
+    const data = rows.map(r => {
+      const spend = Number(r.spend);
+      const conversions = Number(r.conversions);
+      const clicks = Number(r.clicks);
+      const impressions = Number(r.impressions);
+      const crmSales = Number(r.crm_sales) || 0;
+      const crmRevenue = Number(r.crm_revenue) || 0;
+      
+      return {
+        ...r,
+        spend, conversions, clicks, impressions, crmSales, crmRevenue,
+        cpl: conversions ? spend / conversions : 0,
+        ctr: impressions ? clicks / impressions : 0,
+        cpc: clicks ? spend / clicks : 0,
+        cac: crmSales ? spend / crmSales : 0,
+      };
+    });
+
+    res.json(data);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -44,8 +44,10 @@ export function renderDetailTable(tbody, monthlyRows, notes, channel, year) {
           <td class="num">${fmtInt(r.clicks)}</td>
           <td class="num">${fmtPct(r.ctr)}</td>
           <td class="num">${fmtInt(r.conversions)}</td>
+          <td class="num">${fmtInt(r.sales || 0)}</td>
           <td class="num">${fmtBRL(r.spend)}</td>
           <td class="num">${fmtBRL(r.cpl || 0, 2)}</td>
+          <td class="num">${fmtBRL(r.cac || 0, 2)}</td>
           <td><div class="perf-bar"><div class="perf-bar-fill" style="width:${pBar}%;background:linear-gradient(90deg,${barCol},var(--teal))"></div></div></td>
         </tr>
       `);
@@ -89,9 +91,11 @@ export function renderCampaignTable(container, rows, onDrill) {
     { key: 'status',        label: 'Status',      sortable: false },
     { key: 'impressions',   label: 'Impressões',  sortable: true  },
     { key: 'clicks',        label: 'Cliques',     sortable: true  },
-    { key: 'conversions',   label: 'Conv.',       sortable: true  },
+    { key: 'conversions',   label: 'Leads',       sortable: true  },
+    { key: 'sales',         label: 'Vendas',      sortable: true  },
     { key: 'spend',         label: 'Investimento',sortable: true  },
     { key: 'cpl',           label: 'CPL',         sortable: true  },
+    { key: 'cac',           label: 'CAC',         sortable: true  },
     { key: 'roas',          label: 'ROAS',        sortable: true  },
     { key: '_drill',        label: '',            sortable: false },
   ];
@@ -135,11 +139,13 @@ export function renderCampaignTable(container, rows, onDrill) {
             ${fmtInt(r.conversions)}
             <div class="perf-bar"><div class="perf-bar-fill" style="width:${convBar}%;background:linear-gradient(90deg,var(--teal),#00f5d4)"></div></div>
           </td>
+          <td class="num">${fmtInt(r.sales || 0)}</td>
           <td class="num">
             ${fmtBRL(r.spend)}
             <div class="perf-bar"><div class="perf-bar-fill" style="width:${spendBar}%"></div></div>
           </td>
           <td class="num">${fmtBRL(r.cpl || 0, 2)}</td>
+          <td class="num">${fmtBRL(r.cac || 0, 2)}</td>
           <td class="num">${(r.roas || 0).toFixed(2)}x</td>
           <td class="num">
             <button class="btn small drill-btn"
@@ -218,4 +224,65 @@ export function renderCampaignTable(container, rows, onDrill) {
   }
 
   bindDrill();
+}
+
+/** Tabela de Dados Demográficos. */
+export function renderDemographics(demographics) {
+  const regionTbody = document.getElementById('demo-region-tbody');
+  const ageTbody = document.getElementById('demo-age-tbody');
+  if (!regionTbody || !ageTbody) return;
+
+  const regions = demographics.filter(d => d.type === 'region');
+  const ageGenders = demographics.filter(d => d.type === 'age' || d.type === 'gender');
+
+  const buildRow = r => {
+    const tagCls = r.channel === 'google' ? 'google' : 'meta';
+    const label  = r.channel === 'google' ? 'Google' : 'Meta';
+    return `
+      <tr>
+        <td>${escapeAttr(r.dimension)}</td>
+        <td><span class="src-tag ${tagCls}">● ${label}</span></td>
+        <td class="num">${fmtBRL(r.spend)}</td>
+        <td class="num">${fmtInt(r.conversions)}</td>
+        <td class="num">${fmtBRL(r.cpl || 0, 2)}</td>
+      </tr>
+    `;
+  };
+
+  regionTbody.innerHTML = regions.length ? regions.map(buildRow).join('') : '<tr><td colspan="5" style="text-align:center;color:#a8a29e;padding:12px">Sem dados de região</td></tr>';
+  ageTbody.innerHTML = ageGenders.length ? ageGenders.map(buildRow).join('') : '<tr><td colspan="5" style="text-align:center;color:#a8a29e;padding:12px">Sem dados demográficos</td></tr>';
+}
+
+/** Galeria de Criativos (Ad-level) */
+export function renderAds(ads) {
+  const tbody = document.getElementById('ads-tbody');
+  if (!tbody) return;
+
+  if (!ads || !ads.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a8a29e;padding:12px">Sem dados de criativos importados</td></tr>';
+    return;
+  }
+
+  const buildRow = r => {
+    const tagCls = r.channel === 'google' ? 'google' : 'meta';
+    const label  = r.channel === 'google' ? 'Google' : 'Meta';
+    const thumb  = r.thumbnail_url 
+      ? `<img src="${escapeAttr(r.thumbnail_url)}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` 
+      : `<div style="width:40px;height:40px;background:#1a1a1a;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#555;font-size:10px">N/A</div>`;
+      
+    return `
+      <tr>
+        <td style="padding:4px">${thumb}</td>
+        <td>${escapeAttr(r.ad_name || r.ad_id)}</td>
+        <td style="color:#a8a29e;font-size:12px">${escapeAttr(r.campaign_name)}</td>
+        <td><span class="src-tag ${tagCls}">● ${label}</span></td>
+        <td class="num">${fmtBRL(r.spend)}</td>
+        <td class="num" title="CPL: ${fmtBRL(r.cpl || 0, 2)}">${fmtInt(r.conversions)} <span style="font-size:10px;color:#888">(${fmtBRL(r.cpl || 0, 2)})</span></td>
+        <td class="num" style="color:#00ADA7;font-weight:bold">${fmtInt(r.crmSales)}</td>
+        <td class="num" style="color: ${r.cac > 200 ? '#ff6464' : '#4ecb71'}">${r.crmSales ? fmtBRL(r.cac || 0, 2) : '-'}</td>
+      </tr>
+    `;
+  };
+
+  tbody.innerHTML = ads.map(buildRow).join('');
 }

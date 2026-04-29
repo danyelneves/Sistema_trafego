@@ -3,268 +3,275 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maranet · Entrar</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Maranet · SYSTEM AUTH</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --teal:    #00C9C3;
-    --teal-dim: rgba(0,201,195,0.15);
-    --bg:      #060d14;
-    --surface: rgba(12,28,40,0.8);
-    --border:  rgba(0,201,195,0.12);
-    --border-focus: rgba(0,201,195,0.5);
-    --text:    #e2f0f5;
-    --muted:   #5d8494;
-    --bad:     #f87171;
+    --bg: #06080A;
+    --surface: #0A0D10;
+    --border: rgba(255, 255, 255, 0.12);
+    --border-focus: #BAFF29;
+    --text: #FFFFFF;
+    --muted: #8A949C;
+    --accent: #BAFF29;
+    --bad: #FF2E4C;
   }
 
   html, body {
-    height: 100%; background: var(--bg);
-    font-family: 'Inter', sans-serif; color: var(--text);
+    height: 100%;
+    background: var(--bg);
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
     overflow: hidden;
   }
 
-  /* ── LAYOUT ─────────────────────────────── */
+  /* ── BRUTALIST LAYOUT ─────────────────────────────── */
   .login-layout {
     display: grid;
-    grid-template-columns: 1fr 480px;
+    grid-template-columns: 2fr 1fr;
     height: 100vh;
+    position: relative;
   }
   @media (max-width: 900px) {
     .login-layout { grid-template-columns: 1fr; }
-    .login-left   { display: none; }
+    .login-left { display: none !important; }
+  }
+
+  /* Grid overlay for raw technical feel */
+  .grid-overlay {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 64px 64px;
+    pointer-events: none;
+    z-index: 0;
   }
 
   /* ── LADO ESQUERDO ─────────────────────── */
   .login-left {
-    position: relative; overflow: hidden;
-    background: #060d14;
-    display: flex; flex-direction: column;
-    align-items: flex-start; justify-content: flex-end;
-    padding: 48px;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 64px;
+    border-right: 1px solid var(--border);
   }
-
-  /* Orbs animados */
-  .orb {
-    position: absolute; border-radius: 50%;
-    filter: blur(80px); pointer-events: none;
-  }
-  .orb-1 {
-    width: 500px; height: 500px;
-    background: radial-gradient(circle, rgba(0,201,195,0.22) 0%, transparent 70%);
-    top: -100px; left: -100px;
-    animation: drift1 12s ease-in-out infinite alternate;
-  }
-  .orb-2 {
-    width: 380px; height: 380px;
-    background: radial-gradient(circle, rgba(6,77,107,0.35) 0%, transparent 70%);
-    bottom: 80px; right: -60px;
-    animation: drift2 15s ease-in-out infinite alternate;
-  }
-  .orb-3 {
-    width: 260px; height: 260px;
-    background: radial-gradient(circle, rgba(0,201,195,0.1) 0%, transparent 70%);
-    top: 40%; left: 40%;
-    animation: drift3 9s ease-in-out infinite alternate;
-  }
-  @keyframes drift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(60px,40px) scale(1.1); } }
-  @keyframes drift2 { from { transform: translate(0,0); } to { transform: translate(-40px,-30px); } }
-  @keyframes drift3 { from { transform: translate(0,0); } to { transform: translate(30px,-20px); } }
-
-  /* Grid lines */
-  .login-left::before {
-    content: '';
-    position: absolute; inset: 0;
-    background-image:
-      linear-gradient(rgba(0,201,195,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,201,195,0.04) 1px, transparent 1px);
-    background-size: 56px 56px;
-    mask-image: radial-gradient(ellipse 80% 80% at 30% 50%, black 20%, transparent 80%);
-  }
-
-  /* Conteúdo esquerdo */
-  .left-content { position: relative; z-index: 2; }
 
   .brand-logo {
-    display: flex; align-items: center; gap: 14px;
-    margin-bottom: 28px;
+    display: flex; align-items: center; gap: 16px;
   }
   .logo-icon {
-    width: 48px; height: 48px; border-radius: 14px;
-    background: linear-gradient(135deg, var(--teal), #064D6B);
+    width: 48px; height: 48px; border-radius: 2px;
+    background: var(--accent);
     display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 20px; color: #fff;
-    box-shadow: 0 0 32px rgba(0,201,195,0.3);
+    font-weight: 900; font-size: 24px; color: var(--bg);
+    border: 1px solid var(--accent);
   }
-  .brand-name { font-size: 24px; font-weight: 700; color: #fff; }
-  .brand-sub  { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .brand-name { font-size: 24px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 2px; }
+  .brand-sub { font-size: 10px; color: var(--accent); letter-spacing: 4px; text-transform: uppercase; margin-top: 4px; }
 
   .left-headline {
-    font-size: clamp(28px, 3vw, 40px);
-    font-weight: 800; line-height: 1.15; color: #fff;
-    margin-bottom: 16px;
+    font-size: clamp(64px, 8vw, 120px);
+    font-weight: 900;
+    line-height: 0.9;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.1);
+    text-transform: uppercase;
+    position: absolute;
+    bottom: -20px;
+    left: -20px;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    z-index: -1;
   }
-  .left-headline span { color: var(--teal); }
+  
+  .title-wrapper {
+    position: relative;
+    z-index: 2;
+  }
+
+  .left-title {
+    font-size: clamp(32px, 4vw, 56px);
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--text);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    letter-spacing: -1px;
+  }
+  .left-title span {
+    color: var(--accent);
+  }
 
   .left-desc {
-    font-size: 14px; color: var(--muted); line-height: 1.7;
-    max-width: 380px; margin-bottom: 32px;
+    font-size: 14px; color: var(--muted); line-height: 1.6;
+    max-width: 420px; margin-bottom: 48px;
+    padding-left: 16px;
+    border-left: 2px solid var(--accent);
   }
 
   .left-stats {
-    display: flex; gap: 28px;
+    display: flex; gap: 48px;
   }
-  .stat-item { }
-  .stat-num  { font-size: 22px; font-weight: 700; color: var(--teal); }
-  .stat-label{ font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-num { font-size: 32px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
 
   /* ── LADO DIREITO ──────────────────────── */
   .login-right {
-    position: relative; display: flex;
-    align-items: center; justify-content: center;
-    padding: 40px 48px;
-    background: rgba(8,18,28,0.95);
-    border-left: 1px solid var(--border);
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    padding: 40px;
   }
 
   .login-form-wrap {
-    width: 100%; max-width: 360px;
-    animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
-  }
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
+    width: 100%;
+    max-width: 400px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 48px;
+    box-shadow: 16px 16px 0px 0px rgba(0,0,0,0.5);
+    animation: sharpReveal 0.6s cubic-bezier(0.0, 0.5, 0.0, 1) both;
   }
 
-  .form-header { margin-bottom: 36px; }
-  .form-eyebrow {
-    font-size: 11px; font-weight: 600; letter-spacing: 3px;
-    text-transform: uppercase; color: var(--teal);
-    margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  @keyframes sharpReveal {
+    from { opacity: 0; transform: translateY(40px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
-  .form-eyebrow::before {
-    content: ''; width: 20px; height: 1px; background: var(--teal);
+
+  .form-header { margin-bottom: 48px; }
+  .form-eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: 4px;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 16px; display: inline-block;
+    border: 1px solid var(--accent);
+    padding: 4px 10px;
+    background: rgba(186, 255, 41, 0.05);
   }
   .form-title {
-    font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 8px;
+    font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 8px; text-transform: uppercase;
   }
   .form-subtitle { font-size: 13px; color: var(--muted); }
 
   /* Fields */
-  .field-group { margin-bottom: 18px; }
+  .field-group { margin-bottom: 24px; }
   .field-label {
-    display: block; font-size: 11px; font-weight: 500;
-    color: var(--muted); margin-bottom: 8px; letter-spacing: 0.5px;
+    display: block; font-size: 10px; font-weight: 700;
+    color: var(--text); margin-bottom: 8px; letter-spacing: 2px;
+    text-transform: uppercase;
   }
   .field-input-wrap { position: relative; }
-  .field-icon {
-    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-    color: var(--muted); font-size: 14px; pointer-events: none;
-    transition: color 0.2s;
-  }
   .field-input {
-    width: 100%; padding: 13px 14px 13px 40px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 10px; color: var(--text);
-    font-family: 'Inter', sans-serif; font-size: 14px;
+    width: 100%; padding: 14px 16px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 0; color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: 15px;
     outline: none; transition: all 0.2s;
   }
-  .field-input::placeholder { color: rgba(93,132,148,0.6); }
+  .field-input::placeholder { color: rgba(255,255,255,0.2); }
   .field-input:focus {
     border-color: var(--border-focus);
-    background: rgba(0,201,195,0.04);
-    box-shadow: 0 0 0 3px rgba(0,201,195,0.08);
+    background: rgba(186, 255, 41, 0.02);
   }
-  .field-input:focus + .field-icon,
-  .field-input-wrap:focus-within .field-icon { color: var(--teal); }
 
   /* Botão */
   .btn-login {
-    width: 100%; padding: 14px;
-    background: linear-gradient(135deg, var(--teal), #00a8a2);
-    border: none; border-radius: 10px; color: #fff;
-    font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600;
-    cursor: pointer; letter-spacing: 0.3px;
-    transition: all 0.2s; margin-top: 8px;
-    position: relative; overflow: hidden;
+    width: 100%; padding: 18px;
+    background: var(--accent);
+    border: none; border-radius: 0; color: var(--bg);
+    font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 800;
+    cursor: pointer; letter-spacing: 2px; text-transform: uppercase;
+    transition: all 0.2s; margin-top: 16px;
+    position: relative;
+    border: 1px solid var(--accent);
   }
-  .btn-login::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
-    opacity: 0; transition: opacity 0.2s;
+  .btn-login:hover { 
+    background: var(--bg);
+    color: var(--accent);
   }
-  .btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(0,201,195,0.35); }
-  .btn-login:hover::before { opacity: 1; }
-  .btn-login:active { transform: translateY(0); }
-
+  .btn-login:active { transform: translateY(2px); }
   .btn-login.loading { opacity: 0.7; cursor: not-allowed; }
 
   /* Erro */
   .err-msg {
-    display: flex; align-items: center; gap: 8px;
-    padding: 12px 14px; border-radius: 8px;
-    background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2);
-    color: var(--bad); font-size: 13px; margin-top: 14px;
-    min-height: 0; transition: all 0.2s;
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px; border-radius: 0;
+    background: rgba(255, 46, 76, 0.1); border: 1px solid var(--bad);
+    color: var(--bad); font-size: 13px; font-weight: 500; margin-top: 24px;
+    transition: all 0.2s;
   }
   .err-msg:empty { display: none; }
-  .err-icon { flex-shrink: 0; }
 
   /* Footer */
   .form-footer {
-    margin-top: 32px; padding-top: 24px;
-    border-top: 1px solid rgba(255,255,255,0.05);
-    text-align: center; font-size: 11px; color: var(--muted);
+    margin-top: 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
   .secure-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 10px; color: var(--muted);
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
   }
-  .secure-badge svg { color: var(--teal); }
-
+  .secure-badge::before {
+    content: '';
+    width: 6px; height: 6px; background: var(--accent);
+    display: block;
+  }
 </style>
 </head>
 <body>
+  <div class="grid-overlay"></div>
   <div class="login-layout">
 
     <!-- ESQUERDA -->
     <div class="login-left">
-      <div class="orb orb-1"></div>
-      <div class="orb orb-2"></div>
-      <div class="orb orb-3"></div>
-
-      <div class="left-content">
-        <div class="brand-logo">
-          <div class="logo-icon">M</div>
-          <div>
-            <div class="brand-name">Maranet</div>
-            <div class="brand-sub">Telecom</div>
-          </div>
+      <div class="left-headline">AUTH SYSTEM</div>
+      
+      <div class="brand-logo">
+        <div class="logo-icon">M</div>
+        <div>
+          <div class="brand-name">Maranet</div>
+          <div class="brand-sub">Traffic Control</div>
         </div>
+      </div>
 
-        <h1 class="left-headline">
-          Central de<br><span>Tráfego</span><br>Inteligente
+      <div class="title-wrapper">
+        <h1 class="left-title">
+          Sistema de<br>Monitoramento<br><span>Tático</span>
         </h1>
-
         <p class="left-desc">
-          Dashboard unificado para monitoramento de campanhas Google Ads e Meta Ads em tempo real.
+          Plataforma consolidada de alta performance para gestão de fluxo de tráfego, Google Ads e Meta Ads em tempo real. Acesso restrito a operadores autorizados.
         </p>
 
         <div class="left-stats">
           <div class="stat-item">
-            <div class="stat-num">2</div>
-            <div class="stat-label">Plataformas</div>
+            <div class="stat-num">02</div>
+            <div class="stat-label">Canais Ativos</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">99.9%</div>
+            <div class="stat-label">Uptime</div>
           </div>
           <div class="stat-item">
             <div class="stat-num">24/7</div>
-            <div class="stat-label">Monitoramento</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-num">∞</div>
-            <div class="stat-label">Campanhas</div>
+            <div class="stat-label">Sincronização</div>
           </div>
         </div>
       </div>
@@ -274,42 +281,33 @@
     <div class="login-right">
       <form class="login-form-wrap" id="login-form" autocomplete="on">
         <div class="form-header">
-          <div class="form-eyebrow">Acesso restrito</div>
-          <h2 class="form-title">Bem-vindo de volta</h2>
-          <p class="form-subtitle">Entre com suas credenciais para acessar o painel</p>
+          <div class="form-eyebrow">Secure Gateway</div>
+          <h2 class="form-title">Operator Login</h2>
+          <p class="form-subtitle">Informe suas credenciais de acesso tático</p>
         </div>
 
         <div class="field-group">
-          <label class="field-label" for="u">Usuário</label>
+          <label class="field-label" for="u">Operator ID</label>
           <div class="field-input-wrap">
             <input class="field-input" id="u" name="username"
               autocomplete="username" required autofocus placeholder="seu usuário">
-            <span class="field-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </span>
           </div>
         </div>
 
         <div class="field-group">
-          <label class="field-label" for="p">Senha</label>
+          <label class="field-label" for="p">Access Key</label>
           <div class="field-input-wrap">
             <input class="field-input" id="p" name="password" type="password"
               autocomplete="current-password" required placeholder="••••••••">
-            <span class="field-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </span>
           </div>
         </div>
 
-        <button class="btn-login" id="btn-login" type="submit">Entrar</button>
+        <button class="btn-login" id="btn-login" type="submit">Authenticate</button>
 
         <div class="err-msg" id="err" role="alert"></div>
 
         <div class="form-footer">
-          <span class="secure-badge">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Conexão segura · Maranet Telecom © 2026
-          </span>
+          <span class="secure-badge">Maranet Core © 2026</span>
         </div>
       </form>
     </div>
@@ -325,7 +323,7 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   err.innerHTML = '';
   btn.classList.add('loading');
-  btn.textContent = 'Entrando…';
+  btn.textContent = 'AUTHENTICATING...';
 
   const body = {
     username: document.getElementById('u').value.trim(),
@@ -344,13 +342,13 @@ form.addEventListener('submit', async (e) => {
     location.href = '/';
   } catch (e) {
     const msg = e.message === 'credenciais inválidas'
-      ? 'Usuário ou senha inválidos.'
+      ? 'CREDENCIAIS INVÁLIDAS.'
       : e.message.startsWith('Unexpected')
-        ? 'Erro de servidor. Tente novamente.'
-        : 'Erro: ' + e.message;
-    err.innerHTML = `<span class="err-icon">⚠</span> ${msg}`;
+        ? 'ERRO DE SERVIDOR.'
+        : 'ERRO: ' + e.message;
+    err.textContent = msg;
     btn.classList.remove('loading');
-    btn.textContent = 'Entrar';
+    btn.textContent = 'AUTHENTICATE';
   }
 });
 </script>

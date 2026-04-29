@@ -6,21 +6,23 @@ import { fmtNum, fmtInt, fmtBRL, fmtPct, delta, isGood } from './utils.js';
 const LABELS = {
   impressions: 'Impressões',
   clicks:      'Cliques',
-  conversions: 'Conversões',
+  conversions: 'Leads',
   spend:       'Investimento',
+  sales:       'Vendas (CRM)',
+  revenue:     'Receita',
   ctr:         'CTR',
   cpl:         'CPL',
   cpc:         'CPC',
   cvr:         'Tx Conversão',
+  cac:         'CAC',
   roas:        'ROAS',
 };
 
 function formatVal(metric, v) {
-  if (metric === 'spend')                       return fmtBRL(v);
-  if (['ctr','cvr'].includes(metric))           return fmtPct(v);
-  if (['cpl','cpc'].includes(metric))           return fmtBRL(v, 2);
-  if (metric === 'roas')                        return (Number(v)||0).toFixed(2) + 'x';
-  if (['impressions','clicks'].includes(metric)) return fmtNum(v);
+  if (['spend', 'revenue', 'cpl', 'cpc', 'cac'].includes(metric)) return fmtBRL(v, 2);
+  if (['ctr','cvr'].includes(metric))                             return fmtPct(v);
+  if (metric === 'roas')                                          return (Number(v)||0).toFixed(2) + 'x';
+  if (['impressions','clicks', 'sales', 'conversions'].includes(metric)) return fmtNum(v);
   return fmtInt(v);
 }
 
@@ -118,19 +120,23 @@ export function renderKPIs(root, data, channel, goals = [], monthlyRows = []) {
   const cards = channel === 'all'
     ? [
         { metric: 'impressions', cls: 'combined' },
-        { metric: 'clicks',      cls: 'combined', extra: ['ctr'] },
         { metric: 'conversions', cls: 'conv' },
+        { metric: 'sales',       cls: 'combined' },
         { metric: 'spend',       cls: 'cost' },
         { metric: 'cpl',         cls: 'combined' },
+        { metric: 'cac',         cls: 'cost' },
+        { metric: 'revenue',     cls: 'combined' },
         { metric: 'roas',        cls: 'combined' },
       ]
     : [
         { metric: 'impressions', cls: channel },
-        { metric: 'clicks',      cls: channel, extra: ['ctr'] },
         { metric: 'conversions', cls: 'conv' },
+        { metric: 'sales',       cls: channel },
         { metric: 'spend',       cls: 'cost' },
         { metric: 'cpl',         cls: channel },
-        { metric: 'cvr',         cls: channel },
+        { metric: 'cac',         cls: 'cost' },
+        { metric: 'revenue',     cls: channel },
+        { metric: 'roas',        cls: channel },
       ];
 
   // Pré-calcula série mensal por métrica filtrada por canal
@@ -139,23 +145,25 @@ export function renderKPIs(root, data, channel, goals = [], monthlyRows = []) {
     monthlyRows.forEach(r => {
       if (channel !== 'all' && r.channel !== channel) return;
       const m = r.month;
-      byMonth[m] = byMonth[m] || { imp:0, cli:0, conv:0, spend:0, rev:0 };
+      byMonth[m] = byMonth[m] || { imp:0, cli:0, conv:0, spend:0, rev:0, sales:0 };
       byMonth[m].imp   += r.impressions  || 0;
       byMonth[m].cli   += r.clicks       || 0;
       byMonth[m].conv  += r.conversions  || 0;
       byMonth[m].spend += r.spend        || 0;
       byMonth[m].rev   += r.revenue      || 0;
+      byMonth[m].sales += r.sales        || 0;
     });
     return Object.keys(byMonth).sort((a,b)=>a-b).map(m => {
       const o = byMonth[m];
-      const imp = o.imp, cli = o.cli, conv = o.conv, spend = o.spend, rev = o.rev;
+      const imp = o.imp, cli = o.cli, conv = o.conv, spend = o.spend, rev = o.rev, sales = o.sales;
       const derived = {
-        impressions: imp, clicks: cli, conversions: conv, spend, revenue: rev,
-        ctr: imp  ? cli/imp    : 0,
-        cpc: cli  ? spend/cli  : 0,
-        cvr: cli  ? conv/cli   : 0,
-        cpl: conv ? spend/conv : 0,
-        roas:spend ? rev/spend : 0,
+        impressions: imp, clicks: cli, conversions: conv, spend, revenue: rev, sales,
+        ctr: imp   ? cli/imp    : 0,
+        cpc: cli   ? spend/cli  : 0,
+        cvr: cli   ? conv/cli   : 0,
+        cpl: conv  ? spend/conv : 0,
+        cac: sales ? spend/sales: 0,
+        roas:spend ? rev/spend  : 0,
       };
       return derived[metric] ?? 0;
     }).slice(-6); // últimos 6 meses
@@ -282,6 +290,128 @@ export function renderHealthPanel(root, campRows, goals) {
       </div>
       <div class="health-divider"></div>
       <div class="health-text muted" style="font-size:10px;letter-spacing:1px;">${total} campanha${total !== 1 ? 's' : ''} ativas</div>
+    </div>
+  `;
+}
+
+/**
+ * Renderiza os KPIs específicos de Social (Instagram/Facebook)
+ */
+export function renderSocialKPIs(root, data, channel) {
+  if (!root) return;
+  // Só mostra se estiver na aba "Consolidado" ou "Meta"
+  if (channel === 'google') {
+    root.style.display = 'none';
+    return;
+  }
+  
+  const cur = data.current || {};
+  const prev = data.previous || {};
+  const yoy = data.yoy || {};
+  
+  const socialCards = [
+    { metric: 'videoViews',     label: 'Reels / Vídeo Views', cls: 'meta' },
+    { metric: 'storyViews',     label: 'Story Views',         cls: 'meta' },
+    { metric: 'linkClicks',     label: 'Link Clicks',         cls: 'meta' },
+    { metric: 'postEngagement', label: 'Engajamento',         cls: 'meta' }
+  ];
+
+  // Se todos os valores atuais forem zero, podemos esconder o grid inteiro 
+  // (opcional, mas bom se não houver dados de Instagram)
+  const totalSocial = socialCards.reduce((acc, c) => acc + (cur[c.metric] || 0), 0);
+  if (totalSocial === 0) {
+    root.style.display = 'none';
+    return;
+  }
+
+  root.style.display = 'grid';
+  root.innerHTML = socialCards.map(({ metric, label, cls }) => {
+    const val  = cur[metric] ?? 0;
+    const pVal = prev[metric] ?? 0;
+    const yVal = yoy[metric] ?? 0;
+
+    const d1 = deltaBadge(metric, val, pVal, 'vs anterior');
+    const d2 = deltaBadge(metric, val, yVal, 'vs ano anterior');
+
+    return `
+      <div class="kpi-card ${cls}" style="border-color: rgba(8, 102, 255, 0.3);">
+        <div class="kpi-card-top">
+          <div>
+            <div class="kpi-source"><div class="src-dot ${cls}"></div>Instagram / FB</div>
+            <div class="kpi-label">${label}</div>
+            <div class="kpi-value">${fmtInt(val)}</div>
+          </div>
+        </div>
+        <div class="kpi-deltas">
+          <div class="kpi-delta ${d1.class}">
+            <span class="delta-arrow">${d1.arrow}</span><span class="delta-pct">${d1.pct}</span><small>${d1.label}</small>
+          </div>
+          <div class="kpi-delta ${d2.class}">
+            <span class="delta-arrow">${d2.arrow}</span><span class="delta-pct">${d2.pct}</span><small>${d2.label}</small>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/**
+ * Renderiza o Pacing Panel.
+ */
+export function renderPacingPanel(container, monthlyRows, goals, year, month, channel) {
+  if (!container) return;
+  if (!month) { container.style.display = 'none'; return; } // Apenas quando filtrado por mês
+
+  const spendGoal = goals.find(g => g.metric === 'spend' && (g.channel === channel || g.channel === 'all'));
+  if (!spendGoal || spendGoal.target <= 0) {
+    container.style.display = 'none';
+    return;
+  }
+
+  const target = spendGoal.target;
+  const monthData = monthlyRows.filter(r => r.month === month && (channel === 'all' || r.channel === channel));
+  const spend = monthData.reduce((acc, r) => acc + (r.spend || 0), 0);
+
+  const now = new Date();
+  const isCurrentMonth = (now.getFullYear() === year && (now.getMonth() + 1) === month);
+  const isPastMonth = (year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth() + 1));
+  
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let daysPassed = 0;
+  if (isPastMonth) daysPassed = daysInMonth;
+  else if (isCurrentMonth) daysPassed = now.getDate();
+
+  const timePct = daysPassed / daysInMonth;
+  const timePctLabel = Math.round(timePct * 100);
+  
+  const spendPct = spend / target;
+  const spendPctLabel = Math.round(spendPct * 100);
+
+  const projSpend = timePct > 0 ? (spend / timePct) : 0;
+  const isOver = projSpend > target * 1.05;
+  const isWarn = projSpend > target && !isOver;
+
+  let statusCls = 'ok';
+  let statusText = '● NO RITMO';
+  if (isOver) { statusCls = 'bad'; statusText = '● ESTOURO PROJETADO'; }
+  else if (isWarn) { statusCls = 'warn'; statusText = '● ATENÇÃO'; }
+
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div class="pacing-panel">
+      <div class="pacing-header">
+        <div class="pacing-title">Calculadora de Pacing <span class="muted" style="text-transform:none; font-weight:normal;">— Ritmo de Verba</span></div>
+        <div class="pacing-status ${statusCls}">${statusText}</div>
+      </div>
+      <div class="pacing-metrics">
+        <div>Progresso do Mês: <span class="mono">${timePctLabel}%</span> (${daysPassed} de ${daysInMonth} dias)</div>
+        <div>Verba Consumida: <span class="mono">${fmtBRL(spend)}</span> / <span class="mono">${fmtBRL(target)}</span> (${spendPctLabel}%)</div>
+        <div>Projeção Final: <span class="mono">${fmtBRL(projSpend)}</span></div>
+      </div>
+      <div class="pacing-track">
+        ${isCurrentMonth ? \`<div class="pacing-time-marker" style="left: ${Math.min(100, Math.max(0, timePctLabel))}%;"></div>\` : ''}
+        <div class="pacing-bar ${statusCls}" style="width: ${Math.min(100, Math.max(0, spendPctLabel))}%;"></div>
+      </div>
     </div>
   `;
 }
