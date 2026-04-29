@@ -5,6 +5,9 @@ import { fmtNum, fmtInt, fmtBRL, fmtPct, delta, isGood } from './utils.js';
 
 const LABELS = {
   impressions: 'Impressões',
+  reach:       'Alcance',
+  frequency:   'Frequência',
+  video_views: 'Views de Vídeo',
   clicks:      'Cliques',
   conversions: 'Leads',
   spend:       'Investimento',
@@ -21,8 +24,8 @@ const LABELS = {
 function formatVal(metric, v) {
   if (['spend', 'revenue', 'cpl', 'cpc', 'cac'].includes(metric)) return fmtBRL(v, 2);
   if (['ctr','cvr'].includes(metric))                             return fmtPct(v);
-  if (metric === 'roas')                                          return (Number(v)||0).toFixed(2) + 'x';
-  if (['impressions','clicks', 'sales', 'conversions'].includes(metric)) return fmtNum(v);
+  if (['roas', 'frequency'].includes(metric))                     return (Number(v)||0).toFixed(2) + 'x';
+  if (['impressions','reach','video_views','clicks', 'sales', 'conversions'].includes(metric)) return fmtNum(v);
   return fmtInt(v);
 }
 
@@ -120,22 +123,22 @@ export function renderKPIs(root, data, channel, goals = [], monthlyRows = []) {
   const cards = channel === 'all'
     ? [
         { metric: 'impressions', cls: 'combined' },
+        { metric: 'reach',       cls: 'combined' },
         { metric: 'conversions', cls: 'conv' },
         { metric: 'sales',       cls: 'combined' },
         { metric: 'spend',       cls: 'cost' },
         { metric: 'cpl',         cls: 'combined' },
         { metric: 'cac',         cls: 'cost' },
-        { metric: 'revenue',     cls: 'combined' },
         { metric: 'roas',        cls: 'combined' },
       ]
     : [
         { metric: 'impressions', cls: channel },
+        { metric: 'reach',       cls: channel },
+        { metric: 'frequency',   cls: channel },
+        { metric: 'video_views', cls: channel },
         { metric: 'conversions', cls: 'conv' },
-        { metric: 'sales',       cls: channel },
         { metric: 'spend',       cls: 'cost' },
         { metric: 'cpl',         cls: channel },
-        { metric: 'cac',         cls: 'cost' },
-        { metric: 'revenue',     cls: channel },
         { metric: 'roas',        cls: channel },
       ];
 
@@ -145,25 +148,28 @@ export function renderKPIs(root, data, channel, goals = [], monthlyRows = []) {
     monthlyRows.forEach(r => {
       if (channel !== 'all' && r.channel !== channel) return;
       const m = r.month;
-      byMonth[m] = byMonth[m] || { imp:0, cli:0, conv:0, spend:0, rev:0, sales:0 };
+      byMonth[m] = byMonth[m] || { imp:0, cli:0, conv:0, spend:0, rev:0, sales:0, reach:0, vv:0 };
       byMonth[m].imp   += r.impressions  || 0;
       byMonth[m].cli   += r.clicks       || 0;
       byMonth[m].conv  += r.conversions  || 0;
       byMonth[m].spend += r.spend        || 0;
       byMonth[m].rev   += r.revenue      || 0;
       byMonth[m].sales += r.sales        || 0;
+      byMonth[m].reach += r.reach        || 0;
+      byMonth[m].vv    += r.video_views  || 0;
     });
     return Object.keys(byMonth).sort((a,b)=>a-b).map(m => {
       const o = byMonth[m];
-      const imp = o.imp, cli = o.cli, conv = o.conv, spend = o.spend, rev = o.rev, sales = o.sales;
+      const imp = o.imp, cli = o.cli, conv = o.conv, spend = o.spend, rev = o.rev, sales = o.sales, reach = o.reach, vv = o.vv;
       const derived = {
-        impressions: imp, clicks: cli, conversions: conv, spend, revenue: rev, sales,
+        impressions: imp, clicks: cli, conversions: conv, spend, revenue: rev, sales, reach, video_views: vv,
         ctr: imp   ? cli/imp    : 0,
         cpc: cli   ? spend/cli  : 0,
         cvr: cli   ? conv/cli   : 0,
         cpl: conv  ? spend/conv : 0,
         cac: sales ? spend/sales: 0,
         roas:spend ? rev/spend  : 0,
+        frequency: reach ? imp/reach : 0,
       };
       return derived[metric] ?? 0;
     }).slice(-6); // últimos 6 meses

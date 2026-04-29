@@ -90,6 +90,9 @@ export function renderCampaignTable(container, rows, onDrill) {
     { key: 'channel',       label: 'Canal',       sortable: true  },
     { key: 'status',        label: 'Status',      sortable: false },
     { key: 'impressions',   label: 'Impressões',  sortable: true  },
+    { key: 'reach',         label: 'Alcance',     sortable: true  },
+    { key: 'frequency',     label: 'Freq.',       sortable: true  },
+    { key: 'video_views',   label: 'Views (Vídeo)',sortable:true  },
     { key: 'clicks',        label: 'Cliques',     sortable: true  },
     { key: 'conversions',   label: 'Leads',       sortable: true  },
     { key: 'sales',         label: 'Vendas',      sortable: true  },
@@ -132,6 +135,9 @@ export function renderCampaignTable(container, rows, onDrill) {
           <td><span class="src-tag ${tagCls}">● ${label}</span></td>
           <td><span class="status-pill ${statusCls}">${statusCls}</span></td>
           <td class="num">${fmtInt(r.impressions)}</td>
+          <td class="num">${fmtInt(r.reach || 0)}</td>
+          <td class="num">${r.frequency > 0 ? (r.frequency).toFixed(2) + 'x' : '—'}</td>
+          <td class="num">${fmtInt(r.video_views || 0)}</td>
           <td class="num">
             ${fmtInt(r.clicks)}
           </td>

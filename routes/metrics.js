@@ -55,11 +55,12 @@ function deriveKpis(r) {
   const cpl  = conv  ? spend/conv : 0;
   const cac  = sales ? spend/sales: 0;
   const roas = spend ? rev/spend  : 0;
+  const frequency = reach ? imp/reach : 0;
   return { 
     ...r, 
     impressions: imp, clicks: cli, conversions: conv, spend, revenue: rev, sales,
     reach, videoViews, storyViews, linkClicks, postEngagement,
-    ctr, cpc, cvr, cpl, cac, roas 
+    ctr, cpc, cvr, cpl, cac, roas, frequency
   };
 }
 
