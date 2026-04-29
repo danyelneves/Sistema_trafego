@@ -403,18 +403,60 @@ body.present .kpi-value { font-size: 36px; }
 body.viewer-mode .wrapper { max-width: 1600px; padding: 32px 48px; }
 body.viewer-mode .drill-btn { display: none !important; }
 
-/* Print */
+/* Print / PDF Export Report Layout */
 @media print {
-  body { background: #fff; color: #000; }
+  @page { size: A4 landscape; margin: 12mm; }
+  body, html { background: #ffffff !important; color: #111111 !important; font-family: var(--font-display); }
   body::before { display: none; }
+  
+  /* Esconder controles irrelevantes para o relatório */
   .app-header .header-right,
   .filter-bar .filter-actions,
-  .modal-overlay { display: none !important; }
+  .filter-bar, /* Opcionalmente esconder filtros também */
+  .source-tabs,
+  .modal-overlay,
+  #btn-present,
+  #btn-refresh { display: none !important; }
+  
+  /* Layout do relatório */
+  .wrapper { padding: 0 !important; max-width: 100% !important; margin: 0 !important; }
+  h1 { font-size: 28px !important; color: #000 !important; margin-bottom: 4px; }
+  h1 span { color: #555 !important; }
+  .badge { background: #111 !important; color: #fff !important; border: none !important; font-size: 9px; padding: 4px 8px; border-radius: 4px; }
+  
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr) !important; gap: 12px !important; }
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr !important; gap: 16px !important; margin-bottom: 24px; page-break-inside: avoid; }
+  
+  /* Cards limpos para impressão */
   .kpi-card, .chart-card, .table-card {
-    background: #fff !important; color: #000 !important; border: 1px solid #ccc !important; break-inside: avoid;
+    background: #fff !important; color: #000 !important;
+    border: 1px solid #E5E7EB !important; border-radius: 8px !important;
+    box-shadow: none !important; break-inside: avoid;
+    padding: 16px !important;
+    backdrop-filter: none !important;
   }
-  .kpi-value, .chart-title, h1 { color: #000 !important; }
-  .kpi-label, .kpi-source, .kpi-sub, .chart-subtitle, thead th, tbody td { color: #333 !important; }
+  .kpi-card::before { display: none !important; }
+  
+  .kpi-value { font-size: 26px !important; color: #000 !important; margin-top: 8px; }
+  .chart-title { color: #111 !important; font-size: 13px !important; }
+  .kpi-label, .kpi-source, .kpi-sub, .chart-subtitle, thead th, tbody td { color: #4B5563 !important; }
+  
+  /* Tabelas mais limpas */
+  table { border: 1px solid #F3F4F6 !important; }
+  thead th { background: #F9FAFB !important; border-bottom: 2px solid #E5E7EB !important; color: #111 !important; }
+  tbody tr { border-bottom: 1px solid #F3F4F6 !important; }
+  
+  /* Cores de status */
+  .kpi-delta.up { color: #16A34A !important; }
+  .kpi-delta.down { color: #DC2626 !important; }
+  
+  /* Rodapé do relatório impresso */
+  body::after {
+    content: "Maranet Central de Tráfego • Relatório gerado automaticamente";
+    display: block; position: fixed; bottom: 0; left: 0; width: 100%;
+    text-align: center; font-size: 9px; color: #9CA3AF; padding: 10px 0;
+    border-top: 1px solid #E5E7EB;
+  }
 }
 
 /* ============================================================

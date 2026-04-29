@@ -79,7 +79,8 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   }
 
   // ---- Botões do header ----
-  $('#btn-entry')     .addEventListener('click', () => entryModal.open());
+  const btnEntry = $('#btn-entry');
+  if (btnEntry) btnEntry.addEventListener('click', () => entryModal.open());
   $('#btn-campaigns') .addEventListener('click', () => campsModal.open());
   $('#btn-goals')     .addEventListener('click', () => goalsModal.open());
   $('#btn-notes')     .addEventListener('click', () => notesModal.open());
@@ -119,9 +120,11 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   }
 
   // ---- Exportações ----
-  $('#btn-export-pdf') .addEventListener('click', exportPDF);
-  $('#btn-export-csv') .addEventListener('click', () => exportCSV(state.lastTable, `maranet-${periodLabel(true)}.csv`));
-  $('#btn-export-json').addEventListener('click', async () => {
+  $('#btn-export-pdf')?.addEventListener('click', exportPDF);
+  const btnExportCSV = $('#btn-export-csv');
+  if (btnExportCSV) btnExportCSV.addEventListener('click', () => exportCSV(state.lastTable, `maranet-${periodLabel(true)}.csv`));
+  const btnExportJSON = $('#btn-export-json');
+  if (btnExportJSON) btnExportJSON.addEventListener('click', async () => {
     try { const r = await exportBackupJSON(api); toast(`Backup gerado (${r.counts.daily} linhas)`); }
     catch (e) { toast('Erro: ' + e.message, { error: true }); }
   });
