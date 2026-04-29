@@ -235,6 +235,12 @@
     display: block;
   }
 </style>
+<script>
+  (function() {
+    const savedTheme = localStorage.getItem('maranet_theme') || 'dark-glass';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  })();
+</script>
 </head>
 <body>
   <div class="grid-overlay"></div>

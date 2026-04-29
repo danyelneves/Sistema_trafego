@@ -2,7 +2,7 @@
    Maranet · Central de Tráfego — estilo global
    ============================================================ */
 
-:root {
+:root, [data-theme="dark-glass"] {
   --laranja: #FF4757;
   --rosa:    #E8057E;
   --teal:    #00F0FF; /* Cyan accent */
@@ -23,6 +23,45 @@
   --font-mono:    'JetBrains Mono', 'Inter', monospace;
   --glass-blur:   blur(16px);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --border-radius-btn: 12px;
+  --border-radius-card: 16px;
+  --body-glow: radial-gradient(circle at 15% 50%, rgba(0, 240, 255, 0.06), transparent 25%), radial-gradient(circle at 85% 30%, rgba(186, 255, 41, 0.05), transparent 25%);
+}
+
+[data-theme="light"] {
+  --teal:    #00A8FF;
+  --green:   #2ED573;
+  --google:  #4285F4;
+  --meta:    #1877F2;
+  --bg:      #F4F6F8;
+  --surface: rgba(255, 255, 255, 0.85);
+  --surface2:rgba(240, 242, 248, 0.95);
+  --border:  rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 168, 255, 0.5);
+  --text:    #2F3640;
+  --muted:   #718093;
+  --good:    #2ED573;
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+  --body-glow: radial-gradient(circle at 15% 50%, rgba(0, 168, 255, 0.05), transparent 25%), radial-gradient(circle at 85% 30%, rgba(46, 213, 115, 0.05), transparent 25%);
+}
+
+[data-theme="brutalist"] {
+  --teal:    #BAFF29;
+  --green:   #BAFF29;
+  --google:  #FFFFFF;
+  --meta:    #8A949C;
+  --bg:      #000000;
+  --surface: #080808;
+  --surface2:#111111;
+  --border:  #333333;
+  --border-strong: #BAFF29;
+  --text:    #FFFFFF;
+  --muted:   #666666;
+  --glass-blur: blur(0px);
+  --glass-shadow: none;
+  --border-radius-btn: 0px;
+  --border-radius-card: 0px;
+  --body-glow: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,12 +74,12 @@ a { color: inherit; }
 body::before {
   content: '';
   position: fixed; inset: 0;
-  background: 
-    radial-gradient(circle at 15% 50%, rgba(0, 240, 255, 0.06), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(186, 255, 41, 0.05), transparent 25%);
+  background: var(--body-glow);
+  background-size: auto;
   pointer-events: none;
   z-index: 0;
 }
+[data-theme="brutalist"] body::before { background-size: 80px 80px; }
 
 .wrapper { position: relative; z-index: 1; max-width: 1440px; margin: 0 auto; padding: 32px 24px; }
 
@@ -82,7 +121,7 @@ h1 span { color: var(--teal); }
   font-family: var(--font-display); font-size: 11px; letter-spacing: 1.5px;
   text-transform: uppercase; padding: 10px 20px; font-weight: 600;
   border: 1px solid var(--border); background: var(--surface); color: var(--text);
-  cursor: pointer; border-radius: 12px; transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer; border-radius: var(--border-radius-btn); transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
@@ -153,7 +192,7 @@ select:focus, input:focus, textarea:focus { border-color: var(--teal); backgroun
   gap: 16px; margin-bottom: 24px;
 }
 .kpi-card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--border-radius-card);
   padding: 24px; position: relative; overflow: hidden; transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-shadow);
@@ -208,7 +247,7 @@ select:focus, input:focus, textarea:focus { border-color: var(--teal); backgroun
 .charts-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 @media (max-width: 900px) { .charts-grid, .charts-row { grid-template-columns: 1fr; } }
 
-.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); transition: all .3s; }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--border-radius-card); padding: 22px; backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); transition: all .3s; }
 .chart-card:hover { border-color: rgba(0, 240, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 240, 255, 0.1); }
 .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
 .chart-title  { font-family: var(--font-display); font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 1px; text-transform: uppercase; }
@@ -223,7 +262,7 @@ canvas { max-height: 280px; }
 /* ============================================================
    TABELA
    ============================================================ */
-.table-card   { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 16px; backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); }
+.table-card   { background: var(--surface); border: 1px solid var(--border); border-radius: var(--border-radius-card); overflow: hidden; margin-bottom: 16px; backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); }
 .table-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: rgba(0,0,0,0.2); }
 
 table { width: 100%; border-collapse: collapse; }

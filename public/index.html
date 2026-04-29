@@ -7,6 +7,23 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  (function() {
+    const savedTheme = localStorage.getItem('maranet_theme') || 'dark-glass';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  })();
+  document.addEventListener('DOMContentLoaded', () => {
+    const themeSelect = document.getElementById('theme-select');
+    if (themeSelect) {
+      themeSelect.value = localStorage.getItem('maranet_theme') || 'dark-glass';
+      themeSelect.addEventListener('change', (e) => {
+        const theme = e.target.value;
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('maranet_theme', theme);
+      });
+    }
+  });
+</script>
 </head>
 <body>
 
@@ -22,7 +39,12 @@
     <div class="header-right">
       <div class="user-chip" id="sync-time" title="Tempo desde a última atualização dos dados">Sync: <b>--</b></div>
       <button class="btn teal" id="btn-refresh" title="Atualizar dados em tempo real">↻ Atualizar</button>
-      <select id="workspace-select" style="display:none; margin-right:10px; background: #0b0b0b; color: var(--fg); border: 1px solid var(--border); padding: 5px 10px;" title="Trocar de Cliente (Workspace)"></select>
+      <select id="theme-select" style="margin-right:10px; background: transparent; color: var(--text); border: 1px solid var(--border); padding: 5px 10px; border-radius: var(--border-radius-btn);" title="Trocar Tema">
+        <option value="dark-glass">Premium Dark (Vidro)</option>
+        <option value="light">Light Mode (Clean)</option>
+        <option value="brutalist">Brutalista (Alto Contraste)</option>
+      </select>
+      <select id="workspace-select" style="display:none; margin-right:10px; background: transparent; color: var(--text); border: 1px solid var(--border); padding: 5px 10px; border-radius: var(--border-radius-btn);" title="Trocar de Cliente (Workspace)"></select>
       <div class="user-chip" id="user-chip"><b>●</b> …</div>
       <button class="btn" id="btn-present" title="Modo apresentação">▶</button>
       <button class="btn" id="btn-logout" title="Sair">Sair</button>
