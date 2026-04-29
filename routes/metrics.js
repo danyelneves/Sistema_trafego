@@ -390,6 +390,53 @@ router.get('/demographics', async (req, res) => {
 });
 
 // ----------------------------------------------------------------
+// GET /api/metrics/placements
+// ----------------------------------------------------------------
+router.get('/placements', async (req, res) => {
+  const year  = Number(req.query.year) || new Date().getFullYear();
+  const month = req.query.month ? Number(req.query.month) : null;
+  const { channel } = req.query;
+
+  const args = [req.user.workspace_id, year];
+  let where = `WHERE c.workspace_id = $1 AND EXTRACT(year FROM m.date) = $2`;
+  if (month) { args.push(month); where += ` AND EXTRACT(month FROM m.date) = $${args.length}`; }
+  if (channel && channel !== 'all') { args.push(channel); where += ` AND c.channel = $${args.length}`; }
+
+  try {
+    const rows = await db.all(`
+      SELECT m.platform, m.placement, c.channel,
+        COALESCE(SUM(m.impressions),0)::bigint AS impressions,
+        COALESCE(SUM(m.clicks),0)::bigint      AS clicks,
+        COALESCE(SUM(m.conversions),0)::bigint AS conversions,
+        COALESCE(SUM(m.spend),0)::numeric      AS spend,
+        COALESCE(SUM(m.video_views),0)::bigint AS video_views
+      FROM metrics_placement m
+      JOIN campaigns c ON c.id = m.campaign_id
+      ${where}
+      GROUP BY m.platform, m.placement, c.channel
+      ORDER BY spend DESC
+    `, ...args);
+    
+    const data = rows.map(r => {
+      const spend = Number(r.spend);
+      const conversions = Number(r.conversions);
+      const clicks = Number(r.clicks);
+      const impressions = Number(r.impressions);
+      return {
+        ...r,
+        spend, conversions, clicks, impressions,
+        video_views: Number(r.video_views),
+        cpl: conversions ? spend / conversions : 0,
+        ctr: impressions ? clicks / impressions : 0,
+        cpc: clicks ? spend / clicks : 0,
+      };
+    });
+
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ----------------------------------------------------------------
 // GET /api/metrics/ads
 // ----------------------------------------------------------------
 router.get('/ads', async (req, res) => {

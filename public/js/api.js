@@ -38,6 +38,7 @@ export const api = {
   byCampaign: (q)        => call('/api/metrics/by-campaign', { query: q }),
   kpis:       (q)        => call('/api/metrics/kpis', { query: q }),
   demographics: (q)      => call('/api/metrics/demographics', { query: q }),
+  placements:   (q)      => call('/api/metrics/placements', { query: q }),
   ads:        (q)        => call('/api/metrics/ads', { query: q }),
 
   goals:        (q)      => call('/api/goals', { query: q }),

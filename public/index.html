@@ -236,7 +236,10 @@
           <div class="chart-subtitle">Onde o dinheiro rende mais</div>
         </div>
       </div>
-      <div style="overflow-x:auto; max-height: 300px; overflow-y: auto;">
+      <div style="padding: 15px 0;">
+        <canvas id="chartDemoRegion" height="220"></canvas>
+      </div>
+      <div style="overflow-x:auto; max-height: 250px; overflow-y: auto;">
         <table>
           <thead>
             <tr><th>Região</th><th>Canal</th><th>Invest.</th><th>Leads</th><th>CPL</th></tr>
@@ -252,13 +255,42 @@
           <div class="chart-subtitle">Público de maior conversão</div>
         </div>
       </div>
-      <div style="overflow-x:auto; max-height: 300px; overflow-y: auto;">
+      <div style="padding: 15px 0;">
+        <canvas id="chartDemoAge" height="220"></canvas>
+      </div>
+      <div style="overflow-x:auto; max-height: 250px; overflow-y: auto;">
         <table>
           <thead>
             <tr><th>Perfil</th><th>Canal</th><th>Invest.</th><th>Leads</th><th>CPL</th></tr>
           </thead>
           <tbody id="demo-age-tbody"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== PLACEMENTS =================== -->
+  <div class="charts-row fade-in" id="row-placements" style="margin-top:20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="table-card" style="margin-top:0">
+      <div class="table-header">
+        <div>
+          <div class="chart-title">Posicionamentos (Placements)</div>
+          <div class="chart-subtitle">Onde o público mais converte (Feed, Stories, Reels)</div>
+        </div>
+      </div>
+      <div style="padding: 15px 0;">
+        <canvas id="chartPlacements" height="250"></canvas>
+      </div>
+    </div>
+    <div class="table-card" style="margin-top:0">
+      <div class="table-header">
+        <div>
+          <div class="chart-title">Plataformas</div>
+          <div class="chart-subtitle">Instagram vs Facebook vs Audience Network</div>
+        </div>
+      </div>
+      <div style="padding: 15px 0; display:flex; justify-content:center;">
+        <canvas id="chartPlatforms" height="250" style="max-height: 250px;"></canvas>
       </div>
     </div>
   </div>

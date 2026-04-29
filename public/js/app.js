@@ -208,13 +208,14 @@ async function refresh() {
   if (state.channel !== 'all') qDemo.channel = state.channel;
 
   try {
-    const [kpis, monthly, byCamp, notes, goals, demographics, ads] = await Promise.all([
+    const [kpis, monthly, byCamp, notes, goals, demographics, placements, ads] = await Promise.all([
       api.kpis(qKpi),
       api.monthly(qMonthly),
       api.byCampaign(qByCamp),
       api.notes({ year: state.year }),
       api.goals({ year: state.year, ...(state.month ? { month: state.month } : {}) }),
       api.demographics(qDemo),
+      api.placements(qDemo),
       api.ads(qDemo),
     ]);
 
@@ -256,6 +257,8 @@ async function refresh() {
 
     // Demographics & Ads
     renderDemographics(demographics);
+    charts.renderDemographicCharts(demographics);
+    charts.renderPlacementCharts(placements);
     renderAds(ads);
 
     lastSyncTime = new Date();

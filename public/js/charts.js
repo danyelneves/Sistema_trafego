@@ -366,3 +366,122 @@ export function renderAll({ monthlyRows, channel, goals = [], notes = [] }) {
   renderFunnel     (document.getElementById('chartFunnel'),     monthlyRows, channel);
   renderSocial     (document.getElementById('chartSocial'),     monthlyRows, channel);
 }
+
+/** Gráficos Demográficos */
+export function renderDemographicCharts(demographics) {
+  const canvasRegion = document.getElementById('chartDemoRegion');
+  const canvasAge = document.getElementById('chartDemoAge');
+  
+  if (canvasRegion) {
+    ensure('demoRegion');
+    const regions = demographics.filter(d => d.type === 'region').sort((a,b) => b.conversions - a.conversions).slice(0, 7);
+    charts.demoRegion = new Chart(canvasRegion, {
+      type: 'bar',
+      data: {
+        labels: regions.map(r => r.dimension),
+        datasets: [
+          { type: 'bar', label: 'Leads', data: regions.map(r => r.conversions), backgroundColor: 'rgba(232,5,126,0.7)', borderRadius: 2, yAxisID: 'y' },
+          { type: 'line', label: 'CPL', data: regions.map(r => r.cpl), borderColor: 'rgba(0,173,167,0.8)', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, yAxisID: 'y1' }
+        ]
+      },
+      options: {
+        ...baseOpts,
+        plugins: { ...baseOpts.plugins, tooltip: { ...baseOpts.plugins.tooltip, mode: 'index', intersect: false } },
+        scales: {
+          x: { ...baseOpts.scales.x },
+          y: { ...baseOpts.scales.y, title: { display: false, text: 'Leads' } },
+          y1: { position: 'right', grid: { display: false }, ticks: { color: '#00ada7', font: { family: 'DM Mono', size: 10 }, callback: v => fmtBRL(v) } }
+        }
+      }
+    });
+  }
+
+  if (canvasAge) {
+    ensure('demoAge');
+    const ages = demographics.filter(d => d.type === 'age' || d.type === 'gender').sort((a,b) => b.conversions - a.conversions).slice(0, 7);
+    charts.demoAge = new Chart(canvasAge, {
+      type: 'bar',
+      data: {
+        labels: ages.map(r => r.dimension),
+        datasets: [{ label: 'Leads', data: ages.map(r => r.conversions), backgroundColor: 'rgba(235,118,23,0.7)', borderRadius: 2 }]
+      },
+      options: {
+        ...baseOpts,
+        indexAxis: 'y',
+        plugins: { ...baseOpts.plugins, tooltip: { ...baseOpts.plugins.tooltip, mode: 'index', intersect: false } },
+        scales: {
+          x: { grid: { color: 'rgba(0,173,167,0.05)' }, ticks: { color: '#6b9aaa' } },
+          y: { grid: { display: false }, ticks: { color: '#e8f4f8' } }
+        }
+      }
+    });
+  }
+}
+
+/** Gráficos de Placement e Plataforma */
+export function renderPlacementCharts(placements) {
+  const row = document.getElementById('row-placements');
+  if (row) row.style.display = placements && placements.length > 0 ? 'grid' : 'none';
+
+  const canvasPlace = document.getElementById('chartPlacements');
+  const canvasPlat = document.getElementById('chartPlatforms');
+  
+  if (canvasPlace) {
+    ensure('placements');
+    const placeData = {};
+    placements.forEach(p => {
+      const plc = p.placement;
+      placeData[plc] = (placeData[plc] || 0) + (p.conversions || 0);
+    });
+    const sortedPlace = Object.entries(placeData).sort((a,b)=>b[1]-a[1]).slice(0, 6);
+    charts.placements = new Chart(canvasPlace, {
+      type: 'bar',
+      data: {
+        labels: sortedPlace.map(p => p[0]),
+        datasets: [{ label: 'Leads por Posicionamento', data: sortedPlace.map(p => p[1]), backgroundColor: 'rgba(8,102,255,0.7)', borderRadius: 2 }]
+      },
+      options: {
+        ...baseOpts,
+        plugins: { ...baseOpts.plugins, tooltip: { ...baseOpts.plugins.tooltip } },
+        scales: {
+          x: { ...baseOpts.scales.x, ticks: { ...baseOpts.scales.x.ticks, maxRotation: 45, minRotation: 45 } },
+          y: { ...baseOpts.scales.y }
+        }
+      }
+    });
+  }
+
+  if (canvasPlat) {
+    ensure('platforms');
+    const platData = {};
+    placements.forEach(p => {
+      const plat = p.platform;
+      platData[plat] = (platData[plat] || 0) + (p.spend || 0);
+    });
+    const sortedPlat = Object.entries(platData).sort((a,b)=>b[1]-a[1]);
+    charts.platforms = new Chart(canvasPlat, {
+      type: 'doughnut',
+      data: {
+        labels: sortedPlat.map(p => p[0]),
+        datasets: [{
+          data: sortedPlat.map(p => p[1]),
+          backgroundColor: ['rgba(232,5,126,0.8)', 'rgba(8,102,255,0.8)', 'rgba(0,173,167,0.8)', 'rgba(235,118,23,0.8)'],
+          borderWidth: 0,
+          hoverOffset: 10
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+          legend: { display: true, position: 'right', labels: { color: '#6b9aaa', font: { family: 'DM Mono' } } },
+          tooltip: {
+            backgroundColor: '#0c1d27', titleColor: '#e8f4f8', bodyColor: '#6b9aaa', padding: 12, cornerRadius: 6,
+            callbacks: { label: ctx => ` ${ctx.label}: ${fmtBRL(ctx.raw)}` }
+          }
+        }
+      }
+    });
+  }
+}
