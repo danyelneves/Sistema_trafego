@@ -513,8 +513,11 @@ export function mountSyncModal({ onSaved } = {}) {
     q('#sync-panel-config').classList.add('active');
     
     await loadStatus();
+  }
 
-  });
+  function close() {
+    overlay.classList.remove('open');
+  }
 
   return { open, close };
 }
