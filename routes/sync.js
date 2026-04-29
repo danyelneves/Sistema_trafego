@@ -316,37 +316,61 @@ function startSSE(res) {
   return (type, data) => res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`);
 }
 
+async function runGoogleSync(workspaceId, from, to, send = null) {
+  if (!(await googleAds.isConfigured(workspaceId))) return { error: 'Google Ads não configurado' };
+  send?.('info', { message: `Google Ads: buscando dados de ${from} até ${to}…` });
+  const rows      = await googleAds.fetchMetrics(workspaceId, from, to);
+  const campaigns = [...new Set(rows.map(r => r.campaignName))];
+  send?.('info', { message: `${rows.length} linhas encontradas em ${campaigns.length} campanhas` });
+  const inserted = await upsertRows(workspaceId, rows, 'google');
+  send?.('info', { message: 'Buscando dados demográficos (Região)…' });
+  const demoRows = await googleAds.fetchDemographics(workspaceId, from, to);
+  const demoIns  = await upsertDemographics(workspaceId, demoRows, 'google');
+  send?.('info', { message: 'Buscando métricas de Anúncios (Criativos)…' });
+  const adsRows = await googleAds.fetchAds(workspaceId, from, to);
+  const adsIns  = await upsertAds(workspaceId, adsRows, 'google');
+  await logSync(workspaceId, 'google', from, to, rows.length, inserted, 'ok');
+  return { fetched: rows.length, inserted, demo: demoIns, ads: adsIns };
+}
+
+async function runMetaSync(workspaceId, from, to, send = null) {
+  if (!(await metaAds.isConfigured(workspaceId))) return { error: 'Meta Ads não configurado' };
+  send?.('info', { message: `Meta Ads: buscando insights de ${from} até ${to}…` });
+  const rows      = await metaAds.fetchMetrics(workspaceId, from, to);
+  const campaigns = [...new Set(rows.map(r => r.campaignName))];
+  send?.('info', { message: `${rows.length} linhas · ${campaigns.length} campanhas — salvando métricas…` });
+  const inserted = await upsertRows(workspaceId, rows, 'meta');
+  send?.('info', { message: 'Buscando breakdown por placement (Instagram/Facebook/Stories/Reels)…' });
+  const plaRows = await metaAds.fetchPlacementBreakdown(workspaceId, from, to);
+  const plaIns  = await upsertPlacement(workspaceId, plaRows, 'meta');
+  send?.('info', { message: 'Buscando dados demográficos (Região, Idade, Gênero)…' });
+  const demoRows = await metaAds.fetchDemographics(workspaceId, from, to);
+  const demoIns  = await upsertDemographics(workspaceId, demoRows, 'meta');
+  send?.('info', { message: 'Buscando métricas de Anúncios (Criativos)…' });
+  const adsRows = await metaAds.fetchAds(workspaceId, from, to);
+  const adsIns  = await upsertAds(workspaceId, adsRows, 'meta');
+  await logSync(workspaceId, 'meta', from, to, rows.length, inserted, 'ok');
+  return { fetched: rows.length, inserted, placements: plaIns, demo: demoIns, ads: adsIns };
+}
+
 // ─────────────────────────────────────────────────────────────
 // POST /api/sync/google
 // ─────────────────────────────────────────────────────────────
 router.post('/google', async (req, res) => {
-  if (!(await googleAds.isConfigured(req.user.workspace_id))) {
-    return res.status(503).json({ error: 'Google Ads não configurado', missing: await googleAds.getMissingFields(req.user.workspace_id) });
-  }
   const { from, to } = req.body || {};
   if (!from || !to) return res.status(400).json({ error: 'from e to (YYYY-MM-DD) obrigatórios' });
-
   const stream = req.query.stream === '1';
   const send   = stream ? startSSE(res) : null;
-
   try {
-    send?.('info', { message: `Google Ads: buscando dados de ${from} até ${to}…` });
-    const rows      = await googleAds.fetchMetrics(req.user.workspace_id, from, to);
-    const campaigns = [...new Set(rows.map(r => r.campaignName))];
-    send?.('info', { message: `${rows.length} linhas encontradas em ${campaigns.length} campanhas` });
-    const inserted = await upsertRows(req.user.workspace_id, rows, 'google');
-    send?.('info', { message: 'Buscando dados demográficos (Região)…' });
-    const demoRows = await googleAds.fetchDemographics(req.user.workspace_id, from, to);
-    const demoIns  = await upsertDemographics(req.user.workspace_id, demoRows, 'google');
-
-    send?.('info', { message: 'Buscando métricas de Anúncios (Criativos)…' });
-    const adsRows = await googleAds.fetchAds(req.user.workspace_id, from, to);
-    const adsIns  = await upsertAds(req.user.workspace_id, adsRows, 'google');
-
-    send?.('success', { message: `✓ ${inserted} registros, ${demoIns} demográficos e ${adsIns} anúncios importados!`, fetched: rows.length, inserted, demo: demoIns, ads: adsIns });
-    await logSync(req.user.workspace_id, 'google', from, to, rows.length, inserted, 'ok');
-    if (stream) { send('done', { fetched: rows.length, inserted, demo: demoIns, ads: adsIns }); res.end(); }
-    else res.json({ ok: true, fetched: rows.length, inserted, demo: demoIns, ads: adsIns, from, to });
+    const result = await runGoogleSync(req.user.workspace_id, from, to, send);
+    if (result.error) {
+      if (stream) { send?.('error', { message: `✗ Erro: ${result.error}` }); res.end(); }
+      else res.status(503).json(result);
+      return;
+    }
+    send?.('success', { message: `✓ ${result.inserted} registros, ${result.demo} demográficos e ${result.ads} anúncios importados!`, ...result });
+    if (stream) { send('done', result); res.end(); }
+    else res.json({ ok: true, ...result, from, to });
   } catch (e) {
     await logSync(req.user.workspace_id, 'google', from, to, 0, 0, 'error', e.message);
     if (stream) { send?.('error', { message: `✗ Erro: ${e.message}` }); res.end(); }
@@ -358,38 +382,20 @@ router.post('/google', async (req, res) => {
 // POST /api/sync/meta
 // ─────────────────────────────────────────────────────────────
 router.post('/meta', async (req, res) => {
-  if (!await metaAds.isConfigured(req.user.workspace_id)) {
-    return res.status(503).json({ error: 'Meta Ads não configurado', missing: await metaAds.getMissingFields(req.user.workspace_id) });
-  }
   const { from, to } = req.body || {};
   if (!from || !to) return res.status(400).json({ error: 'from e to (YYYY-MM-DD) obrigatórios' });
-
   const stream = req.query.stream === '1';
   const send   = stream ? startSSE(res) : null;
-
   try {
-    send?.('info', { message: `Meta Ads: buscando insights de ${from} até ${to}…` });
-    const rows      = await metaAds.fetchMetrics(req.user.workspace_id, from, to);
-    const campaigns = [...new Set(rows.map(r => r.campaignName))];
-    send?.('info', { message: `${rows.length} linhas · ${campaigns.length} campanhas — salvando métricas…` });
-    const inserted = await upsertRows(req.user.workspace_id, rows, 'meta');
-
-    send?.('info', { message: 'Buscando breakdown por placement (Instagram/Facebook/Stories/Reels)…' });
-    const plaRows = await metaAds.fetchPlacementBreakdown(req.user.workspace_id, from, to);
-    const plaIns  = await upsertPlacement(req.user.workspace_id, plaRows, 'meta');
-
-    send?.('info', { message: 'Buscando dados demográficos (Região, Idade, Gênero)…' });
-    const demoRows = await metaAds.fetchDemographics(req.user.workspace_id, from, to);
-    const demoIns  = await upsertDemographics(req.user.workspace_id, demoRows, 'meta');
-
-    send?.('info', { message: 'Buscando métricas de Anúncios (Criativos)…' });
-    const adsRows = await metaAds.fetchAds(req.user.workspace_id, from, to);
-    const adsIns  = await upsertAds(req.user.workspace_id, adsRows, 'meta');
-
-    send?.('success', { message: `✓ ${inserted} métricas + ${plaIns} placements + ${demoIns} demográficos + ${adsIns} anúncios!`, fetched: rows.length, inserted });
-    await logSync(req.user.workspace_id, 'meta', from, to, rows.length, inserted, 'ok');
-    if (stream) { send('done', { fetched: rows.length, inserted, placements: plaIns, demo: demoIns, ads: adsIns }); res.end(); }
-    else res.json({ ok: true, fetched: rows.length, inserted, placements: plaIns, demo: demoIns, ads: adsIns, from, to });
+    const result = await runMetaSync(req.user.workspace_id, from, to, send);
+    if (result.error) {
+      if (stream) { send?.('error', { message: `✗ Erro: ${result.error}` }); res.end(); }
+      else res.status(503).json(result);
+      return;
+    }
+    send?.('success', { message: `✓ ${result.inserted} métricas + ${result.placements} placements + ${result.demo} demográficos + ${result.ads} anúncios!`, ...result });
+    if (stream) { send('done', result); res.end(); }
+    else res.json({ ok: true, ...result, from, to });
   } catch (e) {
     await logSync(req.user.workspace_id, 'meta', from, to, 0, 0, 'error', e.message);
     if (stream) { send?.('error', { message: `✗ Erro: ${e.message}` }); res.end(); }
@@ -397,4 +403,4 @@ router.post('/meta', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = { router, runGoogleSync, runMetaSync };

@@ -49,7 +49,7 @@ app.use('/api/users',      require('./routes/users'));
 app.use('/api/alerts',     require('./routes/alerts'));
 app.use('/api/import',     require('./routes/import'));
 app.use('/api/drill',      require('./routes/drill'));
-app.use('/api/sync',       require('./routes/sync'));
+app.use('/api/sync',       require('./routes/sync').router);
 app.use('/api/cron',       require('./routes/cron'));
 app.use('/api/instagram',  require('./routes/instagram'));
 app.use('/api/webhook',    require('./routes/webhook'));

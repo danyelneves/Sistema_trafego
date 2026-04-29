@@ -33,4 +33,33 @@ router.get('/alerts', async (req, res) => {
   }
 });
 
+router.get('/sync', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    const auth = req.headers['authorization'] || '';
+    const secret = process.env.CRON_SECRET;
+    if (secret && auth !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
+  }
+
+  try {
+    const db = require('../db');
+    const { runGoogleSync, runMetaSync } = require('./sync');
+    const workspaces = await db.all('SELECT id FROM workspaces WHERE active = true');
+
+    const today = new Date().toISOString().split('T')[0];
+    const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+
+    const results = [];
+    for (const ws of workspaces) {
+      const googleRes = await runGoogleSync(ws.id, firstDay, today).catch(e => ({ error: e.message }));
+      const metaRes = await runMetaSync(ws.id, firstDay, today).catch(e => ({ error: e.message }));
+      results.push({ workspace_id: ws.id, google: googleRes, meta: metaRes });
+    }
+
+    res.json({ ok: true, ran_at: new Date().toISOString(), results });
+  } catch (e) {
+    console.error('[CRON SYNC] Erro ao sincronizar dados:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;
