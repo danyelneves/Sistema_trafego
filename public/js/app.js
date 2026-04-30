@@ -253,6 +253,13 @@ async function refresh() {
     // Calculadora de Pacing (apenas visível ao filtrar por Mês)
     renderPacingPanel($('#pacing-panel'), state.lastMonthly, goalsNorm, state.year, state.month, state.channel);
 
+    // Funil de Vendas (CRM)
+    renderFunnel($('#sales-funnel'), kpis.current);
+    
+    // PDF Export
+    const btnPdf = $('#btn-export-pdf');
+    if (btnPdf) btnPdf.onclick = () => window.print();
+
     // Gráficos
     charts.renderAll({
       monthlyRows: state.lastMonthly,

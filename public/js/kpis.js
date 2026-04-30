@@ -471,3 +471,58 @@ export function renderAIInsights(aiData) {
     content.appendChild(card);
   });
 }
+
+// ----------------------------------------------------------------------
+// FUNIL DE VENDAS
+// ----------------------------------------------------------------------
+function renderFunnel(container, current) {
+  if (!container) return;
+  const imp = Number(current.impressions) || 0;
+  const cli = Number(current.clicks) || 0;
+  const leads = Number(current.conversions) || 0;
+  const sales = Number(current.sales) || 0;
+
+  if (imp === 0) {
+    container.innerHTML = '<div style="color:var(--muted); font-size:12px;">Sem dados suficientes para o funil</div>';
+    return;
+  }
+
+  // Calc widths
+  const wCli = Math.max(20, Math.round((cli / imp) * 100)) + '%';
+  const wLeads = cli > 0 ? Math.max(20, Math.round((leads / cli) * 100)) + '%' : '20%';
+  const wSales = leads > 0 ? Math.max(20, Math.round((sales / leads) * 100)) + '%' : '20%';
+
+  // Dropoffs
+  const dropCli = imp > 0 ? (100 - (cli/imp)*100).toFixed(1) + '%' : '0%';
+  const dropLeads = cli > 0 ? (100 - (leads/cli)*100).toFixed(1) + '%' : '0%';
+  const dropSales = leads > 0 ? (100 - (sales/leads)*100).toFixed(1) + '%' : '0%';
+
+  container.innerHTML = `
+    <div class="funnel-step" style="width: 100%">
+      <div class="label">Impressões</div>
+      <div class="value">${fmtNum(imp)}</div>
+      <div class="dropoff" style="visibility:hidden">-</div>
+    </div>
+    <div style="font-size:10px; color:var(--muted); text-align:center;">Queda de ${dropCli}</div>
+    
+    <div class="funnel-step" style="width: ${cli > 0 ? '80%' : '20%'}">
+      <div class="label">Cliques</div>
+      <div class="value">${fmtNum(cli)}</div>
+      <div class="dropoff" title="Taxa de Queda">${dropCli}</div>
+    </div>
+    <div style="font-size:10px; color:var(--muted); text-align:center;">Queda de ${dropLeads}</div>
+
+    <div class="funnel-step" style="width: ${leads > 0 ? '60%' : '20%'}">
+      <div class="label">Leads</div>
+      <div class="value">${fmtNum(leads)}</div>
+      <div class="dropoff" title="Taxa de Queda">${dropLeads}</div>
+    </div>
+    <div style="font-size:10px; color:var(--muted); text-align:center;">Queda de ${dropSales}</div>
+
+    <div class="funnel-step" style="width: ${sales > 0 ? '40%' : '20%'}; border-color: var(--green);">
+      <div class="label" style="color:var(--green)">Vendas (CRM)</div>
+      <div class="value" style="color:var(--green)">${fmtNum(sales)}</div>
+      <div class="dropoff" title="Taxa de Queda">${dropSales}</div>
+    </div>
+  `;
+}

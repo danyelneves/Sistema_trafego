@@ -42,7 +42,10 @@
       <select id="theme-select" style="margin-right:10px; background: transparent; color: var(--text); border: 1px solid var(--border); padding: 5px 10px; border-radius: var(--border-radius-btn);" title="Trocar Tema">
         <option value="dark-glass">Premium Dark (Vidro)</option>
         <option value="light">Light Mode (Clean)</option>
-        <option value="brutalist">Brutalista (Alto Contraste)</option>
+        <option value="brutalist">Brutalista (Acid Green)</option>
+        <option value="cyberpunk">Cyberpunk (Red/Neon)</option>
+        <option value="ocean">Deep Ocean (Cyan)</option>
+        <option value="monochrome">Monochrome (P&B)</option>
       </select>
       <div style="display:flex; align-items:center;">
         <select id="workspace-select" style="display:none; margin-right:5px; background: transparent; color: var(--text); border: 1px solid var(--border); padding: 5px 10px; border-radius: var(--border-radius-btn);" title="Trocar de Cliente (Workspace)"></select>
@@ -147,6 +150,21 @@
         </div>
       </div>
       <canvas id="chartVerba"></canvas>
+    </div>
+  </div>
+
+  <div class="charts-row fade-in">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Funil de Vendas & Taxas de Queda</div>
+          <div class="chart-subtitle">Da impressão à venda concluída (CRM)</div>
+        </div>
+        <button class="btn" id="btn-export-pdf" title="Exportar Relatório em PDF">📥 Exportar Relatório PDF</button>
+      </div>
+      <div id="sales-funnel" class="funnel-container">
+        <!-- JS injeta os steps aqui -->
+      </div>
     </div>
   </div>
 

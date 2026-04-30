@@ -64,6 +64,66 @@
   --body-glow: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
 }
 
+[data-theme="cyberpunk"] {
+  --teal:    #FF003C;
+  --green:   #FCEE09;
+  --google:  #FF003C;
+  --meta:    #FCEE09;
+  --bg:      #050002;
+  --surface: #0f0308;
+  --surface2:#1a050d;
+  --border:  rgba(255, 0, 60, 0.2);
+  --border-strong: #FF003C;
+  --text:    #F3E5E5;
+  --muted:   #8C7373;
+  --good:    #FCEE09;
+  --glass-blur: blur(0px);
+  --glass-shadow: none;
+  --border-radius-btn: 0px;
+  --border-radius-card: 0px;
+  --body-glow: radial-gradient(circle at 15% 50%, rgba(255, 0, 60, 0.08), transparent 25%), radial-gradient(circle at 85% 30%, rgba(252, 238, 9, 0.05), transparent 25%);
+}
+
+[data-theme="ocean"] {
+  --teal:    #00F0FF;
+  --green:   #00FF88;
+  --google:  #00F0FF;
+  --meta:    #0099FF;
+  --bg:      #030914;
+  --surface: #061124;
+  --surface2:#091A33;
+  --border:  rgba(0, 240, 255, 0.15);
+  --border-strong: #00F0FF;
+  --text:    #E0F2FE;
+  --muted:   #7DD3FC;
+  --good:    #00FF88;
+  --glass-blur: blur(16px);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --border-radius-btn: 8px;
+  --border-radius-card: 12px;
+  --body-glow: radial-gradient(circle at 15% 50%, rgba(0, 240, 255, 0.1), transparent 25%), radial-gradient(circle at 85% 30%, rgba(0, 153, 255, 0.1), transparent 25%);
+}
+
+[data-theme="monochrome"] {
+  --teal:    #FFFFFF;
+  --green:   #E0E0E0;
+  --google:  #FFFFFF;
+  --meta:    #CCCCCC;
+  --bg:      #000000;
+  --surface: #0a0a0a;
+  --surface2:#141414;
+  --border:  #333333;
+  --border-strong: #FFFFFF;
+  --text:    #FFFFFF;
+  --muted:   #888888;
+  --good:    #FFFFFF;
+  --glass-blur: blur(0px);
+  --glass-shadow: none;
+  --border-radius-btn: 0px;
+  --border-radius-card: 0px;
+  --body-glow: none;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body { background: var(--bg); color: var(--text); font-family: var(--font-display); min-height: 100vh; }
@@ -829,3 +889,65 @@ tbody tr:hover { background: rgba(0,173,167,0.07) !important; transition: backgr
 .log-line.info    { color: var(--text); }
 .log-line.success { color: var(--good); }
 .log-line.error   { color: var(--bad);  }
+
+/* PDF Export Hide elements */
+@media print {
+  .app-header, .filter-bar, #btn-export-pdf {
+    display: none !important;
+  }
+  body {
+    background: white;
+    color: black;
+  }
+  .chart-card {
+    border: 1px solid #ddd;
+    break-inside: avoid;
+  }
+}
+
+/* ============================================================
+   FUNNEL DE VENDAS
+   ============================================================ */
+.funnel-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
+  gap: 12px;
+  width: 100%;
+}
+.funnel-step {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-btn);
+  padding: 12px 24px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  transition: all 0.3s;
+}
+.funnel-step:hover {
+  border-color: var(--teal);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+}
+.funnel-step .label {
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--teal);
+  width: 120px;
+}
+.funnel-step .value {
+  font-size: 18px;
+  color: var(--text);
+  font-weight: 700;
+  width: 100px;
+  text-align: right;
+}
+.funnel-step .dropoff {
+  color: var(--laranja);
+  font-size: 12px;
+  width: 80px;
+  text-align: right;
+}
