@@ -960,6 +960,44 @@
   </div>
 </div>
 
+<!-- ================================================================= MODAL · Ads Launcher ================================================================= -->
+<div class="modal-overlay" id="modal-launcher">
+  <div class="modal modal-wide">
+    <h2>Lançador de Campanhas 🚀</h2>
+    <div class="modal-subtitle">Crie campanhas diretamente no Facebook Ads sem abrir o Gerenciador.</div>
+    
+    <div class="form-group" style="margin-top:20px;">
+      <label>Nome da Campanha (Facebook)</label>
+      <input type="text" id="launcher-name" placeholder="Ex: [Lançamento NEXUS] - Conversão - Frio">
+    </div>
+
+    <div class="form-group">
+      <label>Orçamento Diário (R$)</label>
+      <input type="number" id="launcher-budget" placeholder="100.00">
+    </div>
+
+    <div class="form-group">
+      <label>Texto Principal (Copy)</label>
+      <textarea id="launcher-copy" rows="4" placeholder="Escreva o texto do seu anúncio aqui..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>URL de Destino (Site)</label>
+      <input type="text" id="launcher-link" placeholder="https://seu-site.com">
+    </div>
+
+    <div style="margin-top: 25px;">
+      <button class="btn-save pulse" id="btn-launch" onclick="launchCampaign()" style="width: 100%; background: #ff007f; color: #fff;">🚀 LANÇAR CAMPANHA AGORA</button>
+    </div>
+
+    <div id="launcher-status" style="margin-top: 15px; font-weight: bold; text-align: center; font-size: 14px;"></div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeLauncherModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ================================================================= MODAL · KANBAN CRIATIVOS ================================================================= -->
 <div class="modal-overlay" id="modal-kanban">
   <div class="modal modal-wide" style="max-width:1000px;">
@@ -1170,6 +1208,10 @@
   </div>
 </div>
 
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/modals.js"></script>
+<script src="js/launcher.js"></script>
 <script type="module" src="/js/app.js"></script>
 
 <script>
