@@ -73,6 +73,7 @@ app.use('/api/vision',     require('./routes/vision')); // Engenharia Reversa Vi
 app.use('/api/sentinel',   require('./routes/sentinel')); // Trader de Tráfego 24/7
 app.use('/api/forge',      require('./routes/forge')); // O Forjador de Landing Pages Mutantes
 app.use('/api/voice',      require('./routes/voice')); // Robô de Call Center AI
+app.use('/api/franchise',  require('./routes/franchise')); // Motor White-Label
 
 // ------------------------------------------------------------
 // HOSPEDAGEM DINÂMICA DE LANDING PAGES (NEXUS FORGE)
