@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maranet · Central de Tráfego</title>
+<title>NEXUS OS</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -24,6 +24,11 @@
     }
   });
 </script>
+
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
+  <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Black_triangle.svg/512px-Black_triangle.svg.png">
+
 </head>
 <body>
 
@@ -32,7 +37,7 @@
   <!-- =================== HEADER =================== -->
   <header class="app-header fade-in">
     <div class="header-left">
-      <div class="badge">Maranet Telecom</div>
+      <div class="badge">NEXUS OS</div>
       <h1>Central de <span>Tráfego</span></h1>
       <div class="subtitle" id="period-label"><span class="pulse"></span>Carregando…</div>
     </div>
@@ -118,7 +123,7 @@
   <div id="ai-insights-panel" class="fade-in" style="display: none; margin-bottom: 20px; background: rgba(0,255,163,0.05); border-left: 4px solid #00ffa3; border-radius: 8px; padding: 15px;">
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
       <i class="ph ph-robot" style="color: #00ffa3; font-size: 24px;"></i>
-      <h3 style="margin:0; font-size:16px; color:#e8f4f8;">Maranet AI Consultant <span style="font-size:11px; padding:2px 6px; background:#00ffa3; color:#0c1d27; border-radius:4px; margin-left:8px; font-weight:bold;">BETA</span></h3>
+      <h3 style="margin:0; font-size:16px; color:#e8f4f8;">NEXUS AI Consultant <span style="font-size:11px; padding:2px 6px; background:#00ffa3; color:#0c1d27; border-radius:4px; margin-left:8px; font-weight:bold;">BETA</span></h3>
     </div>
     <div id="ai-insights-content" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;"></div>
   </div>
@@ -381,7 +386,7 @@
 
   <!-- =================== FOOTER =================== -->
   <footer class="app-footer fade-in">
-    <div>Dashboard · <strong>Maranet Telecom</strong></div>
+    <div>Dashboard · <strong>NEXUS OS</strong></div>
     <div id="last-update">—</div>
   </footer>
 </div>
@@ -684,7 +689,7 @@
     
     <div class="form-group" style="margin-top:15px;">
       <label>Nome do Workspace / Cliente</label>
-      <input type="text" id="branding-name" placeholder="Ex: Maranet Telecom">
+      <input type="text" id="branding-name" placeholder="Ex: NEXUS OS">
     </div>
 
     <div class="form-group">
@@ -764,7 +769,7 @@
 <!-- ================================================================= MODAL · Instalação do Pixel ================================================================= -->
 <div class="modal-overlay" id="modal-pixel">
   <div class="modal modal-wide">
-    <h2>Instalação do Pixel Maranet 🎯</h2>
+    <h2>Instalação do Nexus Pixel 🎯</h2>
     <div class="modal-subtitle">Cole este código na tag <code>&lt;head&gt;</code> de todas as páginas do seu site.</div>
     
     <div class="form-group" style="margin-top:15px;">
@@ -1024,7 +1029,7 @@
 <div class="modal-overlay" id="modal-billing">
   <div class="modal">
     <h2>Faturamento e Planos (SaaS) 💳</h2>
-    <div class="modal-subtitle">Gerencie o seu plano no Maranet Central de Tráfego.</div>
+    <div class="modal-subtitle">Gerencie o seu plano no NEXUS OS.</div>
     
     <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:20px; margin-top:20px;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1144,7 +1149,7 @@
   </div>
 </div>
 <!-- ================================================================= COPILOT UI ================================================================= -->
-<div id="copilot-fab" title="Maranet Copilot">
+<div id="copilot-fab" title="NEXUS Copilot">
   <i class="ph ph-robot"></i>
 </div>
 
@@ -1152,12 +1157,12 @@
   <div class="copilot-header">
     <div style="display:flex; align-items:center; gap:8px;">
       <i class="ph ph-robot" style="font-size:20px; color:var(--teal)"></i>
-      <strong>Maranet Copilot</strong>
+      <strong>NEXUS Copilot</strong>
     </div>
     <button id="copilot-close" style="background:transparent; border:none; color:var(--text); cursor:pointer; font-size:20px;">&times;</button>
   </div>
   <div class="copilot-body" id="copilot-messages">
-    <div class="msg-bot">Olá! Sou o Maranet Copilot. Como posso ajudar a analisar seus dados de tráfego hoje?</div>
+    <div class="msg-bot">Olá! Sou o NEXUS Copilot. Como posso ajudar a analisar seus dados de tráfego hoje?</div>
   </div>
   <div class="copilot-input-area">
     <input type="text" id="copilot-input" placeholder="Pergunte sobre seus dados...">
@@ -1166,5 +1171,16 @@
 </div>
 
 <script type="module" src="/js/app.js"></script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js').catch(err => {
+        console.log('Service Worker registration failed: ', err);
+      });
+    });
+  }
+</script>
+
 </body>
 </html>

@@ -44,6 +44,44 @@ router.post('/', async (req, res) => {
   }
 });
 
+// NEXUS: Multi-Touch Attribution Endpoint
+router.post('/track', async (req, res) => {
+  try {
+    const { workspace_id, visitor_id, event_type, url, referrer, utms } = req.body;
+    
+    if (!workspace_id || !visitor_id) {
+      return res.status(400).json({ error: 'workspace_id and visitor_id required' });
+    }
+
+    const source = utms?.source || null;
+    const medium = utms?.medium || null;
+    const campaign = utms?.campaign || null;
+    const term = utms?.term || null;
+    const content = utms?.content || null;
+    
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ua = req.headers['user-agent'] || null;
+
+    const sql = `
+      INSERT INTO pixel_journeys (
+        workspace_id, visitor_id, event_type, landing_page, referrer,
+        utm_source, utm_medium, utm_campaign, utm_term, utm_content, 
+        ip_address, user_agent
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    `;
+
+    await db.run(sql, 
+      workspace_id, visitor_id, event_type, url, referrer,
+      source, medium, campaign, term, content, ip, ua
+    );
+
+    res.status(200).json({ ok: true });
+  } catch (e) {
+    console.error('Nexus Pixel Track Error:', e.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // GET /api/pixel/leads (Requires Auth - returns leads for the CRM)
 const { requireAuth } = require('../middleware/auth');
 router.get('/leads', requireAuth, async (req, res) => {
