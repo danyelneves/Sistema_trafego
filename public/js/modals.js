@@ -309,13 +309,23 @@ export function mountUsersModal({ onChanged }) {
   $('#user-close').addEventListener('click', () => closeModal('modal-users'));
 
   async function refresh() {
-    let rows = [];
-    try { rows = await api.users(); } catch {}
+    let rows = [], workspaces = [];
+    try { 
+      rows = await api.users(); 
+      workspaces = await api.getWorkspaces();
+    } catch {}
     const tbody = $('#user-tbody');
     if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;padding:18px">Nenhum usuário.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="muted" style="text-align:center;padding:18px">Nenhum usuário.</td></tr>`;
       return;
     }
+    
+    const wsOptions = (selId) => `<option value="">-- Todos/Nenhum --</option>` + 
+      workspaces.map(w => `<option value="${w.id}" ${w.id == selId ? 'selected' : ''}>${escapeAttr(w.name)}</option>`).join('');
+
+    const newWsSelect = $('#user-new-workspace');
+    if (newWsSelect) newWsSelect.innerHTML = wsOptions('');
+
     tbody.innerHTML = rows.map(u => `
       <tr data-id="${u.id}">
         <td>${escapeAttr(u.username)}</td>
@@ -325,6 +335,9 @@ export function mountUsersModal({ onChanged }) {
             <option value="admin"  ${u.role==='admin'  ? 'selected' : ''}>Admin</option>
             <option value="viewer" ${u.role==='viewer' ? 'selected' : ''}>Viewer</option>
           </select>
+        </td>
+        <td>
+          <select class="user-workspace" title="Cliente associado">${wsOptions(u.current_workspace_id)}</select>
         </td>
         <td><input class="user-pass" type="password" placeholder="Nova senha (opcional)"></td>
         <td class="row right">
@@ -336,7 +349,11 @@ export function mountUsersModal({ onChanged }) {
     tbody.querySelectorAll('tr[data-id]').forEach(tr => {
       const id = Number(tr.dataset.id);
       tr.querySelector('.user-save').addEventListener('click', async () => {
-        const body = { display_name: tr.querySelector('.user-name').value.trim(), role: tr.querySelector('.user-role').value };
+        const body = { 
+          display_name: tr.querySelector('.user-name').value.trim(), 
+          role: tr.querySelector('.user-role').value,
+          workspace_id: tr.querySelector('.user-workspace').value || null
+        };
         const pass = tr.querySelector('.user-pass').value;
         if (pass) body.password = pass;
         try { await api.updateUser(id, body); toast('Usuário atualizado'); onChanged?.(); }
@@ -356,6 +373,7 @@ export function mountUsersModal({ onChanged }) {
       password:     $('#user-new-password').value,
       display_name: $('#user-new-name').value.trim(),
       role:         $('#user-new-role').value,
+      workspace_id: $('#user-new-workspace')?.value || null
     };
     if (!body.username || !body.password) { toast('Username e senha são obrigatórios', { error: true }); return; }
     try {

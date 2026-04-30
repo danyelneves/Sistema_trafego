@@ -62,19 +62,35 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
     const wsSelect = $('#workspace-select');
     if (wsSelect) {
       wsSelect.style.display = 'inline-block';
+      const btnNewWs = $('#btn-new-workspace');
+      if (btnNewWs) btnNewWs.style.display = 'inline-block';
+
       try {
         const workspaces = await api.getWorkspaces();
         wsSelect.innerHTML = workspaces.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
         // Seleciona o atual (vem do servidor, podemos ter que adivinhar ou ter api.me() retornando workspace_id)
-        if (currentUser.workspace_id) wsSelect.value = currentUser.workspace_id;
+        if (currentUser.current_workspace_id) wsSelect.value = currentUser.current_workspace_id;
       } catch (e) { console.warn('Erro ao carregar workspaces', e); }
 
       wsSelect.addEventListener('change', async (e) => {
         try {
           await api.switchWorkspace(e.target.value);
           window.location.reload();
-        } catch (err) { toast('Erro ao trocar workspace', { error: true }); }
+        } catch (err) { toast('Erro ao trocar cliente', { error: true }); }
       });
+
+      if (btnNewWs) {
+        btnNewWs.addEventListener('click', async () => {
+          const name = prompt('Nome do novo Cliente/Workspace:');
+          if (!name) return;
+          try {
+            const row = await api.createWorkspace({ name });
+            toast('Cliente criado com sucesso!');
+            await api.switchWorkspace(row.id);
+            window.location.reload();
+          } catch (e) { toast('Erro ao criar cliente: ' + e.message, { error: true }); }
+        });
+      }
     }
   }
 

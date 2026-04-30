@@ -28,7 +28,7 @@ router.post('/switch', requireAdmin, async (req, res) => {
     const ws = await db.get('SELECT id FROM workspaces WHERE id = $1', workspace_id);
     if (!ws) return res.status(404).json({ error: 'Workspace não encontrado' });
 
-    await db.run('UPDATE users SET workspace_id = $1 WHERE id = $2', workspace_id, req.user.id);
+    await db.run('UPDATE users SET current_workspace_id = $1 WHERE id = $2', workspace_id, req.user.id);
     res.json({ ok: true, workspace_id });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

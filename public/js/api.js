@@ -58,6 +58,7 @@ export const api = {
 
   // Workspaces
   getWorkspaces:   ()          => call('/api/workspaces'),
+  createWorkspace: (body)      => call('/api/workspaces', { method: 'POST', body }),
   switchWorkspace: (wId)       => call('/api/workspaces/switch', { method: 'POST', body: { workspace_id: wId } }),
 
   // Alertas

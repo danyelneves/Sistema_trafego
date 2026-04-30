@@ -44,7 +44,10 @@
         <option value="light">Light Mode (Clean)</option>
         <option value="brutalist">Brutalista (Alto Contraste)</option>
       </select>
-      <select id="workspace-select" style="display:none; margin-right:10px; background: transparent; color: var(--text); border: 1px solid var(--border); padding: 5px 10px; border-radius: var(--border-radius-btn);" title="Trocar de Cliente (Workspace)"></select>
+      <div style="display:flex; align-items:center;">
+        <select id="workspace-select" style="display:none; margin-right:5px; background: transparent; color: var(--text); border: 1px solid var(--border); padding: 5px 10px; border-radius: var(--border-radius-btn);" title="Trocar de Cliente (Workspace)"></select>
+        <button class="btn" id="btn-new-workspace" style="display:none; padding: 5px 8px; margin-right: 10px; min-height:unset; line-height:1;" title="Novo Cliente (Workspace)">+</button>
+      </div>
       <div class="user-chip" id="user-chip"><b>●</b> …</div>
       <button class="btn" id="btn-present" title="Modo apresentação">▶</button>
       <button class="btn" id="btn-logout" title="Sair">Sair</button>
@@ -579,13 +582,16 @@
       <div class="field"><label>Perfil</label>
         <select id="user-new-role"><option value="viewer">Viewer</option><option value="admin">Admin</option></select>
       </div>
+      <div class="field"><label>Cliente (Workspace)</label>
+        <select id="user-new-workspace"><option value="">-- Todos/Nenhum --</option></select>
+      </div>
     </div>
     <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
       <button class="btn teal" id="user-create">+ Criar usuário</button>
     </div>
     <div class="form-section" style="margin-top:24px">Usuários cadastrados</div>
     <table class="mini-table">
-      <thead><tr><th>Username</th><th>Nome</th><th>Perfil</th><th>Nova senha</th><th></th></tr></thead>
+      <thead><tr><th>Username</th><th>Nome</th><th>Perfil</th><th>Cliente (Workspace)</th><th>Nova senha</th><th></th></tr></thead>
       <tbody id="user-tbody"></tbody>
     </table>
     <div class="modal-actions"><button class="btn" id="user-close">Fechar</button></div>

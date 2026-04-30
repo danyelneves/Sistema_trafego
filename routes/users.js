@@ -14,14 +14,14 @@ const ROLES = ['admin', 'viewer'];
 router.get('/', async (req, res) => {
   try {
     const rows = await db.all(
-      'SELECT id, username, display_name, role, created_at FROM users ORDER BY id'
+      'SELECT id, username, display_name, role, current_workspace_id, created_at FROM users ORDER BY id'
     );
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.post('/', async (req, res) => {
-  const { username, password, display_name, role = 'viewer' } = req.body || {};
+  const { username, password, display_name, role = 'viewer', workspace_id } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: 'username e password são obrigatórios' });
   if (!ROLES.includes(role))  return res.status(400).json({ error: `role deve ser: ${ROLES.join(', ')}` });
   if (password.length < 6)    return res.status(400).json({ error: 'senha deve ter ao menos 6 caracteres' });
@@ -29,10 +29,10 @@ router.post('/', async (req, res) => {
   try {
     const hash = await bcrypt.hash(password, 10);
     const row = await db.get(
-      `INSERT INTO users (username, password_hash, display_name, role)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, username, display_name, role, created_at`,
-      username.trim(), hash, display_name?.trim() || null, role
+      `INSERT INTO users (username, password_hash, display_name, role, current_workspace_id)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, username, display_name, role, current_workspace_id, created_at`,
+      username.trim(), hash, display_name?.trim() || null, role, workspace_id ? Number(workspace_id) : null
     );
     res.status(201).json(row);
   } catch (e) {
@@ -47,7 +47,7 @@ router.patch('/:id', async (req, res) => {
     const cur = await db.get('SELECT * FROM users WHERE id = $1', id);
     if (!cur) return res.status(404).json({ error: 'usuário não encontrado' });
 
-    const { display_name, role, password } = req.body || {};
+    const { display_name, role, password, workspace_id } = req.body || {};
     if (role && !ROLES.includes(role)) return res.status(400).json({ error: `role deve ser: ${ROLES.join(', ')}` });
 
     let hash = cur.password_hash;
@@ -57,12 +57,13 @@ router.patch('/:id', async (req, res) => {
     }
 
     const row = await db.get(
-      `UPDATE users SET display_name = $1, role = $2, password_hash = $3
-       WHERE id = $4
-       RETURNING id, username, display_name, role, created_at`,
+      `UPDATE users SET display_name = $1, role = $2, password_hash = $3, current_workspace_id = $4
+       WHERE id = $5
+       RETURNING id, username, display_name, role, current_workspace_id, created_at`,
       display_name !== undefined ? display_name.trim() : cur.display_name,
       role || cur.role,
       hash,
+      workspace_id !== undefined ? (workspace_id ? Number(workspace_id) : null) : cur.current_workspace_id,
       id
     );
     res.json(row);
