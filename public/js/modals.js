@@ -906,3 +906,72 @@ export function mountLeadsModal() {
 
   return modal;
 }
+
+// ---------------------------------------------------------------
+// DRE Financeiro Modal
+// ---------------------------------------------------------------
+export function mountDreModal(onSave) {
+  const modal = $('#modal-dre');
+  const btnOpen = $('#btn-dre');
+  const btnClose = $('#dre-close');
+  const btnSave = $('#dre-save');
+
+  if (!modal || !btnOpen) return null;
+
+  btnOpen.addEventListener('click', async () => {
+    const wsId = $('#workspace-select')?.value;
+    if (!wsId) return toast('Selecione um workspace', { error: true });
+    
+    try {
+      const data = await api.getFinancial(wsId);
+      $('#dre-product-cost').value = data.product_cost || 0;
+      $('#dre-tax-rate').value = data.tax_rate || 0;
+      $('#dre-gateway-rate').value = data.gateway_rate || 0;
+      $('#dre-agency-fee').value = data.agency_fee || 0;
+      openModal('modal-dre');
+    } catch(e) {
+      toast('Erro ao carregar DRE', { error: true });
+    }
+  });
+
+  btnClose.addEventListener('click', () => closeModal('modal-dre'));
+
+  btnSave.addEventListener('click', async () => {
+    const wsId = $('#workspace-select')?.value;
+    const body = {
+      product_cost: parseFloat($('#dre-product-cost').value) || 0,
+      tax_rate: parseFloat($('#dre-tax-rate').value) || 0,
+      gateway_rate: parseFloat($('#dre-gateway-rate').value) || 0,
+      agency_fee: parseFloat($('#dre-agency-fee').value) || 0,
+    };
+    try {
+      await api.saveFinancial(wsId, body);
+      toast('DRE Salvo com sucesso!');
+      closeModal('modal-dre');
+      if (onSave) onSave(); // trigger refresh
+    } catch(e) {
+      toast('Erro ao salvar DRE', { error: true });
+    }
+  });
+
+  return modal;
+}
+
+// ---------------------------------------------------------------
+// Raio-X Creatives Modal
+// ---------------------------------------------------------------
+export function mountCreativesModal() {
+  const modal = $('#modal-creatives');
+  const btnOpen = $('#btn-creatives');
+  const btnClose = $('#creatives-close');
+
+  if (!modal || !btnOpen) return null;
+
+  btnOpen.addEventListener('click', () => {
+    openModal('modal-creatives');
+  });
+
+  btnClose.addEventListener('click', () => closeModal('modal-creatives'));
+
+  return modal;
+}

@@ -71,6 +71,10 @@ export const api = {
   // CRM / Leads
   getLeads:           ()         => call('/api/pixel/leads'),
 
+  // Financial (DRE)
+  getFinancial:       (wsId)     => call(`/api/financial/${wsId}`),
+  saveFinancial:      (wsId, body) => call(`/api/financial/${wsId}`, { method: 'POST', body }),
+
   // Reports
   generateReport:     (body)     => call('/api/reports/generate', { method: 'POST', body }),
 

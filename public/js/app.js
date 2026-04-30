@@ -8,7 +8,8 @@ import { renderKPIs, renderHealthPanel, renderSocialKPIs, renderPacingPanel, ren
 import {
   mountEntryModal, mountCampaignsModal, mountGoalsModal, mountNotesModal,
   mountUsersModal, mountImportModal, mountAlertsModal, mountBrandingModal,
-  mountUTMModal, mountPixelModal, mountAutomationsModal, mountLeadsModal
+  mountUTMModal, mountPixelModal, mountAutomationsModal, mountLeadsModal,
+  mountDreModal, mountCreativesModal
 }                       from './modals.js';
 import { mountSyncModal }  from './sync-modal.js';
 import { mountDrillModal }  from './drill.js';
@@ -38,7 +39,7 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 // ---------------------------------------------------------------
 (async function init() {
   let currentUser = null;
-  try { const { user } = await api.me(); currentUser = user; renderUser(user); }
+  try { const { user } = await api.me(); currentUser = user; window.currentUser = user; renderUser(user); }
   catch { location.href = '/login'; return; }
 
   // Monta todos os modais
@@ -55,6 +56,8 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const pixelModal = mountPixelModal();
   const autoModal = mountAutomationsModal();
   const leadsModal = mountLeadsModal();
+  const dreModal = mountDreModal(refresh);
+  const creativesModal = mountCreativesModal();
 
   // Modais admin-only
   let usersModal, importModal, syncModal, alertsModal, brandingModal;
@@ -246,12 +249,40 @@ async function refresh() {
     state.lastMonthly = monthly.rows || [];
     state.lastByCamp  = byCamp.rows  || [];
     state.lastGoals   = goals;
+    
+    // Fetch Financial Settings for Net Profit Calculation
+    let financial = null;
+    try {
+      const wsId = $('#workspace-select')?.value || window.currentUser?.current_workspace_id || 1;
+      financial = await api.getFinancial(wsId);
+    } catch(e) { }
+    state.financial = financial;
+
+    if (financial) {
+      const applyDRE = (o) => {
+        if (!o) return;
+        o.grossRevenue = o.revenue || 0;
+        const tax = o.grossRevenue * ((financial.tax_rate || 0) / 100);
+        const gw  = o.grossRevenue * ((financial.gateway_rate || 0) / 100);
+        // Let's assume agency_fee is monthly. If we are looking at a period, we just subtract it once for simplicity.
+        const fixed = financial.agency_fee || 0;
+        
+        o.revenue = o.grossRevenue - tax - gw - fixed; // Replace revenue with Net Profit in the UI
+        o.roas = o.spend > 0 ? (o.revenue / o.spend) : 0; // Recalculate ROAS based on Net Profit
+        o.isNetProfit = true;
+      };
+      applyDRE(kpis.current);
+      applyDRE(kpis.past);
+    }
+
     state.lastKpis    = kpis.current;
 
     renderHeaderPeriod();
 
     // KPIs com sparklines
     const goalsNorm = goalsRelevantToPeriod(goals);
+    // Add isNetProfit flag so the renderer can show "Lucro Líquido" instead of "Receita"
+    kpis.isNetProfit = !!financial;
     renderKPIs($('#kpi-grid'), kpis, state.channel, goalsNorm, state.lastMonthly);
     renderSocialKPIs($('#social-grid'), kpis, state.channel);
 
@@ -263,8 +294,6 @@ async function refresh() {
 
     // Funil de Vendas (CRM)
     renderFunnel($('#sales-funnel'), kpis.current);
-    
-    // PDF Export has been replaced with Magic Report (handler is on line 146)
 
     // Gráficos
     charts.renderAll({

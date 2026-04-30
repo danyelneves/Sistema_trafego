@@ -119,6 +119,13 @@ function goalProgressBar(gs) {
  * @param {Array} monthlyRows  - todas as linhas mensais do período (para sparklines)
  */
 export function renderKPIs(root, data, channel, goals = [], monthlyRows = []) {
+  if (!root) return;
+  const current = data.current || data;
+  const past    = data.past;
+
+  if (data.isNetProfit) LABELS.revenue = 'Lucro Líquido 💸';
+  else                  LABELS.revenue = 'Receita';
+
   const cur = data.current;
   const cards = channel === 'all'
     ? [
