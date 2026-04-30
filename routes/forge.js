@@ -12,11 +12,14 @@ router.post('/generate', requireAuth, async (req, res) => {
   try {
     const { niche, name, slug } = req.body;
     
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY não configurada.");
+    // Puxa as configurações
+    const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [req.user.workspace_id]);
+    const getSetting = (k) => settings.find(s => s.key === k)?.value;
 
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const OPENAI_API_KEY = getSetting('openai.apiKey');
+    const GEMINI_API_KEY = getSetting('gemini.apiKey') || process.env.GEMINI_API_KEY;
+
+    if (!GEMINI_API_KEY && !OPENAI_API_KEY) throw new Error("I.A. não configurada.");
 
     // O Prompt Mágico do Mutant Funnel
     const prompt = `Atue como um Web Designer Sênior e Copywriter de Alta Conversão.
@@ -40,8 +43,36 @@ Regras Obrigatórias:
 5. Coloque o id="mutant-headline" no H1 principal.
 6. Retorne APENAS o código HTML puro, sem blocos \`\`\`html. Sem explicações.`;
 
-    const result = await model.generateContent(prompt);
-    let htmlContent = await result.response.text();
+    let htmlContent = "";
+
+    // 1. Tenta OpenAI GPT-4o
+    if (OPENAI_API_KEY) {
+        try {
+            const { OpenAI } = require('openai');
+            const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+            const completion = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: [{ role: "user", content: prompt }]
+            });
+            htmlContent = completion.choices[0].message.content.trim();
+            console.log("[FORGE ROUTER] Usando OpenAI GPT-4o");
+        } catch (e) {
+            console.error("[FORGE ROUTER] Falha no OpenAI. Caindo pro Gemini.");
+        }
+    }
+
+    // 2. Fallback Gemini
+    if (!htmlContent && GEMINI_API_KEY) {
+        const { GoogleGenerativeAI } = require('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const result = await model.generateContent(prompt);
+        htmlContent = await result.response.text();
+        console.log("[FORGE ROUTER] Usando Gemini 1.5 Flash");
+    }
+
+    if (!htmlContent) throw new Error("Nenhuma IA conseguiu gerar a página.");
+
     htmlContent = htmlContent.replace("```html", "").replace("```", "").trim();
 
     // Salva no Banco de Dados

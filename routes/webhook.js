@@ -151,20 +151,17 @@ router.post('/whatsapp', async (req, res) => {
     const getSetting = (k) => settings.find(s => s.key === k)?.value;
 
     const GEMINI_API_KEY = getSetting('gemini.apiKey') || process.env.GEMINI_API_KEY;
+    const ANTHROPIC_API_KEY = getSetting('anthropic.apiKey');
     const ELEVEN_API_KEY = getSetting('elevenlabs.apiKey');
     const VOICE_ID = getSetting('elevenlabs.voiceId') || 'pNInz6obpgDQGcFmaJcg';
     
     const waSettings = await db.get('SELECT * FROM wa_settings WHERE workspace_id = $1 AND active = true', [workspace_id]);
 
-    if (!GEMINI_API_KEY || !waSettings) {
+    if (!GEMINI_API_KEY && !ANTHROPIC_API_KEY || !waSettings) {
         return res.status(200).json({ ok: true, msg: "IA ou WhatsApp não configurados." });
     }
 
     console.log(`[FECHADOR NLP] Nova mensagem de ${remoteJid}: "${incomingText}"`);
-
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const MP_TOKEN = getSetting('mercadopago.accessToken');
 
@@ -175,8 +172,34 @@ Cliente falou: "${incomingText}"
 REGRA DE GHOST CHECKOUT: Se o cliente falar que quer comprar, fechar, ou perguntar como pagar, e você perceber que ele está pronto, adicione EXATAMENTE a tag [GERAR_PIX] no final da sua resposta. O sistema irá interceptar essa tag e enviar a cobrança direto no WhatsApp dele.
 Responda de forma natural, curta e agressiva em vendas. Não pareça um robô.`;
 
-    const aiResponse = await model.generateContent(prompt);
-    let responseText = aiResponse.response.text().trim();
+    let responseText = "";
+    
+    // Roteamento Multi-Modelos
+    if (ANTHROPIC_API_KEY) {
+        try {
+            const { Anthropic } = require('@anthropic-ai/sdk');
+            const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+            const msg = await anthropic.messages.create({
+                model: "claude-3-5-sonnet-20241022",
+                max_tokens: 300,
+                messages: [{ role: "user", content: prompt }]
+            });
+            responseText = msg.content[0].text.trim();
+            console.log("[ROUTER] Usando Claude 3.5 Sonnet");
+        } catch(e) {
+            console.error("[ROUTER ERRO] Falha no Claude. Caindo pro Gemini.");
+        }
+    }
+    
+    // Fallback para Gemini
+    if (!responseText && GEMINI_API_KEY) {
+        const { GoogleGenerativeAI } = require('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const aiResponse = await model.generateContent(prompt);
+        responseText = aiResponse.response.text().trim();
+        console.log("[ROUTER] Usando Gemini 1.5 Flash");
+    }
     
     let isGhostCheckout = false;
     let pixCode = "";

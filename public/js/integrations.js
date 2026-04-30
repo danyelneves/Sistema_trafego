@@ -13,8 +13,11 @@ async function openIntegrationsModal() {
         document.getElementById('int-mp').value = data['mercadopago.accessToken'] || '';
         document.getElementById('int-admin-phone').value = data['admin.phone'] || '';
 
+        document.getElementById('int-gemini').value = data['gemini.apiKey'] || '';
+        document.getElementById('int-anthropic').value = data['anthropic.apiKey'] || '';
+        document.getElementById('int-openai').value = data['openai.apiKey'] || '';
         document.getElementById('int-eleven').value = data['elevenlabs.apiKey'] || '';
-        document.getElementById('int-voiceid').value = data['elevenlabs.voiceId'] || '';
+        document.getElementById('int-voice-id').value = data['elevenlabs.voiceId'] || '';
         document.getElementById('int-heygen').value = data['heygen.apiKey'] || '';
 
         document.getElementById('toggle-forge').checked = data['toggle.sentinel_forge'] === 'true';
@@ -77,8 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
             'toggle.nexus_corsario': document.getElementById('toggle-corsario').checked ? 'true' : 'false',
             'sentinel.temperature': document.getElementById('int-temp').value,
             
+            'gemini.apiKey': document.getElementById('int-gemini').value,
+            'anthropic.apiKey': document.getElementById('int-anthropic').value,
+            'openai.apiKey': document.getElementById('int-openai').value,
             'elevenlabs.apiKey': document.getElementById('int-eleven').value,
-            'elevenlabs.voiceId': document.getElementById('int-voiceid').value,
+            'elevenlabs.voiceId': document.getElementById('int-voice-id').value,
             'heygen.apiKey': document.getElementById('int-heygen').value
         };
 
