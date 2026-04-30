@@ -301,9 +301,24 @@ async function aggRange(from, to, channel, workspaceId) {
     WHERE c.workspace_id = $1 AND m.date BETWEEN $2 AND $3
     ${channelClause}
   `, ...args) || {};
+
+  // Vendas Reais do CRM (Webhook)
+  const salesArgs = [workspaceId, from, to];
+  let salesChannelClause = '';
+  if (channel && channel !== 'all') { salesArgs.push(channel); salesChannelClause = ` AND channel = $${salesArgs.length}`; }
+
+  const s = await db.get(`
+    SELECT COUNT(id) as crm_sales, COALESCE(SUM(contract_value), 0) as crm_revenue
+    FROM sales
+    WHERE workspace_id = $1 AND DATE(created_at) BETWEEN $2 AND $3 AND status IN ('won', 'closed')
+    ${salesChannelClause}
+  `, ...salesArgs) || {};
+
   return deriveKpis({
     impressions: r.impressions || 0, clicks: r.clicks || 0,
-    conversions: r.conversions || 0, spend: r.spend || 0, revenue: r.revenue || 0,
+    conversions: r.conversions || 0, spend: r.spend || 0, 
+    revenue: s.crm_revenue || 0, // Receita Real do Webhook
+    sales: s.crm_sales || 0,     // Vendas Reais do Webhook
     reach: r.reach || 0, video_views: r.video_views || 0, story_views: r.story_views || 0,
     link_clicks: r.link_clicks || 0, post_engagement: r.post_engagement || 0
   });
