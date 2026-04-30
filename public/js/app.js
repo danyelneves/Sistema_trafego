@@ -130,6 +130,62 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
     });
   }
 
+    // Lógica NEXUS FORGE
+  const btnCreateForge = document.getElementById('btn-create-forge');
+  
+  window.loadForgeList = async function() {
+    try {
+        const token = localStorage.getItem('maranet_token') || '';
+        const res = await fetch('/api/forge/list', { headers: { 'Authorization': 'Bearer ' + token }});
+        const data = await res.json();
+        const tbody = document.querySelector('#forge-list-table tbody');
+        if (tbody && data.funnels) {
+            tbody.innerHTML = data.funnels.map(f => `
+              <tr>
+                <td>${f.name}</td>
+                <td><a href="/f/${f.slug}" target="_blank" style="color:var(--teal);">/f/${f.slug}</a></td>
+                <td>${f.visits || 0}</td>
+              </tr>
+            `).join('');
+        }
+    } catch(e) { console.error('Erro ao carregar lista forge:', e); }
+  };
+
+  if (btnCreateForge) {
+    btnCreateForge.addEventListener('click', async () => {
+        const name = document.getElementById('forge-name').value;
+        const niche = document.getElementById('forge-niche').value;
+        const slug = document.getElementById('forge-slug').value;
+
+        if (!name || !niche || !slug) return toast('Preencha todos os campos!', {error:true});
+        
+        const oldText = btnCreateForge.innerHTML;
+        btnCreateForge.innerHTML = 'Forjando IA... (Pode levar 20s)';
+        btnCreateForge.disabled = true;
+
+        try {
+            const token = localStorage.getItem('maranet_token') || '';
+            const res = await fetch('/api/forge/generate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+              body: JSON.stringify({ name, niche, slug })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                toast('Página Forjada com sucesso!');
+                window.loadForgeList(); // Recarrega
+            } else {
+                toast('Erro: ' + (data.error || 'Desconhecido'), {error:true});
+            }
+        } catch(e) {
+            toast('Erro de rede: ' + e.message, {error:true});
+        } finally {
+            btnCreateForge.innerHTML = oldText;
+            btnCreateForge.disabled = false;
+        }
+    });
+  }
+
   // Botões admin
   const btnUsers  = $('#btn-users');
   const btnImport = $('#btn-import');
