@@ -63,6 +63,8 @@ app.use('/api/empire',     require('./routes/empire'));
 app.use('/api/launcher',   require('./routes/launcher'));
 app.use('/api/vending',    require('./routes/vending')); // Vending Machine
 app.use('/api/market',     require('./routes/market')); // Bolsa de Valores de Leads
+app.use('/api/lazarus',    require('./routes/lazarus')); // Protocolo Lázaro
+app.use('/api/pay',        require('./routes/pay')); // Fintech Gateway
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now(), node: process.version }));
 
