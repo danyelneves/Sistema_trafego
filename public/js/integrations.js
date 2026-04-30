@@ -12,6 +12,10 @@ async function openIntegrationsModal() {
         document.getElementById('int-mp').value = data['mercadopago.accessToken'] || '';
         document.getElementById('int-admin-phone').value = data['admin.phone'] || '';
 
+        document.getElementById('int-eleven').value = data['elevenlabs.apiKey'] || '';
+        document.getElementById('int-voiceid').value = data['elevenlabs.voiceId'] || '';
+        document.getElementById('int-heygen').value = data['heygen.apiKey'] || '';
+
         document.getElementById('toggle-forge').checked = data['toggle.sentinel_forge'] === 'true';
         document.getElementById('toggle-oracle').checked = data['toggle.skynet_oracle'] === 'true';
         document.getElementById('toggle-lazarus').checked = data['toggle.lazarus_protocol'] === 'true';
@@ -67,7 +71,11 @@ document.addEventListener('DOMContentLoaded', () => {
             'toggle.skynet_oracle': document.getElementById('toggle-oracle').checked ? 'true' : 'false',
             'toggle.lazarus_protocol': document.getElementById('toggle-lazarus').checked ? 'true' : 'false',
             'toggle.hive_mind': document.getElementById('toggle-hive').checked ? 'true' : 'false',
-            'sentinel.temperature': document.getElementById('int-temp').value
+            'sentinel.temperature': document.getElementById('int-temp').value,
+            
+            'elevenlabs.apiKey': document.getElementById('int-eleven').value,
+            'elevenlabs.voiceId': document.getElementById('int-voiceid').value,
+            'heygen.apiKey': document.getElementById('int-heygen').value
         };
 
         try {

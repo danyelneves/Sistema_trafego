@@ -97,18 +97,53 @@ router.all('/cron', async (req, res) => {
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-      const prompt = `Você é um agente de atendimento humano e empático. O cliente '${order.customer_name}' tentou comprar o produto '${order.product_name}' de R$${order.amount}, mas não pagou (carrinho abandonado há 15 minutos). Escreva 1 mensagem curta de WhatsApp oferecendo ajuda, buscando puxar conversa para recuperar a venda. Diga que pode mandar um link novo se o PIX expirou.`;
+      const prompt = `Você é um agente de atendimento humano e empático. O cliente '${order.customer_name}' tentou comprar o produto '${order.product_name}' de R$${order.amount}, mas não pagou (carrinho abandonado há 15 minutos). Escreva 1 mensagem curta, amigável e MUITO informal, como se fosse um áudio de WhatsApp rápido oferecendo ajuda.`;
 
       const aiResponse = await model.generateContent(prompt);
       const msg = aiResponse.response.text().trim();
 
       console.log(`[LAZARUS] IA negociando com ${order.customer_name}...`);
 
+      // Verifica se ElevenLabs está ativado para gerar ÁUDIO
+      const ELEVEN_API_KEY = getSetting('elevenlabs.apiKey');
+      const VOICE_ID = getSetting('elevenlabs.voiceId') || 'pNInz6obpgDQGcFmaJcg';
+      let audioBase64 = null;
+
+      if (ELEVEN_API_KEY) {
+          try {
+              console.log(`[LAZARUS] Clonando voz para o áudio de resgate...`);
+              const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
+              const respAudio = await axios.post(url, {
+                  text: msg,
+                  model_id: "eleven_multilingual_v2",
+                  voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+              }, {
+                  headers: { 'xi-api-key': ELEVEN_API_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+                  responseType: 'arraybuffer'
+              });
+              audioBase64 = Buffer.from(respAudio.data, 'binary').toString('base64');
+          } catch(e) {
+              console.error("[LAZARUS] Erro ao clonar voz:", e.message);
+          }
+      }
+
       try {
-        await axios.post(waSettings.api_url, {
-          number: order.customer_phone,
-          text: msg
-        }, { headers: { 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }});
+        if (audioBase64) {
+            // Dispara via Áudio (Evolution API / Z-API)
+            await axios.post(waSettings.api_url, {
+              number: order.customer_phone,
+              audio: `data:audio/mpeg;base64,${audioBase64}`, // Envia o base64 do áudio
+              text: msg // Opcional, como legenda
+            }, { headers: { 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }});
+            console.log(`[LAZARUS] Áudio enviado com sucesso!`);
+        } else {
+            // Dispara apenas Texto
+            await axios.post(waSettings.api_url, {
+              number: order.customer_phone,
+              text: msg
+            }, { headers: { 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }});
+            console.log(`[LAZARUS] Texto enviado com sucesso!`);
+        }
         
         // Marca como "LAZARUS_ACTIVATED" para não mandar mensagem de novo
         await db.run("UPDATE orders SET status = 'LAZARUS_ACTIVATED' WHERE id = $1", [order.id]);

@@ -75,6 +75,7 @@ app.use('/api/forge',      require('./routes/forge')); // O Forjador de Landing 
 app.use('/api/voice',      require('./routes/voice')); // Robô de Call Center AI
 app.use('/api/franchise',  require('./routes/franchise')); // Motor White-Label
 app.use('/api/skynet',     require('./routes/skynet')); // Operação Skynet (Auto-Aquisição)
+app.use('/api/studio',     require('./routes/studio')); // NEXUS Studio (Clonagem de Voz/Vídeo)
 
 // ------------------------------------------------------------
 // HOSPEDAGEM DINÂMICA DE LANDING PAGES (NEXUS FORGE)
