@@ -10,13 +10,13 @@ router.use(requireAuth);
 
 router.get('/', async (req, res) => {
   try {
-    const rows = await db.all('SELECT key, value FROM settings');
+    const rows = await db.all('SELECT key, value FROM workspace_settings WHERE workspace_id = $1', req.user.workspace_id);
     const obj = {};
     rows.forEach(r => { obj[r.key] = r.value; });
 
     if (!obj['webhook.secret']) {
       const token = require('crypto').randomBytes(16).toString('hex');
-      await db.run("INSERT INTO settings(key, value) VALUES ('webhook.secret', $1)", token);
+      await db.run("INSERT INTO workspace_settings(workspace_id, key, value) VALUES ($1, 'webhook.secret', $2)", req.user.workspace_id, token);
       obj['webhook.secret'] = token;
     }
 
@@ -30,9 +30,9 @@ router.put('/', requireAdmin, async (req, res) => {
     const tx = db.transaction(async (client) => {
       for (const [k, v] of Object.entries(body)) {
         await client.run(
-          `INSERT INTO settings(key, value) VALUES ($1, $2)
-           ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value`,
-          k, String(v)
+          `INSERT INTO workspace_settings(workspace_id, key, value) VALUES ($1, $2, $3)
+           ON CONFLICT(workspace_id, key) DO UPDATE SET value = EXCLUDED.value`,
+          req.user.workspace_id, k, String(v)
         );
       }
     });

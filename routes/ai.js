@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { analyzeMetrics } = require('../services/aiConsultant.js');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { requireAuth } = require('../middleware/auth');
 
 // ----------------------------------------------------------------
 // GET /api/ai/insights
 // ----------------------------------------------------------------
-router.get('/insights', async (req, res) => {
+router.get('/insights', requireAuth, async (req, res) => {
   const { channel } = req.query;
   
   try {
