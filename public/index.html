@@ -960,34 +960,55 @@
   </div>
 </div>
 
-<!-- ================================================================= MODAL · Ads Launcher ================================================================= -->
+<!-- ================================================================= MODAL · Ads Launcher Avançado ================================================================= -->
 <div class="modal-overlay" id="modal-launcher">
-  <div class="modal modal-wide">
+  <div class="modal modal-wide" style="max-width: 700px;">
     <h2>Lançador de Campanhas 🚀</h2>
-    <div class="modal-subtitle">Crie campanhas diretamente no Facebook Ads sem abrir o Gerenciador.</div>
+    <div class="modal-subtitle">NEXUS Smart Launcher. Crie, teste ou deixe a IA fazer tudo.</div>
     
-    <div class="form-group" style="margin-top:20px;">
-      <label>Nome da Campanha (Facebook)</label>
-      <input type="text" id="launcher-name" placeholder="Ex: [Lançamento NEXUS] - Conversão - Frio">
+    <div style="display:flex; gap:10px; margin-top:20px; border-bottom:1px solid #333; padding-bottom:10px;">
+      <button class="btn teal" id="tab-manual" onclick="setLauncherMode('manual')">Padrão</button>
+      <button class="btn-outline" id="tab-matrix" onclick="setLauncherMode('matrix')">Matrix A/B</button>
+      <button class="btn-outline" id="tab-ai" onclick="setLauncherMode('ai')" style="border-color:#ff007f; color:#ff007f;">Self-Driving AI</button>
     </div>
 
-    <div class="form-group">
-      <label>Orçamento Diário (R$)</label>
-      <input type="number" id="launcher-budget" placeholder="100.00">
+    <!-- STANDARD / MATRIX FIELDS -->
+    <div id="launcher-fields-standard" style="margin-top:20px;">
+      <div class="form-group">
+        <label>Nome da Campanha (Facebook)</label>
+        <input type="text" id="launcher-name" placeholder="Ex: [Lançamento NEXUS] - Conversão">
+      </div>
+      <div class="form-group">
+        <label>Orçamento Diário (R$)</label>
+        <input type="number" id="launcher-budget" placeholder="100.00">
+      </div>
+      <div class="form-group">
+        <label>Texto Principal (Copy) <span id="matrix-hint" style="display:none; color:#ff007f; font-size:11px;">[Separe múltiplas copys com barra vertical | ]</span></label>
+        <textarea id="launcher-copy" rows="5" placeholder="Escreva o texto do seu anúncio aqui..."></textarea>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label>Texto Principal (Copy)</label>
-      <textarea id="launcher-copy" rows="4" placeholder="Escreva o texto do seu anúncio aqui..."></textarea>
+    <!-- AI FIELDS -->
+    <div id="launcher-fields-ai" style="margin-top:20px; display:none;">
+      <div class="form-group" style="background:#111; padding:15px; border:1px dashed #ff007f;">
+        <label style="color:#ff007f;">O que você quer vender? (Prompt para IA)</label>
+        <textarea id="launcher-prompt" rows="3" placeholder="Ex: Quero vender um ebook de emagrecimento para mulheres por R$ 97. Crie a campanha."></textarea>
+      </div>
+      <div class="form-group" style="margin-top:10px;">
+        <label>Orçamento Diário (R$)</label>
+        <input type="number" id="launcher-ai-budget" placeholder="100.00">
+      </div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group" style="margin-top:15px;">
       <label>URL de Destino (Site)</label>
       <input type="text" id="launcher-link" placeholder="https://seu-site.com">
     </div>
 
+    <input type="hidden" id="launcher-mode" value="manual">
+
     <div style="margin-top: 25px;">
-      <button class="btn-save pulse" id="btn-launch" onclick="launchCampaign()" style="width: 100%; background: #ff007f; color: #fff;">🚀 LANÇAR CAMPANHA AGORA</button>
+      <button class="btn-save pulse" id="btn-launch" onclick="launchCampaign()" style="width: 100%; background: #ff007f; color: #fff; font-size:16px;">🚀 LANÇAR CAMPANHA</button>
     </div>
 
     <div id="launcher-status" style="margin-top: 15px; font-weight: bold; text-align: center; font-size: 14px;"></div>
