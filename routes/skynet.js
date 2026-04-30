@@ -24,6 +24,9 @@ router.post('/hunt', requireAuth, async (req, res) => {
     const GOOGLE_MAPS_API_KEY = getSetting('google.mapsApiKey', 'GOOGLE_MAPS_API_KEY');
     const GEMINI_API_KEY = getSetting('gemini.apiKey', 'GEMINI_API_KEY');
     const ENABLE_ORACLE = getSetting('toggle.skynet_oracle', 'ENABLE_ORACLE') === 'true';
+    
+    const ELEVEN_API_KEY = getSetting('elevenlabs.apiKey');
+    const VOICE_ID = getSetting('elevenlabs.voiceId') || 'pNInz6obpgDQGcFmaJcg';
 
     // 1. RADAR: Busca no Google Maps (Google Places API)
     let targets = [];
@@ -102,21 +105,49 @@ Logo após, avise que você tem leads QUENTES precisando de ${target_niche} e ma
       console.log(`[SKYNET WHATSAPP] Disparando para ${target.phone}...`);
       
       let dispatchStatus = 'MOCK_DISPATCHED';
-      
+      let audioBase64 = null;
+
+      // Se tiver ElevenLabs configurado, gera o áudio do Script
+      if (ELEVEN_API_KEY) {
+          try {
+              console.log(`[SKYNET] Sintetizando voz de prospecção fria para ${target.name}...`);
+              const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
+              const respAudio = await axios.post(url, {
+                  text: script,
+                  model_id: "eleven_multilingual_v2",
+                  voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+              }, {
+                  headers: { 'xi-api-key': ELEVEN_API_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+                  responseType: 'arraybuffer'
+              });
+              audioBase64 = Buffer.from(respAudio.data, 'binary').toString('base64');
+          } catch(e) {
+              console.error("[SKYNET] Erro ao clonar voz:", e.message);
+          }
+      }
+
       // Disparo Real de WhatsApp (se configurado)
       if (waSettings && waSettings.api_url) {
         try {
-          await axios.post(waSettings.api_url, {
-            number: target.phone,
-            message: script,
-            text: script
-          }, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': waSettings.api_token || '',
-              'apikey': waSettings.api_token || ''
-            }
-          });
+          if (audioBase64) {
+             // Dispara ÁUDIO + Texto
+             await axios.post(waSettings.api_url, {
+                number: target.phone,
+                audio: `data:audio/mpeg;base64,${audioBase64}`,
+                text: script
+             }, {
+                headers: { 'Content-Type': 'application/json', 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }
+             });
+          } else {
+             // Dispara só Texto
+             await axios.post(waSettings.api_url, {
+                number: target.phone,
+                message: script,
+                text: script
+             }, {
+                headers: { 'Content-Type': 'application/json', 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }
+             });
+          }
           dispatchStatus = 'WHATSAPP_SENT_SUCCESS';
         } catch(waError) {
           console.error('[SKYNET WA] Erro ao disparar:', waError.message);
