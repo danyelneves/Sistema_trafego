@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueroClientes.com | O seu celular tocando hoje.</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #fafafa; color: #111; margin: 0; padding: 0; }
+    .hero { background: #00ffcc; color: #000; padding: 60px 20px; text-align: center; }
+    .hero h1 { font-size: 36px; font-weight: 900; margin-bottom: 10px; }
+    .hero p { font-size: 18px; max-width: 600px; margin: 0 auto 30px; }
+    .form-card { background: #fff; max-width: 400px; margin: -40px auto 50px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 30px; }
+    .form-group { margin-bottom: 20px; text-align: left; }
+    .form-group label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
+    .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+    .btn { background: #000; color: #fff; width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+    .btn:hover { background: #333; }
+    #result { margin-top: 20px; font-weight: bold; font-size: 14px; text-align: center; color: #00cc88; display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <h1>Venda mais na sua cidade.</h1>
+    <p>Sem agências. Sem contratos. Sem complicação. <br>Compre uma campanha pronta e receba clientes no WhatsApp hoje.</p>
+  </div>
+
+  <div class="form-card">
+    <div class="form-group">
+      <label>O que você vende? (Ex: Implante Dentário)</label>
+      <input type="text" id="business" placeholder="Ex: Pizzaria, Advogado, Dentista">
+    </div>
+    <div class="form-group">
+      <label>Qual a sua Cidade?</label>
+      <input type="text" id="city" placeholder="Ex: São Paulo">
+    </div>
+    <div class="form-group">
+      <label>Seu WhatsApp (Para receber os leads)</label>
+      <input type="tel" id="phone" placeholder="(11) 99999-9999">
+    </div>
+
+    <!-- Simulação: Na vida real isso aqui redirecionaria pro Stripe/Kiwify.
+         Nós simulamos que o cara pagou os R$ 500 no PIX. -->
+    <button class="btn" id="btn-buy" onclick="buyTraffic()">Ativar Robô - R$ 500</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    async function buyTraffic() {
+      const business = document.getElementById('business').value;
+      const city = document.getElementById('city').value;
+      const phone = document.getElementById('phone').value;
+      const btn = document.getElementById('btn-buy');
+      const resDiv = document.getElementById('result');
+
+      if(!business || !city || !phone) { alert("Preencha tudo!"); return; }
+
+      btn.innerText = "Processando Pagamento...";
+      btn.disabled = true;
+
+      try {
+        // Chamando a Vending Machine API (NEXUS)
+        // Substitua pelo link real do seu Vercel
+        const apiRes = await fetch('https://seu-maranet.vercel.app/api/vending/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            business_type: business,
+            city: city,
+            phone: phone,
+            amount_paid: 500 // Arbitragem!
+          })
+        });
+
+        const data = await apiRes.json();
+        
+        btn.style.display = 'none';
+        resDiv.style.display = 'block';
+        resDiv.innerHTML = `💸 Pagamento Aprovado!<br><br>Sua campanha: <strong>${data.ad_details.campaign_name}</strong> foi criada.<br>Fique de olho no seu WhatsApp!`;
+
+      } catch(e) {
+        alert("Erro: " + e.message);
+        btn.innerText = "Ativar Robô - R$ 500";
+        btn.disabled = false;
+      }
+    }
+  </script>
+
+</body>
+</html>
