@@ -611,3 +611,64 @@ window.simulateSwarm = function() {
         delay += 1500 + Math.random() * 2000;
     });
 };
+
+// -------------------------------------------------------------
+// NEXUS Studio & Voice Bindings
+// -------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    const btnVsl = document.getElementById('btn-create-vsl');
+    if (btnVsl) {
+        btnVsl.addEventListener('click', async () => {
+            const niche = document.getElementById('studio-niche').value;
+            const target = document.getElementById('studio-target').value;
+            const resDiv = document.getElementById('studio-result');
+            
+            if (!niche || !target) return alert("Preencha o nicho e público!");
+            
+            btnVsl.innerHTML = "Renderizando VSL...";
+            try {
+                // Ensure apiCall is available globally or use fetch
+                const res = await fetch('/api/studio/video', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                    body: JSON.stringify({ niche, target_audience: target })
+                });
+                const data = await res.json();
+                if(data.error) throw new Error(data.error);
+
+                resDiv.innerHTML = `Sucesso! ID: ${data.video_id} <br> <span style="color:#aaa; font-size:11px;">Script IA: ${data.script.substring(0, 50)}...</span>`;
+            } catch(e) {
+                resDiv.innerHTML = `<span style="color:red">Erro: ${e.message}</span>`;
+            }
+            btnVsl.innerHTML = "Renderizar Avatar VSL";
+        });
+    }
+
+    const btnCall = document.getElementById('btn-fire-call');
+    if (btnCall) {
+        btnCall.addEventListener('click', async () => {
+            const name = document.getElementById('call-lead-name').value;
+            const phone = document.getElementById('call-lead-phone').value;
+            const context = document.getElementById('call-context').value;
+            const resDiv = document.getElementById('call-result');
+            
+            if (!name || !phone) return alert("Preencha nome e telefone!");
+            
+            btnCall.innerHTML = "Ligando...";
+            try {
+                const res = await fetch('/api/voice/call', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                    body: JSON.stringify({ lead_phone: phone, lead_name: name, context_info: context })
+                });
+                const data = await res.json();
+                if(data.error) throw new Error(data.error);
+
+                resDiv.innerHTML = `Ligação Conectada! <br> <span style="color:#aaa; font-size:11px;">I.A: ${data.ai_transcription}</span>`;
+            } catch(e) {
+                resDiv.innerHTML = `<span style="color:red">Erro: ${e.message}</span>`;
+            }
+            btnCall.innerHTML = "Disparar Ligação IA";
+        });
+    }
+});

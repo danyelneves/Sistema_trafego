@@ -109,7 +109,9 @@
       <button class="btn" id="btn-franchise" title="Gestor de Franquias" onclick="openFranchiseModal()" style="color:#ff0055; border-color:#ff0055;">🏢 Franquias</button>
       <button class="btn pulse" id="btn-skynet" title="Operação Skynet" onclick="openSkynetModal()" style="color:#ff0000; border-color:#ff0000; font-weight:bold;">🤖 Skynet</button>
       <button class="btn pulse" id="btn-forge" title="NEXUS Forge (Criação de LPs com IA)" onclick="document.getElementById('modal-forge').style.display='flex'; if(window.loadForgeList) window.loadForgeList();" style="color:#a855f7; border-color:#a855f7; font-weight:bold;">🧬 Forge</button>
+      <button class="btn pulse" id="btn-studio" title="NEXUS Studio (Clonagem de Vídeo VSL)" onclick="document.getElementById('modal-studio').style.display='flex';" style="color:#d946ef; border-color:#d946ef; font-weight:bold;">🎬 Studio</button>
       <button class="btn pulse" id="btn-sentinel-force" title="Forçar Varredura Sentinel" onclick="forceSentinel()" style="color:#00ffa3; border-color:#00ffa3; font-weight:bold;">⚡ Sentinel</button>
+      <button class="btn pulse" id="btn-voice" title="Call Center Fantasma" onclick="document.getElementById('modal-call').style.display='flex';" style="color:#f59e0b; border-color:#f59e0b; font-weight:bold;">📞 Call Center</button>
       <button class="btn pulse" id="btn-swarm" title="Enxame de Agentes IA (Terminal de Ações)" onclick="document.getElementById('modal-swarm').style.display='flex'; simulateSwarm();" style="color:#fff; border-color:#fff; font-weight:bold;">👾 Enxame</button>
       <button class="btn" id="btn-integrations" title="Configurar Integrações e APIs" style="border-color:#3b82f6; color:#3b82f6;">🔌 Integrações</button>
       <button class="btn primary" id="btn-report-magic" title="Gerar Link de Relatório com IA" style="background:var(--teal); color:#000;">
@@ -1317,6 +1319,12 @@
       <label style="display:flex; align-items:center; gap:10px;">
         <input type="checkbox" id="toggle-hive"> Ativar Hive Mind (Inteligência Coletiva entre Workspaces)
       </label>
+      <label style="display:flex; align-items:center; gap:10px; color:#00ffff; font-weight:bold;">
+        <input type="checkbox" id="toggle-doppelganger"> Ativar Doppelgänger (Clonagem de Personalidade no Fechador)
+      </label>
+      <label style="display:flex; align-items:center; gap:10px; color:#ff00ff; font-weight:bold;">
+        <input type="checkbox" id="toggle-poltergeist"> Ativar Poltergeist (Controle de Impressora IoT e Logística)
+      </label>
       <label style="display:flex; align-items:center; gap:10px; color:#ff0000; font-weight:bold;">
         <input type="checkbox" id="toggle-corsario"> Ativar NEXUS Corsário (Roubo de Leads Instagram DM)
       </label>
@@ -1434,6 +1442,60 @@
       <div id="swarm-terminal" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #ccc; background: #050505; border: 1px solid #222; padding: 15px; height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
         <!-- Terminal Logs -->
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL STUDIO (VSL HeyGen) -->
+  <div class="modal-overlay" id="modal-studio" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🎬 NEXUS Studio (VSL Mutante)</h2>
+        <button onclick="document.getElementById('modal-studio').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
+      </div>
+      <div class="modal-subtitle">O OmniRouter escreve o Copy e aciona a renderização de Vídeo Lip-Sync no HeyGen.</div>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Nicho do Produto</label>
+          <input type="text" id="studio-niche" placeholder="Ex: Cursos de IA">
+        </div>
+        <div class="field full">
+          <label>Público Alvo Atual</label>
+          <input type="text" id="studio-target" placeholder="Ex: Advogados Tradicionais">
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:20px;">
+        <button class="btn pulse" id="btn-create-vsl" style="border-color:#d946ef; color:#d946ef;">Renderizar Avatar VSL</button>
+      </div>
+      <div id="studio-result" style="margin-top: 15px; color: #00ffa3; font-weight:bold;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL CALL CENTER (Telefonia IA) -->
+  <div class="modal-overlay" id="modal-call" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>📞 Call Center Fantasma</h2>
+        <button onclick="document.getElementById('modal-call').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
+      </div>
+      <div class="modal-subtitle">O OmniRouter escreve o roteiro e o Twilio + ElevenLabs dispara a ligação VOIP pro lead.</div>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Nome do Lead</label>
+          <input type="text" id="call-lead-name" placeholder="Ex: Roberto Carlos">
+        </div>
+        <div class="field full">
+          <label>Telefone do Lead</label>
+          <input type="text" id="call-lead-phone" placeholder="5511999999999">
+        </div>
+        <div class="field full">
+          <label>Contexto da Oferta</label>
+          <input type="text" id="call-context" placeholder="Página do Mentoria Premium">
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:20px;">
+        <button class="btn pulse" id="btn-fire-call" style="border-color:#f59e0b; color:#f59e0b;">Disparar Ligação IA</button>
+      </div>
+      <div id="call-result" style="margin-top: 15px; color: #00ffa3; font-weight:bold;"></div>
     </div>
   </div>
 

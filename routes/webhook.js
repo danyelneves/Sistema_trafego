@@ -164,9 +164,19 @@ router.post('/whatsapp', async (req, res) => {
     console.log(`[FECHADOR NLP] Nova mensagem de ${remoteJid}: "${incomingText}"`);
 
     const MP_TOKEN = getSetting('mercadopago.accessToken');
+    const USE_DOPPELGANGER = getSetting('toggle.doppelganger') === 'true';
 
-    const prompt = `Você é um Closer (Fechador de Vendas) da empresa NEXUS.
-Sua missão: Responder o cliente, quebrar objeções usando persuasão.
+    let basePersonality = `Você é um Closer (Fechador de Vendas) da empresa NEXUS.
+Sua missão: Responder o cliente, quebrar objeções usando persuasão.`;
+
+    if (USE_DOPPELGANGER) {
+        basePersonality = `Atue EXATAMENTE como Daniel Neves, CEO da agência NEXUS.
+Você é direto, usa gírias como "Mano", "Sacada genial", "Bora pra cima". 
+Tem pressa, resolve o problema, e quer fechar o negócio rápido.
+Cometa erros sutis de pontuação para parecer muito humano no WhatsApp.`;
+    }
+
+    const prompt = `${basePersonality}
 Cliente falou: "${incomingText}"
 
 REGRA DE GHOST CHECKOUT: Se o cliente falar que quer comprar, fechar, ou perguntar como pagar, e você perceber que ele está pronto, adicione EXATAMENTE a tag [GERAR_PIX] no final da sua resposta. O sistema irá interceptar essa tag e enviar a cobrança direto no WhatsApp dele.
@@ -219,6 +229,18 @@ Responda de forma natural, curta e agressiva em vendas. Não pareça um robô.`;
             }, { headers: { 'Authorization': `Bearer ${MP_TOKEN}` }});
             
             pixCode = mpRes.data.point_of_interaction.transaction_data.qr_code;
+            
+            // Integração Poltergeist: O pedido de PIX gerou a intenção, na vida real 
+            // acionaríamos o Poltergeist APÓS o pagamento. Como é simulação, chamamos o trigger.
+            if (getSetting('toggle.poltergeist') === 'true') {
+                const axiosLocal = require('axios');
+                axiosLocal.post('http://localhost:3000/api/poltergeist/dispatch', {
+                    order_id: Math.floor(Math.random() * 10000),
+                    total_amount: 97.00,
+                    address: "Rua das Flores, 123"
+                }).catch(err => console.error("[POLTERGEIST TRIGGER ERROR]", err.message));
+            }
+
         } catch(e) {
             console.error("[GHOST CHECKOUT] Falha ao gerar PIX:", e.response ? e.response.data : e.message);
         }
