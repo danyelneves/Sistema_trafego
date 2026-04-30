@@ -4,7 +4,7 @@
  * Em produção (Vercel): chamado pelo Vercel Cron Job via GET /api/cron/alerts
  * Em desenvolvimento local: pode-se chamar manualmente ou manter o setInterval
  */
-const fetch  = require('node-fetch');
+
 const { sendWhatsApp } = require('./whatsapp');
 const db     = require('../db');
 const mailer = require('./mailer');
