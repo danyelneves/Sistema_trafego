@@ -79,10 +79,14 @@ router.post('/hunt', requireAuth, async (req, res) => {
       const checkoutLink = `https://sistrafego.vercel.app/checkout?product_id=2&partner_id=skynet`;
       let script = `Olá dono da ${target.name}! Temos clientes buscando ${target_niche} na sua região. Posso mandar os contatos para você? ${checkoutLink}`;
       
-      // Inteligência Artificial cria a Copy Exclusiva
+      // Inteligência Artificial cria a Copy Exclusiva com Oráculo Sniper
       if (geminiModel) {
         try {
-          const prompt = `Você é um robô de prospecção implacável da agência NEXUS. Escreva uma única mensagem de WhatsApp curtíssima (máximo 3 linhas), direta e persuasiva oferecendo clientes de ${target_niche} para a empresa '${target.name}'. Termine a mensagem com o link de pagamento: ${checkoutLink}`;
+          const prompt = `Você é o Oráculo Sniper, o caçador mais perigoso da agência NEXUS. 
+Sua missão: Escrever 1 única mensagem de WhatsApp casual e curta (máx 3 linhas) para o dono da empresa '${target.name}' (Nicho: ${target_niche} em ${location}).
+MECANISMO: Finja que você acabou de auditar o site ou Instagram deles silenciosamente. Invente uma "falha" ultra realista (ex: 'site demoar pra carregar', 'instagram as moscas', 'concorrente da rua de trás dominando o google').
+Logo após, avise que você tem leads QUENTES (clientes prontos para comprar hoje) precisando de ${target_niche} e mande o link PIX: ${checkoutLink} para você repassar os leads.
+O tom deve ser audacioso, agressivo, urgente, porém extremamente natural (sem parecer bot).`;
           const aiResponse = await geminiModel.generateContent(prompt);
           script = aiResponse.response.text();
         } catch (aiErr) {

@@ -15,13 +15,15 @@ router.get('/pulse', requireAuth, async (req, res) => {
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    const prompt = `Você é a "Mente de Colmeia NEXUS", um supercomputador que rastreia trilhões de dados do Facebook Ads no Brasil.
-Gere 3 tendências (anomalias de alta conversão) que foram detectadas AGORA MESMO no mercado brasileiro. 
-Exemplos: 
-- Vídeos curtos com filtro P&B reduziram CPA em 42% no nicho fitness.
-- Landing Pages de fundo preto estão convertendo 3x mais que fundo branco para info-produtos.
-Seja técnico, frio, e ultra-específico. 
-Formate em HTML (apenas usando <p> e <strong>, sem blocos markdown).`;
+    const db = require('../db');
+    const anomaliesRows = await db.all(`SELECT value FROM workspace_settings WHERE key LIKE 'hive.anomaly.%' ORDER BY id DESC LIMIT 5`);
+    const anomaliesStr = anomaliesRows.map(r => r.value).join('\n') || "Nenhuma anomalia de alta conversão registrada recentemente.";
+
+    const prompt = `Você é a "Mente de Colmeia NEXUS", um supercomputador que rastreia trilhões de dados.
+Os seguintes eventos acabaram de acontecer na nossa rede de clientes e franqueados (estes dados são REAIS e recém capturados do Meta Ads pelo Sentinel):
+${anomaliesStr}
+
+Com base nisso, escreva um "Boletim de Inteligência" (curto, 3 tópicos, formato HTML com <p> e <strong>) extraindo a lição aprendida e dizendo ao usuário o que ele deve replicar nas campanhas dele hoje. Se não houver anomalias reais, dê uma dica avançada genérica de Meta Ads. Não use markdown block.`;
 
     const result = await model.generateContent(prompt);
     let insights = await result.response.text();
