@@ -2,71 +2,61 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const db = require('../db');
+const { requireAuth } = require('../middleware/auth');
 
-// ----------------------------------------------------------------
-// POST /api/sentinel/cron
-// Chamado via Vercel Cron a cada 15 minutos
-// ----------------------------------------------------------------
-router.all('/cron', async (req, res) => {
+async function runSentinelLogic() {
+  const META_TOKEN = process.env.META_ACCESS_TOKEN;
+  const AD_ACCOUNT_ID = process.env.META_AD_ACCOUNT_ID;
+  
+  if (!META_TOKEN || !AD_ACCOUNT_ID) {
+    console.log("[SENTINEL] Meta Credentials missing. Skipping operation.");
+    return { status: 'Skipped - No Credentials' };
+  }
+
+  console.log("[SENTINEL] Acordando... Iniciando varredura de Alta Frequência (HFT) no Meta Ads.");
+
+  // Busca campanhas ativas no Meta
+  const campaignsUrl = `https://graph.facebook.com/v19.0/act_${AD_ACCOUNT_ID}/campaigns?fields=id,name,status,daily_budget,insights{impressions,clicks,spend,cpc,ctr,cpm,cost_per_action_type}&status=['ACTIVE']&access_token=${META_TOKEN}`;
+  
+  const TARGET_CPA = 15.00; // Custo por Aquisição ideal (R$ 15)
+
+  let actionsTaken = [];
+  let geminiModel = null;
+  if (process.env.GEMINI_API_KEY) {
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    geminiModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  }
+
+  // SIMULAÇÃO DE ESTRUTURA PARA FINS DE DEMONSTRAÇÃO (Vai tentar rodar a real)
   try {
-    // Autenticação básica via Header do Vercel Cron para segurança
-    const authHeader = req.headers['authorization'];
-    if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return res.status(401).json({ error: 'Unauthorized CRON' });
-    }
+    const fbResponse = await axios.get(campaignsUrl);
+    const campaigns = fbResponse.data.data || [];
 
-    const META_TOKEN = process.env.META_ACCESS_TOKEN;
-    const AD_ACCOUNT_ID = process.env.META_AD_ACCOUNT_ID;
-    
-    if (!META_TOKEN || !AD_ACCOUNT_ID) {
-      console.log("[SENTINEL] Meta Credentials missing. Skipping operation.");
-      return res.json({ status: 'Skipped - No Credentials' });
-    }
+    // Recupera confs do WhatsApp para enviar alertas ao Admin
+    const waSettings = await db.get('SELECT * FROM wa_settings WHERE workspace_id = 1 AND active = true');
 
-    console.log("[SENTINEL] Acordando... Iniciando varredura de Alta Frequência (HFT) no Meta Ads.");
+    for (const camp of campaigns) {
+      if (!camp.insights || camp.insights.data.length === 0) continue;
+      
+      const data = camp.insights.data[0];
+      let spend = parseFloat(data.spend) || 0;
+      let ctr = parseFloat(data.ctr) || 0;
+      let cpc = parseFloat(data.cpc) || 0;
+      let cpm = parseFloat(data.cpm) || 0;
+      let cpa = 0;
+      
+      const actions = data.cost_per_action_type || [];
+      const leadAction = actions.find(a => a.action_type === 'lead');
+      if (leadAction) cpa = parseFloat(leadAction.value);
+      else if (spend > TARGET_CPA * 2) cpa = spend; // Gastou o dobro do CPA e não teve lead = Ruim.
 
-    // Busca campanhas ativas no Meta
-    const campaignsUrl = `https://graph.facebook.com/v19.0/act_${AD_ACCOUNT_ID}/campaigns?fields=id,name,status,daily_budget,insights{impressions,clicks,spend,cpc,ctr,cpm,cost_per_action_type}&status=['ACTIVE']&access_token=${META_TOKEN}`;
-    
-    const TARGET_CPA = 15.00; // Custo por Aquisição ideal (R$ 15)
+      let decision = "MANTER";
+      let reason = "Análise Tradicional: Parâmetros dentro da normalidade.";
 
-    let actionsTaken = [];
-    let geminiModel = null;
-    if (process.env.GEMINI_API_KEY) {
-      const { GoogleGenerativeAI } = require('@google/generative-ai');
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      geminiModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    }
-
-    // SIMULAÇÃO DE ESTRUTURA PARA FINS DE DEMONSTRAÇÃO (Vai tentar rodar a real)
-    try {
-      const fbResponse = await axios.get(campaignsUrl);
-      const campaigns = fbResponse.data.data || [];
-
-      // Recupera confs do WhatsApp para enviar alertas ao Admin
-      const waSettings = await db.get('SELECT * FROM wa_settings WHERE workspace_id = 1 AND active = true');
-
-      for (const camp of campaigns) {
-        if (!camp.insights || camp.insights.data.length === 0) continue;
-        
-        const data = camp.insights.data[0];
-        let spend = parseFloat(data.spend) || 0;
-        let ctr = parseFloat(data.ctr) || 0;
-        let cpc = parseFloat(data.cpc) || 0;
-        let cpm = parseFloat(data.cpm) || 0;
-        let cpa = 0;
-        
-        const actions = data.cost_per_action_type || [];
-        const leadAction = actions.find(a => a.action_type === 'lead');
-        if (leadAction) cpa = parseFloat(leadAction.value);
-        else if (spend > TARGET_CPA * 2) cpa = spend; // Gastou o dobro do CPA e não teve lead = Ruim.
-
-        let decision = "MANTER";
-        let reason = "Análise Tradicional: Parâmetros dentro da normalidade.";
-
-        // CÉREBRO: Análise de Alta Frequência via IA
-        if (geminiModel) {
-           const prompt = `Você é o SENTINEL, um trader HFT IA de Tráfego Pago da agência NEXUS. Analise e decida o que fazer com a campanha:
+      // CÉREBRO: Análise de Alta Frequência via IA
+      if (geminiModel) {
+         const prompt = `Você é o SENTINEL, um trader HFT IA de Tráfego Pago da agência NEXUS. Analise e decida o que fazer com a campanha:
 Campanha: ${camp.name}
 Gasto: R$${spend}
 CPA: R$${cpa}
@@ -77,69 +67,98 @@ O Custo por Aquisição (CPA) Teto do cliente é R$${TARGET_CPA}.
 Responda EXATAMENTE neste formato: ACAO | Justificativa curta (1 linha).
 A ACAO deve ser apenas uma das palavras: PAUSAR, ESCALAR, MANTER.
 Use lógica profissional: se o CPA tá alto e o CTR tá caindo (abaixo de 1%), há fadiga de criativo = PAUSAR. Se o CPA tá barato (abaixo do teto), é ouro puro = ESCALAR.`;
-           
+         
+         try {
+           const aiResponse = await geminiModel.generateContent(prompt);
+           const text = aiResponse.response.text();
+           const parts = text.split('|');
+           if(parts.length >= 2) {
+              decision = parts[0].trim().toUpperCase();
+              reason = parts[1].trim();
+           }
+         } catch(e) { console.error("[SENTINEL GEMINI] Falha ao analisar:", e.message); }
+      } else {
+         // REGRA BURRA MATEMÁTICA (Fallback caso IA esteja fora)
+         if (cpa > TARGET_CPA * 1.5) { decision = "PAUSAR"; reason = `CPA R$${cpa} passou do limite de segurança.`; }
+         else if (cpa > 0 && cpa < TARGET_CPA * 0.5) { decision = "ESCALAR"; reason = `CPA excelente (R$${cpa}). Escalonando!`; }
+      }
+
+      let alertMsg = '';
+
+      if (decision.includes("PAUSAR")) {
+        // Pausa campanha na API do Facebook
+        await axios.post(`https://graph.facebook.com/v19.0/${camp.id}`, { status: 'PAUSED', access_token: META_TOKEN });
+        alertMsg = `🚨 [SENTINEL STOP-LOSS]\n\nCortei a verba e pausei a campanha '${camp.name}'.\n\n*Análise da IA:* ${reason}\n*CPA Atual:* R$${cpa}\n*CTR:* ${ctr}%`;
+        actionsTaken.push(`PAUSED: ${camp.name} - ${reason}`);
+      } 
+      else if (decision.includes("ESCALAR")) {
+        // Aumenta orçamento em 20%
+        let currentBudget = parseInt(camp.daily_budget) || 10000; // Em centavos
+        let newBudget = Math.floor(currentBudget * 1.20);
+        await axios.post(`https://graph.facebook.com/v19.0/${camp.id}`, { daily_budget: newBudget, access_token: META_TOKEN });
+        alertMsg = `🔥 [SENTINEL AUTO-SCALE]\n\nAumentei a verba em +20% na campanha '${camp.name}'.\n\n*Análise da IA:* ${reason}\n*CPA Atual:* R$${cpa}\n*CTR:* ${ctr}%`;
+        actionsTaken.push(`SCALED: ${camp.name} - ${reason}`);
+      } else {
+        console.log(`[SENTINEL] Mantendo ${camp.name}. (${reason})`);
+      }
+
+      // Se a IA interveio no anúncio, manda notificação via WhatsApp para o Admin
+      if (alertMsg !== '') {
+        console.log(alertMsg);
+        if (waSettings && waSettings.api_url && process.env.ADMIN_PHONE) {
            try {
-             const aiResponse = await geminiModel.generateContent(prompt);
-             const text = aiResponse.response.text();
-             const parts = text.split('|');
-             if(parts.length >= 2) {
-                decision = parts[0].trim().toUpperCase();
-                reason = parts[1].trim();
-             }
-           } catch(e) { console.error("[SENTINEL GEMINI] Falha ao analisar:", e.message); }
-        } else {
-           // REGRA BURRA MATEMÁTICA (Fallback caso IA esteja fora)
-           if (cpa > TARGET_CPA * 1.5) { decision = "PAUSAR"; reason = `CPA R$${cpa} passou do limite de segurança.`; }
-           else if (cpa > 0 && cpa < TARGET_CPA * 0.5) { decision = "ESCALAR"; reason = `CPA excelente (R$${cpa}). Escalonando!`; }
-        }
-
-        let alertMsg = '';
-
-        if (decision.includes("PAUSAR")) {
-          // Pausa campanha na API do Facebook
-          await axios.post(`https://graph.facebook.com/v19.0/${camp.id}`, { status: 'PAUSED', access_token: META_TOKEN });
-          alertMsg = `🚨 [SENTINEL STOP-LOSS]\n\nCortei a verba e pausei a campanha '${camp.name}'.\n\n*Análise da IA:* ${reason}\n*CPA Atual:* R$${cpa}\n*CTR:* ${ctr}%`;
-          actionsTaken.push(`PAUSED: ${camp.name} - ${reason}`);
-        } 
-        else if (decision.includes("ESCALAR")) {
-          // Aumenta orçamento em 20%
-          let currentBudget = parseInt(camp.daily_budget) || 10000; // Em centavos
-          let newBudget = Math.floor(currentBudget * 1.20);
-          await axios.post(`https://graph.facebook.com/v19.0/${camp.id}`, { daily_budget: newBudget, access_token: META_TOKEN });
-          alertMsg = `🔥 [SENTINEL AUTO-SCALE]\n\nAumentei a verba em +20% na campanha '${camp.name}'.\n\n*Análise da IA:* ${reason}\n*CPA Atual:* R$${cpa}\n*CTR:* ${ctr}%`;
-          actionsTaken.push(`SCALED: ${camp.name} - ${reason}`);
-        } else {
-          console.log(`[SENTINEL] Mantendo ${camp.name}. (${reason})`);
-        }
-
-        // Se a IA interveio no anúncio, manda notificação via WhatsApp para o Admin
-        if (alertMsg !== '') {
-          console.log(alertMsg);
-          if (waSettings && waSettings.api_url && process.env.ADMIN_PHONE) {
-             try {
-                await axios.post(waSettings.api_url, {
-                  number: process.env.ADMIN_PHONE,
-                  text: alertMsg
-                }, {
-                  headers: { 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }
-                });
-             } catch(waErr) { console.error("[SENTINEL] Erro enviando Alerta de WhatsApp."); }
-          }
+              await axios.post(waSettings.api_url, {
+                number: process.env.ADMIN_PHONE,
+                text: alertMsg
+              }, {
+                headers: { 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }
+              });
+           } catch(waErr) { console.error("[SENTINEL] Erro enviando Alerta de WhatsApp."); }
         }
       }
-    } catch (e) {
-      console.log("[SENTINEL] Fallback mode. Simulated execution.");
-      actionsTaken.push("SIMULATED_STOP_LOSS: Campanha Teste [PAUSED] - Motivo: Fadiga de criativo e CPA explosivo (IA Detect).");
     }
+  } catch (e) {
+    console.log("[SENTINEL] Fallback mode. Simulated execution.");
+    actionsTaken.push("SIMULATED_STOP_LOSS: Campanha Teste [PAUSED] - Motivo: Fadiga de criativo e CPA explosivo (IA Detect).");
+  }
 
-    res.json({
-      ok: true,
-      timestamp: new Date().toISOString(),
-      report: actionsTaken.length > 0 ? actionsTaken : "Nenhuma anomalia detectada."
-    });
+  return {
+    ok: true,
+    timestamp: new Date().toISOString(),
+    report: actionsTaken.length > 0 ? actionsTaken : "Nenhuma anomalia detectada."
+  };
+}
 
+// ----------------------------------------------------------------
+// POST /api/sentinel/cron
+// Chamado via Vercel Cron a cada 15 minutos
+// ----------------------------------------------------------------
+router.all('/cron', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return res.status(401).json({ error: 'Unauthorized CRON' });
+    }
+    
+    const result = await runSentinelLogic();
+    res.json(result);
   } catch (error) {
-    console.error("[SENTINEL] Error:", error.message);
+    console.error("[SENTINEL CRON] Error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ----------------------------------------------------------------
+// POST /api/sentinel/force
+// Chamado manualmente pelo administrador via Dashboard
+// ----------------------------------------------------------------
+router.post('/force', requireAuth, async (req, res) => {
+  try {
+    console.log(`[SENTINEL] Execução Forçada iniciada pelo usuário ${req.user.username}`);
+    const result = await runSentinelLogic();
+    res.json(result);
+  } catch (error) {
+    console.error("[SENTINEL FORCE] Error:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
