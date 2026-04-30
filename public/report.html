@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatório de Tráfego Mágico</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background: var(--bg);
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+      font-family: 'Inter', sans-serif;
+    }
+    .report-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      max-width: 800px;
+      width: 100%;
+      padding: 40px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .logo { max-height: 40px; }
+    .ai-insight {
+      background: rgba(78, 203, 113, 0.05);
+      border-left: 4px solid var(--teal);
+      padding: 20px;
+      margin-bottom: 40px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .metric-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 20px;
+      text-align: center;
+    }
+    .metric-title { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .metric-val { font-size: 32px; font-weight: 800; color: var(--text); margin-top: 10px; }
+    
+    @media print {
+      body { background: #000; color: #fff; padding: 0; }
+      .report-container { border: none; padding: 20px; }
+      #btn-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="report-container">
+    <div class="header">
+      <div>
+        <h1 id="report-title" style="margin:0; font-size:24px;">Relatório de Tráfego</h1>
+        <div id="report-date" style="color:var(--muted); font-size:14px; margin-top:5px;"></div>
+      </div>
+      <img id="ws-logo" class="logo" src="" alt="Logo" style="display:none;">
+      <h2 id="ws-name" style="margin:0; display:none;"></h2>
+    </div>
+
+    <button id="btn-print" class="btn teal" style="margin-bottom: 20px;" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+
+    <div class="ai-insight">
+      <h3 style="margin-top:0; color:var(--teal); font-size:14px; text-transform:uppercase;">Resumo Executivo (IA)</h3>
+      <div id="ai-summary">Gerando...</div>
+    </div>
+
+    <h3 style="margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">Desempenho Geral</h3>
+    <div class="grid-2" id="metrics-grid">
+      <!-- Injected metrics -->
+    </div>
+  </div>
+
+  <script>
+    async function loadReport() {
+      const path = window.location.pathname; // /report/UUID
+      const uuid = path.split('/').pop();
+      if (!uuid) return alert('UUID inválido');
+
+      try {
+        const res = await fetch('/api/reports/' + uuid);
+        if (!res.ok) throw new Error('Relatório não encontrado');
+        const data = await res.json();
+
+        // Branding
+        if (data.theme_color) document.documentElement.style.setProperty('--teal', data.theme_color);
+        if (data.logo_url) {
+          document.getElementById('ws-logo').src = data.logo_url;
+          document.getElementById('ws-logo').style.display = 'block';
+        } else if (data.workspace_name) {
+          document.getElementById('ws-name').textContent = data.workspace_name;
+          document.getElementById('ws-name').style.display = 'block';
+        }
+
+        document.getElementById('report-title').textContent = data.title;
+        document.getElementById('report-date').textContent = 'Gerado em: ' + new Date(data.created_at).toLocaleString('pt-BR');
+        
+        // Format AI markdown to simple HTML breaks
+        document.getElementById('ai-summary').innerHTML = data.ai_summary.replace(/\n/g, '<br>');
+
+        const metrics = JSON.parse(data.metrics_snapshot || '{}');
+        const grid = document.getElementById('metrics-grid');
+        
+        const formatMoney = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR', {minimumFractionDigits:2});
+        const formatNum = v => Number(v||0).toLocaleString('pt-BR');
+
+        const map = [
+          { label: 'Investimento', val: formatMoney(metrics.spend) },
+          { label: 'Retorno (Receita)', val: formatMoney(metrics.revenue) },
+          { label: 'ROAS Global', val: Number(metrics.roas||0).toFixed(2) + 'x' },
+          { label: 'Leads Gerados', val: formatNum(metrics.leads) },
+          { label: 'Custo por Lead', val: formatMoney(metrics.cpl) },
+          { label: 'Cliques Totais', val: formatNum(metrics.clicks) }
+        ];
+
+        grid.innerHTML = map.map(m => `
+          <div class="metric-card">
+            <div class="metric-title">${m.label}</div>
+            <div class="metric-val">${m.val}</div>
+          </div>
+        `).join('');
+
+      } catch (e) {
+        document.body.innerHTML = `<h2 style="color:var(--laranja); text-align:center;">Erro: ${e.message}</h2>`;
+      }
+    }
+
+    loadReport();
+  </script>
+</body>
+</html>

@@ -44,4 +44,22 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/pixel/leads (Requires Auth - returns leads for the CRM)
+const { requireAuth } = require('../middleware/auth');
+router.get('/leads', requireAuth, async (req, res) => {
+  try {
+    const sql = `
+      SELECT id, event_type, url, utm_source, utm_medium, utm_campaign, utm_term, utm_content, created_at
+      FROM pixel_events
+      WHERE workspace_id = $1 AND event_type IN ('lead', 'purchase', 'pageview')
+      ORDER BY created_at DESC
+      LIMIT 100
+    `;
+    const rows = await db.all(sql, req.user.workspace_id);
+    res.json(rows || []);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;

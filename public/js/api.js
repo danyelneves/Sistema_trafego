@@ -68,6 +68,12 @@ export const api = {
   deleteAutomation:   (id)       => call(`/api/automations/${id}`, { method: 'DELETE' }),
   toggleAutomation:   (id, act)  => call(`/api/automations/${id}/toggle`, { method: 'PATCH', body: { active: act } }),
 
+  // CRM / Leads
+  getLeads:           ()         => call('/api/pixel/leads'),
+
+  // Reports
+  generateReport:     (body)     => call('/api/reports/generate', { method: 'POST', body }),
+
   // Alertas
   alertConfigs:       ()       => call('/api/alerts/config'),
   createAlertConfig:  (body)   => call('/api/alerts/config', { method: 'POST', body }),

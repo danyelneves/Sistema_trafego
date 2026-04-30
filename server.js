@@ -56,6 +56,7 @@ app.use('/api/ai',         require('./routes/ai'));
 app.use('/api/webhook',    require('./routes/webhook'));
 app.use('/api/pixel',      require('./routes/pixel'));
 app.use('/api/automations',require('./routes/automations'));
+app.use('/api/reports',    require('./routes/reports'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now(), node: process.version }));
 
@@ -74,6 +75,10 @@ app.get('/',           guardHTML);
 app.get('/index.html', guardHTML);
 
 app.use(express.static(PUBLIC, { extensions: ['html'] }));
+
+app.get('/report/:uuid', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'report.html'));
+});
 
 // Fallback 404 para /api
 app.use('/api/*', (req, res) => res.status(404).json({ error: 'rota não encontrada' }));

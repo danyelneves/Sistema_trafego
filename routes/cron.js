@@ -11,6 +11,7 @@
  */
 const express = require('express');
 const { runChecks } = require('../services/alertScheduler');
+const { runAutomations } = require('../services/automationsRunner');
 
 const router = express.Router();
 
@@ -26,6 +27,7 @@ router.get('/alerts', async (req, res) => {
 
   try {
     await runChecks();
+    await runAutomations();
     res.json({ ok: true, ran_at: new Date().toISOString() });
   } catch (e) {
     console.error('[CRON] Erro ao verificar alertas:', e.message);

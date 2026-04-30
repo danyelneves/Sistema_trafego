@@ -853,3 +853,56 @@ export function mountAutomationsModal() {
 
   return modal;
 }
+
+// ---------------------------------------------------------------
+// CRM / Leads Modal
+// ---------------------------------------------------------------
+export function mountLeadsModal() {
+  const modal = $('#modal-leads');
+  const btnOpen = $('#btn-leads');
+  const btnClose = $('#leads-close');
+  const tbody = $('#leads-table tbody');
+
+  if (!modal || !btnOpen) return null;
+
+  async function loadLeads() {
+    try {
+      const rows = await api.getLeads();
+      tbody.innerHTML = '';
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="center muted" style="padding:15px;">Nenhum lead capturado ainda.</td></tr>';
+        return;
+      }
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const dt = new Date(r.created_at).toLocaleString('pt-BR');
+        const sourceMedium = `${r.utm_source || '-'}/${r.utm_medium || '-'}`;
+        const evtColor = r.event_type === 'purchase' ? 'var(--teal)' : (r.event_type === 'lead' ? 'var(--blue)' : 'var(--muted)');
+        
+        tr.innerHTML = `
+          <td style="font-size:12px;">${dt}</td>
+          <td><span style="color:${evtColor}; font-weight:bold;">${r.event_type.toUpperCase()}</span></td>
+          <td>${escapeAttr(sourceMedium)}</td>
+          <td>${escapeAttr(r.utm_campaign || '-')}</td>
+          <td>${escapeAttr(r.utm_term || r.utm_content || '-')}</td>
+          <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${r.url}">
+            <a href="${r.url}" target="_blank" style="color:var(--teal);">${r.url}</a>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch(e) {
+      console.error(e);
+      toast('Erro ao carregar CRM', { error: true });
+    }
+  }
+
+  btnOpen.addEventListener('click', () => {
+    loadLeads();
+    openModal('modal-leads');
+  });
+
+  btnClose.addEventListener('click', () => closeModal('modal-leads'));
+
+  return modal;
+}

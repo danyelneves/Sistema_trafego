@@ -8,7 +8,7 @@ import { renderKPIs, renderHealthPanel, renderSocialKPIs, renderPacingPanel, ren
 import {
   mountEntryModal, mountCampaignsModal, mountGoalsModal, mountNotesModal,
   mountUsersModal, mountImportModal, mountAlertsModal, mountBrandingModal,
-  mountUTMModal, mountPixelModal, mountAutomationsModal
+  mountUTMModal, mountPixelModal, mountAutomationsModal, mountLeadsModal
 }                       from './modals.js';
 import { mountSyncModal }  from './sync-modal.js';
 import { mountDrillModal }  from './drill.js';
@@ -54,6 +54,7 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const utmModal = mountUTMModal();
   const pixelModal = mountPixelModal();
   const autoModal = mountAutomationsModal();
+  const leadsModal = mountLeadsModal();
 
   // Modais admin-only
   let usersModal, importModal, syncModal, alertsModal, brandingModal;
@@ -142,7 +143,7 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   }
 
   // ---- Exportações ----
-  $('#btn-export-pdf')?.addEventListener('click', exportPDF);
+  $('#btn-report-magic')?.addEventListener('click', window.generateMagicReport);
   const btnExportCSV = $('#btn-export-csv');
   if (btnExportCSV) btnExportCSV.addEventListener('click', () => exportCSV(state.lastTable, `maranet-${periodLabel(true)}.csv`));
   const btnExportJSON = $('#btn-export-json');
@@ -263,9 +264,7 @@ async function refresh() {
     // Funil de Vendas (CRM)
     renderFunnel($('#sales-funnel'), kpis.current);
     
-    // PDF Export
-    const btnPdf = $('#btn-export-pdf');
-    if (btnPdf) btnPdf.onclick = () => window.print();
+    // PDF Export has been replaced with Magic Report (handler is on line 146)
 
     // Gráficos
     charts.renderAll({
@@ -461,3 +460,26 @@ setInterval(updateSyncTime, 30000);
     if (e.key === 'Enter') sendMessage();
   });
 })();
+
+// Magic Report Generator
+window.generateMagicReport = async function() {
+  const btn = document.getElementById('btn-report-magic');
+  if(btn) { btn.innerHTML = '✨ Gerando (IA)...'; btn.disabled = true; }
+  try {
+    const kpis = window.lastKpis || { spend: 0, revenue: 0, leads: 0, cpl: 0, clicks: 0, roas: 0 };
+    // Get the period label by looking at the UI elements since state might be local
+    const dateFilter = document.getElementById('date-filter');
+    const title = 'Relatório Executivo - ' + (dateFilter ? dateFilter.options[dateFilter.selectedIndex].text : 'Tráfego');
+    
+    const res = await api.generateReport({ title, metrics: kpis.current || kpis });
+    if(res.ok && res.uuid) {
+      window.open('/report/' + res.uuid, '_blank');
+      toast('Relatório Mágico Gerado!');
+    }
+  } catch(e) {
+    console.error(e);
+    toast('Erro ao gerar relatório', { error: true });
+  } finally {
+    if(btn) { btn.innerHTML = '✨ Gerar Relatório Mágico'; btn.disabled = false; }
+  }
+};
