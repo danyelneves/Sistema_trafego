@@ -58,10 +58,60 @@ router.post('/audio', requireAuth, async (req, res) => {
 // ----------------------------------------------------------------
 router.post('/video', requireAuth, async (req, res) => {
     try {
-        // ... Preparação para a arquitetura HeyGen ...
-        res.json({ ok: true, status: "EM CONSTRUÇÃO" });
+        const { niche, target_audience } = req.body;
+        
+        const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [req.user.workspace_id]);
+        const getSetting = (k) => settings.find(s => s.key === k)?.value;
+        
+        const HEYGEN_API_KEY = getSetting('heygen.apiKey');
+        if (!HEYGEN_API_KEY) throw new Error("HeyGen API Key não configurada.");
+
+        // 1. OmniRouter - Gerando o script da VSL
+        const { generateWithOmniRouter } = require('../utils/omni-router');
+        const keys = {
+            GEMINI_API_KEY: getSetting('gemini.apiKey') || process.env.GEMINI_API_KEY,
+            ANTHROPIC_API_KEY: getSetting('anthropic.apiKey'),
+            OPENAI_API_KEY: getSetting('openai.apiKey')
+        };
+
+        const prompt = `Atue como um Copywriter Milionário especialista em Vídeos de Vendas (VSL).
+Escreva o roteiro completo de um vídeo curto (até 60 segundos de fala) para o nicho de: ${niche}.
+O público alvo que está assistindo ao vídeo agora é: ${target_audience}.
+O tom deve ser incisivo, mostrando o problema oculto deles e chamando para clicar no botão da página.
+Retorne APENAS o texto puro que o avatar deve falar. Sem marcações, sem explicações.`;
+
+        console.log(`[STUDIO] Gerando script de VSL para ${target_audience} via OmniRouter...`);
+        const scriptText = await generateWithOmniRouter(prompt, 'MEDIUM', keys);
+
+        // 2. Integração com HeyGen (Avatar Video Generation)
+        console.log(`[STUDIO] Disparando renderização no HeyGen...`);
+        
+        const heygenRes = await axios.post('https://api.heygen.com/v2/video/generate', {
+            video_inputs: [
+                {
+                    character: {
+                        type: "avatar",
+                        avatar_id: "default_avatar_id", // Idealmente configurável
+                        avatar_style: "normal"
+                    },
+                    voice: {
+                        type: "text",
+                        input_text: scriptText,
+                        voice_id: "en-US-JennyNeural" // Fallback seguro
+                    }
+                }
+            ],
+            test: true // Em modo de teste para não gastar créditos reais acidentalmente
+        }, {
+            headers: { 'X-Api-Key': HEYGEN_API_KEY, 'Content-Type': 'application/json' }
+        });
+
+        const videoId = heygenRes.data.data.video_id;
+
+        res.json({ ok: true, video_id: videoId, script: scriptText, status: "RENDER_QUEUED" });
     } catch(e) {
-        res.status(500).json({ error: e.message });
+        console.error("[STUDIO ERROR]", e.message);
+        res.status(500).json({ error: e.response?.data || e.message });
     }
 });
 

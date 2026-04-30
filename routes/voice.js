@@ -9,34 +9,50 @@ const db = require('../db');
 // ----------------------------------------------------------------
 router.post('/call', requireAuth, async (req, res) => {
   try {
-    const { lead_phone, lead_name, script, voice_id } = req.body;
+    const { lead_phone, lead_name, context_info } = req.body;
     
     if (!lead_phone || !lead_name) {
       throw new Error("Telefone e nome do lead são obrigatórios.");
     }
 
+    const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [req.user.workspace_id]);
+    const getSetting = (k) => settings.find(s => s.key === k)?.value;
+
+    const { generateWithOmniRouter } = require('../utils/omni-router');
+    const keys = {
+        GEMINI_API_KEY: getSetting('gemini.apiKey') || process.env.GEMINI_API_KEY,
+        ANTHROPIC_API_KEY: getSetting('anthropic.apiKey'),
+        OPENAI_API_KEY: getSetting('openai.apiKey')
+    };
+
+    const prompt = `Atue como um Operador de Telemarketing Habilidoso (Fechador).
+O nome do lead é ${lead_name}. Ele acabou de se cadastrar na página (${context_info || 'oferta principal'}).
+Escreva o script exato da sua PRIMEIRA FALA ao telefone (máximo 3 frases).
+Seja simpático, assertivo e faça uma pergunta aberta no final para engajar o lead na ligação.`;
+
+    console.log(`[NEXUS VOICE] Gerando script de voz inicial para ${lead_name}...`);
+    const initialSpeech = await generateWithOmniRouter(prompt, 'MEDIUM', keys);
+
+    const voice_id = getSetting('elevenlabs.voiceId') || 'pNInz6obpgDQGcFmaJcg';
+
     // SIMULAÇÃO DA INFRAESTRUTURA DE TELEFONIA (Twilio + ElevenLabs)
     console.log(`[NEXUS VOICE] Sintetizando script na voz ${voice_id} via ElevenLabs...`);
     console.log(`[NEXUS VOICE] Discando para ${lead_phone} via Twilio SIP Trunk...`);
     
-    // Na vida real, a API do Twilio faria o roteamento do áudio.
-    // Simulamos um delay de conexão
+    // Na vida real, a API do Twilio (via biblioteca twilio-node) faria o roteamento do áudio e criaria as tags <Gather>.
     await new Promise(r => setTimeout(r, 1500));
 
-    console.log(`[NEXUS VOICE] Ligação atendida por ${lead_name}. Executando qualificação...`);
-
-    // Registra a ligação no histórico (para fins de dashboard)
-    // Tabela 'calls' não existe ainda, então vamos retornar o sucesso simulado.
+    console.log(`[NEXUS VOICE] Ligação atendida por ${lead_name}. Áudio disparado: "${initialSpeech}"`);
 
     res.json({
       ok: true,
       status: 'CALL_CONNECTED',
-      duration_estimate: '45s',
-      ai_transcription: `[IA]: Olá ${lead_name}! Vi que você se cadastrou... [LEAD]: Sim, tenho interesse. [IA]: Maravilha, agendado para amanhã às 14h.`,
-      result: 'APPOINTMENT_BOOKED'
+      ai_transcription: `[IA]: ${initialSpeech}\n[LEAD]: ... aguardando resposta ...`,
+      action: 'TWILIO_GATHER_WAITING'
     });
 
   } catch (error) {
+    console.error("[NEXUS VOICE ERROR]", error.message);
     res.status(500).json({ error: error.message });
   }
 });

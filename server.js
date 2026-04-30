@@ -76,6 +76,7 @@ app.use('/api/voice',      require('./routes/voice')); // Robô de Call Center A
 app.use('/api/franchise',  require('./routes/franchise')); // Motor White-Label
 app.use('/api/skynet',     require('./routes/skynet')); // Operação Skynet (Auto-Aquisição)
 app.use('/api/studio',     require('./routes/studio')); // NEXUS Studio (Clonagem de Voz/Vídeo)
+app.use('/api/heal',       require('./routes/heal')); // Agentic DevOps (Auto-Cura)
 
 // ------------------------------------------------------------
 // HOSPEDAGEM DINÂMICA DE LANDING PAGES (NEXUS FORGE)
