@@ -18,38 +18,104 @@ router.post('/hunt', requireAuth, async (req, res) => {
 
     console.log(`[SKYNET] Iniciando Caçada: Buscando ${max_targets || 5} ${target_niche} em ${location}...`);
 
-    // 1. Simulação da API do Google Maps / Scraper de B2B
-    // Na vida real, chamaríamos a Google Places API textsearch
-    await new Promise(r => setTimeout(r, 2000)); 
-    
-    // Alvos encontrados (Mock de Alta Conversão)
-    const targets = [
-      { name: `Clínica ${target_niche} Elite`, phone: "11999999991", status: "HUNTER_DISPATCHED" },
-      { name: `Instituto ${target_niche} Prime`, phone: "11999999992", status: "HUNTER_DISPATCHED" },
-      { name: `Centro ${location} de ${target_niche}`, phone: "11999999993", status: "HUNTER_DISPATCHED" }
-    ];
+    // 1. RADAR: Busca no Google Maps (Google Places API)
+    let targets = [];
+    if (process.env.GOOGLE_MAPS_API_KEY) {
+      const gMapsUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(target_niche + ' in ' + location)}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+      const gRes = await axios.get(gMapsUrl);
+      const results = gRes.data.results || [];
+      
+      for (let i = 0; i < Math.min(results.length, max_targets || 5); i++) {
+        const placeId = results[i].place_id;
+        // Pega os detalhes da empresa para pegar o telefone
+        const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_phone_number&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+        const detailRes = await axios.get(detailUrl);
+        const details = detailRes.data.result;
+        
+        if (details && details.formatted_phone_number) {
+          targets.push({
+            name: details.name,
+            phone: details.formatted_phone_number.replace(/\D/g, ''),
+            status: "HUNTER_DISPATCHED"
+          });
+        }
+      }
+    } else {
+      // Fallback para o modo Simulação se a chave do Google não existir
+      console.log("[SKYNET] GOOGLE_MAPS_API_KEY ausente. Usando radar de simulação...");
+      await new Promise(r => setTimeout(r, 2000)); 
+      targets = [
+        { name: `Clínica ${target_niche} Elite`, phone: "11999999991", status: "HUNTER_DISPATCHED" },
+        { name: `Instituto ${target_niche} Prime`, phone: "11999999992", status: "HUNTER_DISPATCHED" }
+      ];
+    }
 
-    console.log(`[SKYNET] ${targets.length} Alvos adquiridos. Acionando NEXUS Voice AI...`);
+    console.log(`[SKYNET] ${targets.length} Alvos adquiridos. Acionando Mente de Colmeia (Gemini)...`);
 
-    // 2. Disparo do NEXUS Voice AI para os alvos
+    // 2. CÉREBRO: Disparo do NEXUS AI para criar as copies e enviar (WhatsApp)
     const callsLog = [];
+    let genAI = null;
+    let geminiModel = null;
+    
+    if (process.env.GEMINI_API_KEY) {
+      const { GoogleGenerativeAI } = require('@google/generative-ai');
+      genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      geminiModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    }
+
+    // Puxa as configurações do WhatsApp para envio real
+    let waSettings = null;
+    if (req.user && req.user.workspace_id) {
+       waSettings = await db.get('SELECT * FROM wa_settings WHERE workspace_id = $1 AND active = true', [req.user.workspace_id]);
+    }
+
     for (let target of targets) {
-      // Cria um link de Checkout único para essa clínica
-      // Assumindo Produto ID 2 como "Pacote de 15 Leads B2B"
       const checkoutLink = `https://sistrafego.vercel.app/checkout?product_id=2&partner_id=skynet`;
+      let script = `Olá dono da ${target.name}! Temos clientes buscando ${target_niche} na sua região. Posso mandar os contatos para você? ${checkoutLink}`;
       
-      const script = `Olá dono da ${target.name}! Sou a Inteligência Artificial da NEXUS. Nós temos 15 clientes buscando ${target_niche} na sua região hoje. O custo para envio imediato dos contatos é R$ 500. Posso mandar o link de pagamento no seu WhatsApp?`;
+      // Inteligência Artificial cria a Copy Exclusiva
+      if (geminiModel) {
+        try {
+          const prompt = `Você é um robô de prospecção implacável da agência NEXUS. Escreva uma única mensagem de WhatsApp curtíssima (máximo 3 linhas), direta e persuasiva oferecendo clientes de ${target_niche} para a empresa '${target.name}'. Termine a mensagem com o link de pagamento: ${checkoutLink}`;
+          const aiResponse = await geminiModel.generateContent(prompt);
+          script = aiResponse.response.text();
+        } catch (aiErr) {
+          console.error('[SKYNET] Erro no Gemini:', aiErr.message);
+        }
+      }
       
-      console.log(`[SKYNET VOICE] Ligando para ${target.phone}: "${script}"`);
+      console.log(`[SKYNET WHATSAPP] Disparando para ${target.phone}...`);
       
-      // Simulação da resposta da Voice AI (Cliente aceita e compra)
+      let dispatchStatus = 'MOCK_DISPATCHED';
+      
+      // Disparo Real de WhatsApp (se configurado)
+      if (waSettings && waSettings.api_url) {
+        try {
+          await axios.post(waSettings.api_url, {
+            number: target.phone,
+            message: script,
+            text: script
+          }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': waSettings.api_token || '',
+              'apikey': waSettings.api_token || ''
+            }
+          });
+          dispatchStatus = 'WHATSAPP_SENT_SUCCESS';
+        } catch(waError) {
+          console.error('[SKYNET WA] Erro ao disparar:', waError.message);
+          dispatchStatus = 'WHATSAPP_SEND_ERROR';
+        }
+      }
+
       callsLog.push({
         target: target.name,
         phone: target.phone,
-        action: 'VOICE_CALL_COMPLETED',
-        ai_transcription: '[IA]: ...Posso mandar o link? [CLIENTE]: Pode mandar, tenho interesse.',
+        action: 'PROSPECT_DISPATCHED',
+        script_used: script,
         checkout_sent: checkoutLink,
-        status: 'AWAITING_PAYMENT' // A máquina agora aguarda o Pix pingar no NEXUS Black
+        status: dispatchStatus
       });
     }
 
