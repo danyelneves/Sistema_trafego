@@ -19,8 +19,8 @@ router.post('/webhook', async (req, res) => {
         const { generateWithOmniRouter } = require('../utils/omni-router');
         const keys = {
             GEMINI_API_KEY: getSetting('gemini.apiKey') || process.env.GEMINI_API_KEY,
-            ANTHROPIC_API_KEY: getSetting('anthropic.apiKey'),
-            OPENAI_API_KEY: getSetting('openai.apiKey')
+            ANTHROPIC_API_KEY: getSetting('anthropic.apiKey') || process.env.ANTHROPIC_API_KEY,
+            OPENAI_API_KEY: getSetting('openai.apiKey') || process.env.OPENAI_API_KEY,
         };
 
         const prompt = `Atue como um Engenheiro DevOps Sênior (GOD MODE).

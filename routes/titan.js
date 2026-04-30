@@ -20,8 +20,8 @@ router.post('/audit', async (req, res) => {
 
         const keys = {
             GEMINI_API_KEY: getSetting('gemini.apiKey') || process.env.GEMINI_API_KEY,
-            ANTHROPIC_API_KEY: getSetting('anthropic.apiKey'),
-            OPENAI_API_KEY: getSetting('openai.apiKey')
+            ANTHROPIC_API_KEY: getSetting('anthropic.apiKey') || process.env.ANTHROPIC_API_KEY,
+            OPENAI_API_KEY: getSetting('openai.apiKey') || process.env.OPENAI_API_KEY,
         };
 
         // 1. Simulação: Puxar Saldo do Mercado Pago

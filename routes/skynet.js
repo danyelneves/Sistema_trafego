@@ -25,8 +25,8 @@ router.post('/hunt', requireAuth, async (req, res) => {
     const GEMINI_API_KEY = getSetting('gemini.apiKey', 'GEMINI_API_KEY');
     const ENABLE_ORACLE = getSetting('toggle.skynet_oracle', 'ENABLE_ORACLE') === 'true';
     
-    const ELEVEN_API_KEY = getSetting('elevenlabs.apiKey');
-    const VOICE_ID = getSetting('elevenlabs.voiceId') || 'pNInz6obpgDQGcFmaJcg';
+    const ELEVEN_API_KEY = getSetting('elevenlabs.apiKey') || process.env.ELEVENLABS_API_KEY;
+    const VOICE_ID = getSetting('elevenlabs.voiceId') || process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJcg';
 
     // 1. RADAR: Busca no Google Maps (Google Places API)
     let targets = [];

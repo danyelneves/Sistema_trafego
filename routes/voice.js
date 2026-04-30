@@ -21,8 +21,8 @@ router.post('/call', requireAuth, async (req, res) => {
     const { generateWithOmniRouter } = require('../utils/omni-router');
     const keys = {
         GEMINI_API_KEY: getSetting('gemini.apiKey') || process.env.GEMINI_API_KEY,
-        ANTHROPIC_API_KEY: getSetting('anthropic.apiKey'),
-        OPENAI_API_KEY: getSetting('openai.apiKey')
+        ANTHROPIC_API_KEY: getSetting('anthropic.apiKey') || process.env.ANTHROPIC_API_KEY,
+        OPENAI_API_KEY: getSetting('openai.apiKey') || process.env.OPENAI_API_KEY,
     };
 
     const prompt = `Atue como um Operador de Telemarketing Habilidoso (Fechador).
@@ -33,7 +33,7 @@ Seja simpático, assertivo e faça uma pergunta aberta no final para engajar o l
     console.log(`[NEXUS VOICE] Gerando script de voz inicial para ${lead_name}...`);
     const initialSpeech = await generateWithOmniRouter(prompt, 'MEDIUM', keys);
 
-    const voice_id = getSetting('elevenlabs.voiceId') || 'pNInz6obpgDQGcFmaJcg';
+    const voice_id = getSetting('elevenlabs.voiceId') || process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJcg';
 
     // SIMULAÇÃO DA INFRAESTRUTURA DE TELEFONIA (Twilio + ElevenLabs)
     console.log(`[NEXUS VOICE] Sintetizando script na voz ${voice_id} via ElevenLabs...`);

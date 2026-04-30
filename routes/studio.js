@@ -15,8 +15,8 @@ router.post('/audio', requireAuth, async (req, res) => {
         const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [req.user.workspace_id]);
         const getSetting = (k) => settings.find(s => s.key === k)?.value;
         
-        const ELEVEN_API_KEY = getSetting('elevenlabs.apiKey');
-        const VOICE_ID = getSetting('elevenlabs.voiceId') || 'pNInz6obpgDQGcFmaJcg'; // Fallback
+        const ELEVEN_API_KEY = getSetting('elevenlabs.apiKey') || process.env.ELEVENLABS_API_KEY;
+        const VOICE_ID = getSetting('elevenlabs.voiceId') || process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJcg'; // Fallback
         
         if (!ELEVEN_API_KEY) {
             return res.status(400).json({error: "ElevenLabs API Key não configurada no workspace."});
@@ -63,15 +63,15 @@ router.post('/video', requireAuth, async (req, res) => {
         const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [req.user.workspace_id]);
         const getSetting = (k) => settings.find(s => s.key === k)?.value;
         
-        const HEYGEN_API_KEY = getSetting('heygen.apiKey');
+        const HEYGEN_API_KEY = getSetting('heygen.apiKey') || process.env.HEYGEN_API_KEY;
         if (!HEYGEN_API_KEY) throw new Error("HeyGen API Key não configurada.");
 
         // 1. OmniRouter - Gerando o script da VSL
         const { generateWithOmniRouter } = require('../utils/omni-router');
         const keys = {
             GEMINI_API_KEY: getSetting('gemini.apiKey') || process.env.GEMINI_API_KEY,
-            ANTHROPIC_API_KEY: getSetting('anthropic.apiKey'),
-            OPENAI_API_KEY: getSetting('openai.apiKey')
+            ANTHROPIC_API_KEY: getSetting('anthropic.apiKey') || process.env.ANTHROPIC_API_KEY,
+            OPENAI_API_KEY: getSetting('openai.apiKey') || process.env.OPENAI_API_KEY,
         };
 
         const prompt = `Atue como um Copywriter Milionário especialista em Vídeos de Vendas (VSL).

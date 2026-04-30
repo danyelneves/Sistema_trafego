@@ -105,8 +105,8 @@ router.all('/cron', async (req, res) => {
       console.log(`[LAZARUS] IA negociando com ${order.customer_name}...`);
 
       // Verifica se ElevenLabs está ativado para gerar ÁUDIO
-      const ELEVEN_API_KEY = getSetting('elevenlabs.apiKey');
-      const VOICE_ID = getSetting('elevenlabs.voiceId') || 'pNInz6obpgDQGcFmaJcg';
+      const ELEVEN_API_KEY = getSetting('elevenlabs.apiKey') || process.env.ELEVENLABS_API_KEY;
+      const VOICE_ID = getSetting('elevenlabs.voiceId') || process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJcg';
       let audioBase64 = null;
 
       if (ELEVEN_API_KEY) {
