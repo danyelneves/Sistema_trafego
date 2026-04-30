@@ -18,17 +18,23 @@ router.post('/hunt', requireAuth, async (req, res) => {
 
     console.log(`[SKYNET] Iniciando Caçada: Buscando ${max_targets || 5} ${target_niche} em ${location}...`);
 
+    const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [req.user.workspace_id]);
+    const getSetting = (k, envKey) => settings.find(s => s.key === k)?.value || process.env[envKey];
+    
+    const GOOGLE_MAPS_API_KEY = getSetting('google.mapsApiKey', 'GOOGLE_MAPS_API_KEY');
+    const GEMINI_API_KEY = getSetting('gemini.apiKey', 'GEMINI_API_KEY');
+
     // 1. RADAR: Busca no Google Maps (Google Places API)
     let targets = [];
-    if (process.env.GOOGLE_MAPS_API_KEY) {
-      const gMapsUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(target_niche + ' in ' + location)}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+    if (GOOGLE_MAPS_API_KEY) {
+      const gMapsUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(target_niche + ' in ' + location)}&key=${GOOGLE_MAPS_API_KEY}`;
       const gRes = await axios.get(gMapsUrl);
       const results = gRes.data.results || [];
       
       for (let i = 0; i < Math.min(results.length, max_targets || 5); i++) {
         const placeId = results[i].place_id;
         // Pega os detalhes da empresa para pegar o telefone
-        const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_phone_number&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+        const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_phone_number&key=${GOOGLE_MAPS_API_KEY}`;
         const detailRes = await axios.get(detailUrl);
         const details = detailRes.data.result;
         
@@ -57,9 +63,9 @@ router.post('/hunt', requireAuth, async (req, res) => {
     let genAI = null;
     let geminiModel = null;
     
-    if (process.env.GEMINI_API_KEY) {
+    if (GEMINI_API_KEY) {
       const { GoogleGenerativeAI } = require('@google/generative-ai');
-      genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       geminiModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     }
 

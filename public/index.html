@@ -109,6 +109,7 @@
       <button class="btn" id="btn-franchise" title="Gestor de Franquias" onclick="openFranchiseModal()" style="color:#ff0055; border-color:#ff0055;">🏢 Franquias</button>
       <button class="btn pulse" id="btn-skynet" title="Operação Skynet" onclick="openSkynetModal()" style="color:#ff0000; border-color:#ff0000; font-weight:bold;">🤖 Skynet</button>
       <button class="btn pulse" id="btn-sentinel-force" title="Forçar Varredura Sentinel" onclick="forceSentinel()" style="color:#00ffa3; border-color:#00ffa3; font-weight:bold;">⚡ Sentinel</button>
+      <button class="btn" id="btn-integrations" title="Configurar Integrações e APIs" style="border-color:#3b82f6; color:#3b82f6;">🔌 Integrações</button>
       <button class="btn primary" id="btn-report-magic" title="Gerar Link de Relatório com IA" style="background:var(--teal); color:#000;">
         ✨ Gerar Relatório Mágico
       </button>
@@ -1260,6 +1261,45 @@
     <div class="modal-actions"><button class="btn" id="drill-close">Fechar</button></div>
   </div>
 </div>
+
+<!-- ================================================================= MODAL · Integrações ================================================================= -->
+<div class="modal-overlay" id="modal-integrations">
+  <div class="modal">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+      <h2 style="margin:0;">🔌 Integrações de Motores e APIs</h2>
+      <button onclick="document.getElementById('modal-integrations').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
+    </div>
+    <div class="modal-subtitle">Configure suas chaves para habilitar funcionalidades exclusivas neste Workspace. (As chaves abaixo substituem o padrão do sistema).</div>
+    
+    <div class="form-section">Inteligência Artificial & Dados</div>
+    <div class="form-grid">
+      <div class="field full"><label>Gemini API Key (Mente da IA)</label><input type="password" id="int-gemini" placeholder="AIzaSy..."></div>
+      <div class="field full"><label>Google Maps API Key (Radar Skynet)</label><input type="password" id="int-google" placeholder="AIzaSy..."></div>
+    </div>
+
+    <div class="form-section" style="margin-top:20px;">Meta Ads (Sentinel & Sincronização)</div>
+    <div class="form-grid">
+      <div class="field full"><label>Access Token de Usuário do Sistema</label><input type="password" id="int-meta-token" placeholder="EAAB..."></div>
+      <div class="field full"><label>Ad Account ID</label><input type="text" id="int-meta-adaccount" placeholder="act_123456789"></div>
+    </div>
+
+    <div class="form-section" style="margin-top:20px;">Meios de Pagamento (Checkout Nativo)</div>
+    <div class="form-grid">
+      <div class="field full"><label>Stripe Secret Key (Cartão de Crédito)</label><input type="password" id="int-stripe" placeholder="sk_live_..."></div>
+      <div class="field full"><label>Mercado Pago Access Token (PIX)</label><input type="password" id="int-mp" placeholder="APP_USR-..."></div>
+    </div>
+
+    <div class="form-section" style="margin-top:20px;">Notificações e Alertas</div>
+    <div class="form-grid">
+      <div class="field full"><label>WhatsApp Admin (Receber alertas Sentinel)</label><input type="text" id="int-admin-phone" placeholder="5511999999999"></div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:20px; justify-content: flex-end;">
+      <button class="btn" onclick="document.getElementById('modal-integrations').style.display='none'">Cancelar</button>
+      <button class="btn pulse" id="btn-save-integrations" style="color:#00ffa3; border-color:#00ffa3; font-weight:bold;">Salvar Integrações</button>
+    </div>
+  </div>
+</div>
 <!-- ================================================================= COPILOT UI ================================================================= -->
 <div id="copilot-fab" title="NEXUS Copilot">
   <i class="ph ph-robot"></i>
@@ -1295,6 +1335,7 @@
 <script src="js/franchise.js"></script>
 <script src="js/skynet.js"></script>
 <script src="js/sentinel.js"></script>
+<script src="js/integrations.js"></script>
 <script type="module" src="/js/app.js"></script>
 
 <script>

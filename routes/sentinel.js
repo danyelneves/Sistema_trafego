@@ -4,12 +4,17 @@ const axios = require('axios');
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
-async function runSentinelLogic() {
-  const META_TOKEN = process.env.META_ACCESS_TOKEN;
-  const AD_ACCOUNT_ID = process.env.META_AD_ACCOUNT_ID;
+async function runSentinelLogic(workspaceId) {
+  const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [workspaceId]);
+  const getSetting = (k, envKey) => settings.find(s => s.key === k)?.value || process.env[envKey];
+
+  const META_TOKEN = getSetting('meta.accessToken', 'META_ACCESS_TOKEN');
+  const AD_ACCOUNT_ID = getSetting('meta.adAccountId', 'META_AD_ACCOUNT_ID');
+  const GEMINI_API_KEY = getSetting('gemini.apiKey', 'GEMINI_API_KEY');
+  const ADMIN_PHONE = getSetting('admin.phone', 'ADMIN_PHONE');
   
   if (!META_TOKEN || !AD_ACCOUNT_ID) {
-    console.log("[SENTINEL] Meta Credentials missing. Skipping operation.");
+    console.log(`[SENTINEL WS:${workspaceId}] Meta Credentials missing. Skipping operation.`);
     return { status: 'Skipped - No Credentials' };
   }
 
@@ -22,9 +27,9 @@ async function runSentinelLogic() {
 
   let actionsTaken = [];
   let geminiModel = null;
-  if (process.env.GEMINI_API_KEY) {
+  if (GEMINI_API_KEY) {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     geminiModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
@@ -34,7 +39,7 @@ async function runSentinelLogic() {
     const campaigns = fbResponse.data.data || [];
 
     // Recupera confs do WhatsApp para enviar alertas ao Admin
-    const waSettings = await db.get('SELECT * FROM wa_settings WHERE workspace_id = 1 AND active = true');
+    const waSettings = await db.get('SELECT * FROM wa_settings WHERE workspace_id = $1 AND active = true', [workspaceId]);
 
     for (const camp of campaigns) {
       if (!camp.insights || camp.insights.data.length === 0) continue;
@@ -105,10 +110,10 @@ Use lógica profissional: se o CPA tá alto e o CTR tá caindo (abaixo de 1%), h
       // Se a IA interveio no anúncio, manda notificação via WhatsApp para o Admin
       if (alertMsg !== '') {
         console.log(alertMsg);
-        if (waSettings && waSettings.api_url && process.env.ADMIN_PHONE) {
+        if (waSettings && waSettings.api_url && ADMIN_PHONE) {
            try {
               await axios.post(waSettings.api_url, {
-                number: process.env.ADMIN_PHONE,
+                number: ADMIN_PHONE,
                 text: alertMsg
               }, {
                 headers: { 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }
@@ -140,8 +145,13 @@ router.all('/cron', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized CRON' });
     }
     
-    const result = await runSentinelLogic();
-    res.json(result);
+    const workspaces = await db.all("SELECT id FROM workspaces");
+    let allReports = [];
+    for (const ws of workspaces) {
+        const result = await runSentinelLogic(ws.id);
+        allReports.push({ workspace: ws.id, report: result.report });
+    }
+    res.json({ ok: true, reports: allReports });
   } catch (error) {
     console.error("[SENTINEL CRON] Error:", error.message);
     res.status(500).json({ error: error.message });
@@ -155,7 +165,7 @@ router.all('/cron', async (req, res) => {
 router.post('/force', requireAuth, async (req, res) => {
   try {
     console.log(`[SENTINEL] Execução Forçada iniciada pelo usuário ${req.user.username}`);
-    const result = await runSentinelLogic();
+    const result = await runSentinelLogic(req.user.workspace_id);
     res.json(result);
   } catch (error) {
     console.error("[SENTINEL FORCE] Error:", error.message);

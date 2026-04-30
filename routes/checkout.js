@@ -27,15 +27,21 @@ router.post('/process', async (req, res) => {
     const product = await db.get(`SELECT * FROM products WHERE id = $1`, product_id);
     if (!product) throw new Error("Produto inválido.");
 
+    const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [product.workspace_id]);
+    const getSetting = (k, envKey) => settings.find(s => s.key === k)?.value || process.env[envKey];
+    
+    const STRIPE_SECRET_KEY = getSetting('stripe.secretKey', 'STRIPE_SECRET_KEY');
+    const MERCADOPAGO_ACCESS_TOKEN = getSetting('mercadopago.accessToken', 'MERCADOPAGO_ACCESS_TOKEN');
+
     let status = 'PENDING';
     let message = '';
     let pix_code = null;
     let pix_qr_code_base64 = null;
     
     if (payment_method === 'CREDIT_CARD') {
-      if (!process.env.STRIPE_SECRET_KEY) throw new Error('Stripe não configurado (Falta variável STRIPE_SECRET_KEY).');
+      if (!STRIPE_SECRET_KEY) throw new Error('Stripe não configurado (Falta variável STRIPE_SECRET_KEY no painel ou env).');
       
-      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      const stripe = require('stripe')(STRIPE_SECRET_KEY);
       
       // Assumindo token gerado pelo Stripe Elements no frontend (tok_xxx) ou payment_method (pm_xxx)
       const source = card_data?.token || card_data?.payment_method_id || 'tok_visa'; // Fallback de teste caso venha vazio
@@ -63,10 +69,10 @@ router.post('/process', async (req, res) => {
       }
 
     } else if (payment_method === 'PIX') {
-      if (!process.env.MERCADOPAGO_ACCESS_TOKEN) throw new Error('Mercado Pago não configurado (Falta variável MERCADOPAGO_ACCESS_TOKEN).');
+      if (!MERCADOPAGO_ACCESS_TOKEN) throw new Error('Mercado Pago não configurado (Falta variável MERCADOPAGO_ACCESS_TOKEN no painel ou env).');
       
       const { MercadoPagoConfig, Payment } = require('mercadopago');
-      const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN, options: { timeout: 10000 } });
+      const client = new MercadoPagoConfig({ accessToken: MERCADOPAGO_ACCESS_TOKEN, options: { timeout: 10000 } });
       const mpPayment = new Payment(client);
 
       try {
