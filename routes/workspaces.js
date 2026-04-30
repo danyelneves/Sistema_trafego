@@ -21,6 +21,19 @@ router.post('/', requireAdmin, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+router.put('/:id/branding', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { name, logo_url, theme_color } = req.body;
+  if (!name) return res.status(400).json({ error: 'name é obrigatório' });
+  try {
+    await db.run(
+      'UPDATE workspaces SET name = $1, logo_url = $2, theme_color = $3 WHERE id = $4',
+      name, logo_url || null, theme_color || '#00F0FF', id
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 router.post('/switch', requireAdmin, async (req, res) => {
   const { workspace_id } = req.body;
   if (!workspace_id) return res.status(400).json({ error: 'workspace_id é obrigatório' });

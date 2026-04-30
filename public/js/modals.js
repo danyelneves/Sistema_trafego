@@ -586,5 +586,116 @@ function fmtValueByMetric(m, v) {
   if (['ctr','cvr'].includes(m)) return Number(v).toFixed(2) + '%';
   return fmtInt(v);
 }
-
 function $$(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
+
+// ---------------------------------------------------------------
+// White-Label / Branding Modal
+// ---------------------------------------------------------------
+export function mountBrandingModal({ onSaved }) {
+  const modal = $('#modal-branding');
+  const btnOpen = $('#btn-branding');
+  const btnClose = $('#branding-close');
+  const btnSave = $('#branding-save');
+
+  const inpName = $('#branding-name');
+  const inpLogo = $('#branding-logo');
+  const inpColor = $('#branding-color');
+
+  if (!modal || !btnOpen) return null;
+
+  btnOpen.style.display = 'inline-block'; // Show for admin
+
+  btnOpen.addEventListener('click', async () => {
+    try {
+      const res = await api.me();
+      if (res && res.user) {
+        inpName.value = res.user.workspace_name || '';
+        inpLogo.value = res.user.logo_url || '';
+        inpColor.value = res.user.theme_color || '#00F0FF';
+      }
+    } catch(e) {}
+    openModal('modal-branding');
+  });
+
+  btnClose.addEventListener('click', () => closeModal('modal-branding'));
+
+  btnSave.addEventListener('click', async () => {
+    const name = inpName.value.trim();
+    if (!name) return toast('Nome é obrigatório', { error: true });
+    btnSave.textContent = 'Salvando...';
+    try {
+      const res = await api.me();
+      await api.updateBranding(res.user.workspace_id, {
+        name,
+        logo_url: inpLogo.value.trim(),
+        theme_color: inpColor.value
+      });
+      closeModal('modal-branding');
+      location.reload(); // Reload to apply new branding immediately
+    } catch (e) {
+      toast(e.message, { error: true });
+    } finally {
+      btnSave.textContent = 'Salvar Personalização';
+    }
+  });
+
+  return modal;
+}
+
+// ---------------------------------------------------------------
+// UTM Generator Modal
+// ---------------------------------------------------------------
+export function mountUTMModal() {
+  const modal = $('#modal-utm');
+  const btnOpen = $('#btn-utm');
+  const btnClose = $('#utm-close');
+  const btnCopy = $('#utm-copy');
+
+  const inpUrl = $('#utm-url');
+  const inpSource = $('#utm-source');
+  const inpMedium = $('#utm-medium');
+  const inpCampaign = $('#utm-campaign');
+  const inpTerm = $('#utm-term');
+  const inpContent = $('#utm-content');
+  const inpResult = $('#utm-result');
+
+  if (!modal || !btnOpen) return null;
+
+  function generateLink() {
+    let baseUrl = inpUrl.value.trim();
+    if (!baseUrl) {
+      inpResult.value = '';
+      return;
+    }
+    try {
+      const url = new URL(baseUrl.startsWith('http') ? baseUrl : 'https://' + baseUrl);
+      if (inpSource.value.trim()) url.searchParams.set('utm_source', inpSource.value.trim());
+      if (inpMedium.value.trim()) url.searchParams.set('utm_medium', inpMedium.value.trim());
+      if (inpCampaign.value.trim()) url.searchParams.set('utm_campaign', inpCampaign.value.trim());
+      if (inpTerm.value.trim()) url.searchParams.set('utm_term', inpTerm.value.trim());
+      if (inpContent.value.trim()) url.searchParams.set('utm_content', inpContent.value.trim());
+      inpResult.value = url.toString();
+    } catch(e) {
+      inpResult.value = 'URL inválida';
+    }
+  }
+
+  [inpUrl, inpSource, inpMedium, inpCampaign, inpTerm, inpContent].forEach(el => {
+    el.addEventListener('input', generateLink);
+  });
+
+  btnOpen.addEventListener('click', () => {
+    openModal('modal-utm');
+  });
+
+  btnClose.addEventListener('click', () => closeModal('modal-utm'));
+
+  btnCopy.addEventListener('click', () => {
+    if (inpResult.value && inpResult.value !== 'URL inválida') {
+      navigator.clipboard.writeText(inpResult.value);
+      toast('Link Copiado!');
+    }
+  });
+
+  return modal;
+}

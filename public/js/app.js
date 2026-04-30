@@ -7,7 +7,8 @@ import { renderCampaignTable, renderDetailTable, renderDemographics, renderAds }
 import { renderKPIs, renderHealthPanel, renderSocialKPIs, renderPacingPanel, renderAIInsights } from './kpis.js';
 import {
   mountEntryModal, mountCampaignsModal, mountGoalsModal, mountNotesModal,
-  mountUsersModal, mountImportModal, mountAlertsModal,
+  mountUsersModal, mountImportModal, mountAlertsModal, mountBrandingModal,
+  mountUTMModal
 }                       from './modals.js';
 import { mountSyncModal }  from './sync-modal.js';
 import { mountDrillModal }  from './drill.js';
@@ -50,13 +51,16 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   // Armazena drill modal globalmente para o callback de refresh
   window.__drillModal = drillModal;
 
+  const utmModal = mountUTMModal();
+
   // Modais admin-only
-  let usersModal, importModal, syncModal, alertsModal;
+  let usersModal, importModal, syncModal, alertsModal, brandingModal;
   if (currentUser?.role === 'admin') {
     usersModal  = mountUsersModal ({ onChanged: () => {} });
     importModal = mountImportModal({ onSaved: refresh });
     syncModal   = mountSyncModal  ({ onSaved: refresh });
     alertsModal = mountAlertsModal();
+    brandingModal = mountBrandingModal({ onSaved: refresh });
     
     // Configura seletor de workspaces
     const wsSelect = $('#workspace-select');
@@ -301,6 +305,20 @@ async function refresh() {
 function renderUser(user) {
   const chip = $('#user-chip');
   if (chip) chip.innerHTML = `<b>●</b> ${user.name || user.username}`;
+
+  // White-Label Branding
+  const badge = $('.app-header .badge');
+  if (badge && user.workspace_name) badge.textContent = user.workspace_name;
+
+  if (user.theme_color) {
+    document.documentElement.style.setProperty('--teal', user.theme_color);
+    document.documentElement.style.setProperty('--border-strong', user.theme_color);
+  }
+
+  const titleContainer = $('.header-left h1');
+  if (user.logo_url && titleContainer) {
+    titleContainer.innerHTML = `<img src="${user.logo_url}" alt="${user.workspace_name}" style="height: 40px; margin-right: 10px; vertical-align: middle;">`;
+  }
 }
 
 function renderHeaderPeriod() {

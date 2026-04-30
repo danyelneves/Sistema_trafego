@@ -60,6 +60,7 @@ export const api = {
   getWorkspaces:   ()          => call('/api/workspaces'),
   createWorkspace: (body)      => call('/api/workspaces', { method: 'POST', body }),
   switchWorkspace: (wId)       => call('/api/workspaces/switch', { method: 'POST', body: { workspace_id: wId } }),
+  updateBranding:  (id, body)  => call(`/api/workspaces/${id}/branding`, { method: 'PUT', body }),
 
   // Alertas
   alertConfigs:       ()       => call('/api/alerts/config'),
