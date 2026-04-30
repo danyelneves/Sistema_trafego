@@ -70,6 +70,7 @@ app.use('/api/pay',        require('./routes/pay')); // Fintech Gateway
 app.use('/api/checkout',   require('./routes/checkout')); // Kiwify Killer
 app.use('/api/hive',       require('./routes/hive')); // Mente de Colmeia
 app.use('/api/vision',     require('./routes/vision')); // Engenharia Reversa Visual
+app.use('/api/sentinel',   require('./routes/sentinel')); // Trader de Tráfego 24/7
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now(), node: process.version }));
 
