@@ -11,6 +11,11 @@ async function openIntegrationsModal() {
         document.getElementById('int-stripe').value = data['stripe.secretKey'] || '';
         document.getElementById('int-mp').value = data['mercadopago.accessToken'] || '';
         document.getElementById('int-admin-phone').value = data['admin.phone'] || '';
+
+        document.getElementById('toggle-forge').checked = data['toggle.sentinel_forge'] === 'true';
+        document.getElementById('toggle-oracle').checked = data['toggle.skynet_oracle'] === 'true';
+        document.getElementById('toggle-lazarus').checked = data['toggle.lazarus_protocol'] === 'true';
+        document.getElementById('toggle-hive').checked = data['toggle.hive_mind'] === 'true';
         
         document.getElementById('modal-integrations').style.display = 'flex';
     } catch(e) {
@@ -34,7 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
             'meta.adAccountId': document.getElementById('int-meta-adaccount').value,
             'stripe.secretKey': document.getElementById('int-stripe').value,
             'mercadopago.accessToken': document.getElementById('int-mp').value,
-            'admin.phone': document.getElementById('int-admin-phone').value
+            'admin.phone': document.getElementById('int-admin-phone').value,
+            'toggle.sentinel_forge': document.getElementById('toggle-forge').checked ? 'true' : 'false',
+            'toggle.skynet_oracle': document.getElementById('toggle-oracle').checked ? 'true' : 'false',
+            'toggle.lazarus_protocol': document.getElementById('toggle-lazarus').checked ? 'true' : 'false',
+            'toggle.hive_mind': document.getElementById('toggle-hive').checked ? 'true' : 'false'
         };
 
         try {

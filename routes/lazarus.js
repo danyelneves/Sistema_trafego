@@ -85,6 +85,10 @@ router.all('/cron', async (req, res) => {
 
       const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [order.workspace_id]);
       const getSetting = (k, envKey) => settings.find(s => s.key === k)?.value || process.env[envKey];
+      
+      const ENABLE_LAZARUS = getSetting('toggle.lazarus_protocol', 'ENABLE_LAZARUS') === 'true';
+      if (!ENABLE_LAZARUS) continue;
+
       const GEMINI_API_KEY = getSetting('gemini.apiKey', 'GEMINI_API_KEY');
       const waSettings = await db.get('SELECT * FROM wa_settings WHERE workspace_id = $1 AND active = true', [order.workspace_id]);
 

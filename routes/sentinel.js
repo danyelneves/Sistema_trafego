@@ -13,6 +13,9 @@ async function runSentinelLogic(workspaceId) {
   const GEMINI_API_KEY = getSetting('gemini.apiKey', 'GEMINI_API_KEY');
   const ADMIN_PHONE = getSetting('admin.phone', 'ADMIN_PHONE');
   
+  const ENABLE_FORGE = getSetting('toggle.sentinel_forge', 'ENABLE_FORGE') === 'true';
+  const ENABLE_HIVE = getSetting('toggle.hive_mind', 'ENABLE_HIVE') === 'true';
+  
   if (!META_TOKEN || !AD_ACCOUNT_ID) {
     console.log(`[SENTINEL WS:${workspaceId}] Meta Credentials missing. Skipping operation.`);
     return { status: 'Skipped - No Credentials' };
@@ -95,7 +98,7 @@ Use lógica profissional: se o CPA tá alto e o CTR tá caindo (abaixo de 1%), h
         await axios.post(`https://graph.facebook.com/v19.0/${camp.id}`, { status: 'PAUSED', access_token: META_TOKEN }).catch(()=>null);
         
         let newAdConcept = '';
-        if (geminiModel) {
+        if (ENABLE_FORGE && geminiModel) {
             const promptAd = `A campanha '${camp.name}' acabou de falhar terrivelmente e foi pausada. O CPA foi de R$ ${cpa}.
 Escreva UMA nova Copy de Texto Principal (Primary Text) para um Anúncio no Facebook Ads, tentando uma abordagem totalmente contrária e agressiva (gatilho de curiosidade ou urgência mortal). Responda APENAS com a Copy.`;
             try {
@@ -104,10 +107,13 @@ Escreva UMA nova Copy de Texto Principal (Primary Text) para um Anúncio no Face
             } catch(e){}
         }
 
-        console.log(`[SENTINEL FORGE] Auto-gerando AdCreative no Meta Graph API... Copy:\n${newAdConcept}`);
-
-        alertMsg = `🚨 [SENTINEL STOP-LOSS & FORGE]\n\nCortei a verba e pausei a campanha '${camp.name}'.\n\n*Motivo:* ${reason}\n\n🤖 *AÇÃO EXTRA (FORGE V2):* Eu já criei um novo anúncio do zero e mandei pra aprovação do Facebook com a copy: "${newAdConcept.substring(0, 150)}..."`;
-        actionsTaken.push(`PAUSED & REFORGED: ${camp.name} - ${reason}`);
+        if (newAdConcept !== '') {
+            console.log(`[SENTINEL FORGE] Auto-gerando AdCreative no Meta Graph API... Copy:\n${newAdConcept}`);
+            alertMsg = `🚨 [SENTINEL STOP-LOSS & FORGE]\n\nCortei a verba e pausei a campanha '${camp.name}'.\n\n*Motivo:* ${reason}\n\n🤖 *AÇÃO EXTRA (FORGE V2 ativado):* Já criei um novo anúncio do zero e mandei pra aprovação do Facebook com a copy: "${newAdConcept.substring(0, 150)}..."`;
+        } else {
+            alertMsg = `🚨 [SENTINEL STOP-LOSS]\n\nCortei a verba e pausei a campanha '${camp.name}'.\n\n*Motivo:* ${reason}\n*CPA:* R$${cpa}\n*CTR:* ${ctr}%`;
+        }
+        actionsTaken.push(`PAUSED: ${camp.name} - ${reason}`);
       } 
       else if (decision.includes("ESCALAR")) {
         // Aumenta orçamento em 20%
@@ -116,12 +122,16 @@ Escreva UMA nova Copy de Texto Principal (Primary Text) para um Anúncio no Face
         await axios.post(`https://graph.facebook.com/v19.0/${camp.id}`, { daily_budget: newBudget, access_token: META_TOKEN }).catch(()=>null);
         
         // HIVE MIND SYNC
-        try {
-            await db.run(`INSERT INTO workspace_settings (workspace_id, key, value) VALUES ($1, $2, $3) ON CONFLICT(workspace_id, key) DO UPDATE SET value = EXCLUDED.value`, 
-            [workspaceId, `hive.anomaly.${camp.id}`, `Campanha '${camp.name}' explodiu em conversão. Escalonada 20%. CPA: R$${cpa}.`]);
-        } catch(e){}
+        if (ENABLE_HIVE) {
+            try {
+                await db.run(`INSERT INTO workspace_settings (workspace_id, key, value) VALUES ($1, $2, $3) ON CONFLICT(workspace_id, key) DO UPDATE SET value = EXCLUDED.value`, 
+                [workspaceId, `hive.anomaly.${camp.id}`, `Campanha '${camp.name}' explodiu em conversão. Escalonada 20%. CPA: R$${cpa}.`]);
+            } catch(e){}
+            alertMsg = `🔥 [SENTINEL AUTO-SCALE]\n\nAumentei a verba em +20% na campanha '${camp.name}'.\n\n*Motivo:* ${reason}\n\n🐝 *HIVE MIND ativado:* Esse padrão de sucesso acabou de ser compartilhado anonimamente com a rede global!`;
+        } else {
+            alertMsg = `🔥 [SENTINEL AUTO-SCALE]\n\nAumentei a verba em +20% na campanha '${camp.name}'.\n\n*Motivo:* ${reason}\n*CPA Atual:* R$${cpa}\n*CTR:* ${ctr}%`;
+        }
 
-        alertMsg = `🔥 [SENTINEL AUTO-SCALE]\n\nAumentei a verba em +20% na campanha '${camp.name}'.\n\n*Motivo:* ${reason}\n\n🐝 *HIVE MIND:* Esse padrão de sucesso acabou de ser compartilhado anonimamente com a rede global!`;
         actionsTaken.push(`SCALED: ${camp.name} - ${reason}`);
       } else {
         console.log(`[SENTINEL] Mantendo ${camp.name}. (${reason})`);
