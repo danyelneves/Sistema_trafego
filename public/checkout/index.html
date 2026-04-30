@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamento Seguro | NEXUS Checkout</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f4f5f7; color: #111; margin: 0; padding: 0; display:flex; justify-content:center; align-items:center; min-height: 100vh; }
+    .checkout-container { display: flex; max-width: 900px; width: 100%; background: #fff; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); overflow: hidden; flex-wrap: wrap; }
+    
+    .left-panel { background: #111; color: #fff; padding: 40px; flex: 1; min-width: 300px; display:flex; flex-direction:column; justify-content:space-between; }
+    .product-img { width: 100%; border-radius: 8px; margin-bottom: 20px; object-fit: cover; height: 200px; }
+    .price-tag { font-size: 36px; font-weight: 800; color: #00ffa3; margin-top: 10px; }
+    
+    .right-panel { padding: 40px; flex: 1.5; min-width: 350px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 13px; color: #555; text-transform: uppercase; }
+    .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box; background: #fafafa; }
+    
+    .payment-methods { display: flex; gap: 10px; margin-bottom: 20px; }
+    .pay-btn { flex: 1; padding: 15px; border: 1px solid #ddd; background: #fff; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .pay-btn.active { border-color: #000; background: #f9f9f9; }
+    
+    .btn-submit { background: #00ffa3; color: #000; width: 100%; padding: 18px; border: none; border-radius: 6px; font-size: 18px; font-weight: 800; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+    .btn-submit:hover { background: #00e08f; }
+
+    #card-details { display: none; }
+    
+    .secure-badge { text-align: center; font-size: 12px; color: #888; margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+  <div class="checkout-container" id="checkout-app" style="display:none;">
+    <!-- LEFT PANEL: Product Info -->
+    <div class="left-panel">
+      <div>
+        <img id="prod-img" class="product-img" src="" alt="Produto">
+        <h2 id="prod-name" style="margin:0; font-size:24px;">Carregando...</h2>
+        <p id="prod-desc" style="color:#aaa; font-size:14px; line-height:1.5; margin-top:10px;"></p>
+      </div>
+      <div>
+        <div style="font-size:12px; color:#888; text-transform:uppercase;">Total a Pagar</div>
+        <div class="price-tag" id="prod-price">R$ 0,00</div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Payment Form -->
+    <div class="right-panel">
+      <h3 style="margin-top:0;">1. Seus Dados</h3>
+      <div class="form-group">
+        <label>Nome Completo</label>
+        <input type="text" id="c-name" placeholder="João da Silva">
+      </div>
+      <div style="display:flex; gap:15px;">
+        <div class="form-group" style="flex:1;">
+          <label>E-mail</label>
+          <input type="email" id="c-email" placeholder="joao@email.com">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>WhatsApp</label>
+          <input type="text" id="c-phone" placeholder="(11) 99999-9999">
+        </div>
+      </div>
+
+      <h3 style="margin-top:20px;">2. Forma de Pagamento</h3>
+      <div class="payment-methods">
+        <button class="pay-btn active" id="btn-cc" onclick="selectPay('CREDIT_CARD')">💳 Cartão de Crédito</button>
+        <button class="pay-btn" id="btn-pix" onclick="selectPay('PIX')">💠 PIX (Aprovação Imediata)</button>
+      </div>
+
+      <div id="card-details">
+        <div class="form-group">
+          <label>Número do Cartão</label>
+          <input type="text" id="c-card" placeholder="4111 1111 1111 1111" maxlength="16">
+        </div>
+        <div style="display:flex; gap:15px;">
+          <div class="form-group" style="flex:1;">
+            <label>Validade</label>
+            <input type="text" placeholder="MM/AA">
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>CVV</label>
+            <input type="text" placeholder="123" maxlength="4">
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="btn-buy" onclick="processPayment()">COMPRAR AGORA</button>
+      <div class="secure-badge">🔒 Pagamento 100% Seguro processado via NEXUS Engine. Zero Taxas Ocultas.</div>
+    </div>
+  </div>
+
+  <script>
+    let currentMethod = 'CREDIT_CARD';
+    let productId = null;
+
+    function selectPay(method) {
+      currentMethod = method;
+      document.getElementById('btn-cc').classList.remove('active');
+      document.getElementById('btn-pix').classList.remove('active');
+      
+      if(method === 'CREDIT_CARD') {
+        document.getElementById('btn-cc').classList.add('active');
+        document.getElementById('card-details').style.display = 'block';
+      } else {
+        document.getElementById('btn-pix').classList.add('active');
+        document.getElementById('card-details').style.display = 'none';
+      }
+    }
+
+    async function loadProduct() {
+      const params = new URLSearchParams(window.location.search);
+      productId = params.get('product_id') || 1; // Padrão ID 1
+      
+      try {
+        const res = await fetch(`/api/checkout/product/${productId}`);
+        const prod = await res.json();
+        
+        if(prod.error) return document.body.innerHTML = '<h1>Produto não encontrado.</h1>';
+        
+        document.getElementById('prod-name').innerText = prod.name;
+        document.getElementById('prod-desc').innerText = prod.description;
+        document.getElementById('prod-price').innerText = `R$ ${Number(prod.price).toFixed(2).replace('.',',')}`;
+        document.getElementById('prod-img').src = prod.cover_image_url;
+        
+        document.getElementById('checkout-app').style.display = 'flex';
+        selectPay('CREDIT_CARD');
+
+      } catch(e) {
+        alert("Erro ao carregar produto.");
+      }
+    }
+
+    async function processPayment() {
+      const name = document.getElementById('c-name').value;
+      const email = document.getElementById('c-email').value;
+      const phone = document.getElementById('c-phone').value;
+      const btn = document.getElementById('btn-buy');
+
+      if(!name || !email) return alert('Preencha seus dados básicos.');
+
+      btn.innerText = "Processando...";
+      btn.disabled = true;
+
+      const payload = {
+        product_id: productId,
+        customer_name: name,
+        customer_email: email,
+        customer_phone: phone,
+        payment_method: currentMethod
+      };
+
+      if(currentMethod === 'CREDIT_CARD') {
+        payload.card_data = { number: document.getElementById('c-card').value || '4111222233334444' };
+      }
+
+      try {
+        const res = await fetch('/api/checkout/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if(res.ok) {
+          if(currentMethod === 'PIX') {
+            document.querySelector('.right-panel').innerHTML = `
+              <h2>💠 Escaneie o QR Code</h2>
+              <p>Abra o app do seu banco e pague o Pix Copia e Cola abaixo:</p>
+              <div style="background:#eee; padding:15px; font-family:monospace; font-size:12px; word-break:break-all;">${data.pix_code}</div>
+              <p style="color:#888; font-size:12px; margin-top:20px;">Aguardando pagamento... Você receberá o acesso no WhatsApp.</p>
+            `;
+          } else {
+            document.querySelector('.right-panel').innerHTML = `
+              <h2 style="color:#00ffa3;">✅ Pagamento Aprovado!</h2>
+              <p>Sua compra foi confirmada com sucesso.</p>
+              <p>O seu acesso acaba de ser enviado para o e-mail: <strong>${email}</strong> e para o seu WhatsApp.</p>
+            `;
+          }
+        } else {
+          alert("Erro: " + data.error);
+          btn.innerText = "COMPRAR AGORA";
+          btn.disabled = false;
+        }
+
+      } catch(e) {
+        alert("Erro ao processar.");
+        btn.innerText = "COMPRAR AGORA";
+        btn.disabled = false;
+      }
+    }
+
+    window.onload = loadProduct;
+  </script>
+</body>
+</html>
