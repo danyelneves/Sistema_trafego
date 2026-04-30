@@ -17,6 +17,16 @@ async function openIntegrationsModal() {
         document.getElementById('toggle-lazarus').checked = data['toggle.lazarus_protocol'] === 'true';
         document.getElementById('toggle-hive').checked = data['toggle.hive_mind'] === 'true';
         
+        const tempMap = {
+            '1': '🧊 Fria (Conservador - Corta gastos rápido)',
+            '2': '⚖️ Morna (Equilibrada - Dá respiro à campanha)',
+            '3': '🔥 Quente (Agressivo - Escala brutal, Risco Máximo)'
+        };
+        const tempValue = data['sentinel.temperature'] || '2';
+        document.getElementById('int-temp').value = tempValue;
+        const lbl = document.getElementById('lbl-temp');
+        if(lbl) lbl.innerText = 'Nível: ' + tempMap[tempValue];
+
         document.getElementById('modal-integrations').style.display = 'flex';
     } catch(e) {
         alert('Erro ao carregar integrações: ' + e.message);
@@ -25,6 +35,19 @@ async function openIntegrationsModal() {
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-integrations')?.addEventListener('click', openIntegrationsModal);
+
+    const tempSlider = document.getElementById('int-temp');
+    if (tempSlider) {
+        tempSlider.addEventListener('input', (e) => {
+            const tempMap = {
+                '1': '🧊 Fria (Conservador - Corta gastos rápido)',
+                '2': '⚖️ Morna (Equilibrada - Dá respiro à campanha)',
+                '3': '🔥 Quente (Agressivo - Escala brutal, Risco Máximo)'
+            };
+            const lbl = document.getElementById('lbl-temp');
+            if (lbl) lbl.innerText = 'Nível: ' + tempMap[e.target.value];
+        });
+    }
 
     document.getElementById('btn-save-integrations')?.addEventListener('click', async () => {
         const btn = document.getElementById('btn-save-integrations');
@@ -43,7 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
             'toggle.sentinel_forge': document.getElementById('toggle-forge').checked ? 'true' : 'false',
             'toggle.skynet_oracle': document.getElementById('toggle-oracle').checked ? 'true' : 'false',
             'toggle.lazarus_protocol': document.getElementById('toggle-lazarus').checked ? 'true' : 'false',
-            'toggle.hive_mind': document.getElementById('toggle-hive').checked ? 'true' : 'false'
+            'toggle.hive_mind': document.getElementById('toggle-hive').checked ? 'true' : 'false',
+            'sentinel.temperature': document.getElementById('int-temp').value
         };
 
         try {

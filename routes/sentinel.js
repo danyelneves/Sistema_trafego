@@ -15,6 +15,7 @@ async function runSentinelLogic(workspaceId) {
   
   const ENABLE_FORGE = getSetting('toggle.sentinel_forge', 'ENABLE_FORGE') === 'true';
   const ENABLE_HIVE = getSetting('toggle.hive_mind', 'ENABLE_HIVE') === 'true';
+  const TEMP_LEVEL = getSetting('sentinel.temperature', '2');
   
   if (!META_TOKEN || !AD_ACCOUNT_ID) {
     console.log(`[SENTINEL WS:${workspaceId}] Meta Credentials missing. Skipping operation.`);
@@ -56,6 +57,9 @@ async function runSentinelLogic(workspaceId) {
       
       const actions = data.cost_per_action_type || [];
       const leadAction = actions.find(a => a.action_type === 'lead');
+      const purchaseAction = actions.find(a => a.action_type === 'purchase');
+      let purchases = purchaseAction ? parseInt(purchaseAction.value) : 0;
+      
       if (leadAction) cpa = parseFloat(leadAction.value);
       else if (spend > TARGET_CPA * 2) cpa = spend; // Gastou o dobro do CPA e não teve lead = Ruim.
 
@@ -64,17 +68,30 @@ async function runSentinelLogic(workspaceId) {
 
       // CÉREBRO: Análise de Alta Frequência via IA
       if (geminiModel) {
-         const prompt = `Você é o SENTINEL, um trader HFT IA de Tráfego Pago da agência NEXUS. Analise e decida o que fazer com a campanha:
-Campanha: ${camp.name}
-Gasto: R$${spend}
-CPA: R$${cpa}
+        let tempInstructions = "COMPORTAMENTO DE RISCO: MORNA (EQUILIBRADA). Mantenha um balanço saudável entre lucros e corte de gastos.";
+        if (TEMP_LEVEL === '1') {
+            tempInstructions = "COMPORTAMENTO DE RISCO: FRIA (MUITO CONSERVADOR). Você deve proteger o caixa da empresa a todo custo. Se o CPA estiver o mínimo acima do aceitável ou não houver vendas iniciais sólidas, não hesite em PAUSAR a campanha rapidamente.";
+        } else if (TEMP_LEVEL === '3') {
+            tempInstructions = "COMPORTAMENTO DE RISCO: QUENTE (AGRESSIVA). Você está no modo de hiperescala (rasgar dinheiro para achar o vencedor). Tolere CPAs maiores e variações negativas sem medo. Foque em ESCALAR agressivamente campanhas que dão sinal mínimo de vida. Evite PAUSAR a menos que seja um desastre total sem cliques.";
+        }
+
+        const prompt = `Você é o Sentinel, um Robô Analista de Tráfego de Alta Frequência implacável.
+Sua missão: Decidir se devemos PAUSAR, ESCALAR ou MANTER uma campanha do Facebook Ads.
+
+${tempInstructions}
+
+Campanha: "${camp.name}"
+Status Atual: ${camp.status}
+Investimento: R$${spend}
+Compras (Purchases): ${purchases}
+CPA (Custo por Compra): R$${cpa}
+Cliques (Link Clicks): ${clicks}
 CTR: ${ctr}%
-CPC: R$${cpc}
-CPM: R$${cpm}
-O Custo por Aquisição (CPA) Teto do cliente é R$${TARGET_CPA}.
-Responda EXATAMENTE neste formato: ACAO | Justificativa curta (1 linha).
-A ACAO deve ser apenas uma das palavras: PAUSAR, ESCALAR, MANTER.
-Use lógica profissional: se o CPA tá alto e o CTR tá caindo (abaixo de 1%), há fadiga de criativo = PAUSAR. Se o CPA tá barato (abaixo do teto), é ouro puro = ESCALAR.`;
+Orçamento Diário: R$${(camp.daily_budget || 0)/100}
+
+REGRAS ESTritas de SAÍDA:
+- Responda apenas UMA das palavras: PAUSAR, ESCALAR, ou MANTER, seguida de um pipe | e 1 frase curta explicando o motivo técnico.
+Exemplo: PAUSAR | O CTR caiu para 0.5% e o CPA estourou o limite de R$ 50.`;
          
          try {
            const aiResponse = await geminiModel.generateContent(prompt);
