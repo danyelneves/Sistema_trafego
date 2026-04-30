@@ -107,6 +107,7 @@
       <button class="btn" id="btn-viewer-link" title="Gerar link de acesso para Diretoria">🔗 Link Diretoria</button>
       <button class="btn" id="btn-sync"      title="Sincronizar Google Ads / Meta">⚡ Sincronizar</button>
       <button class="btn" id="btn-franchise" title="Gestor de Franquias" onclick="openFranchiseModal()" style="color:#ff0055; border-color:#ff0055;">🏢 Franquias</button>
+      <button class="btn pulse" id="btn-saas" title="Gestão SaaS" style="color:#ff00ff; border-color:#ff00ff; font-weight:bold;">💎 SaaS Admin</button>
       <button class="btn pulse" id="btn-skynet" title="Operação Skynet" onclick="openSkynetModal()" style="color:#ff0000; border-color:#ff0000; font-weight:bold;">🤖 Skynet</button>
       <button class="btn pulse" id="btn-forge" title="NEXUS Forge (Criação de LPs com IA)" onclick="document.getElementById('modal-forge').style.display='flex'; if(window.loadForgeList) window.loadForgeList();" style="color:#a855f7; border-color:#a855f7; font-weight:bold;">🧬 Forge</button>
       <button class="btn pulse" id="btn-studio" title="NEXUS Studio (Clonagem de Vídeo VSL)" onclick="document.getElementById('modal-studio').style.display='flex';" style="color:#d946ef; border-color:#d946ef; font-weight:bold;">🎬 Studio</button>
@@ -1501,6 +1502,58 @@
     </div>
   </div>
 
+  <!-- ================================================================= MODAL · Gestão SaaS (Master) ================================================================= -->
+  <div class="modal-overlay" id="modal-saas" style="display:none; z-index: 9999;">
+    <div class="modal" style="max-width: 900px;">
+      <div class="modal-header">
+        <h2 style="color:#ff00ff;">💎 NEXUS Master (Faturamento SaaS)</h2>
+        <button onclick="document.getElementById('modal-saas').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
+      </div>
+      <div class="modal-subtitle">Controle de Franquias, Overage e Billing. Mark-up automático de 30% sobre o custo base da IA.</div>
+
+      <div class="kpi-grid" style="margin-top:20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+        <div class="kpi-card" style="background:#111; border:1px solid #333; padding:15px;">
+          <div class="kpi-title" style="color:#888; font-size:12px; text-transform:uppercase;">Inquilinos (Franquias)</div>
+          <div class="kpi-value" id="saas-total-tenants" style="font-size:24px; font-weight:bold; color:#fff; margin-top:5px;">0</div>
+        </div>
+        <div class="kpi-card" style="background:#111; border:1px solid #ff3333; padding:15px;">
+          <div class="kpi-title" style="color:#888; font-size:12px; text-transform:uppercase;">Custo de API (Você Paga)</div>
+          <div class="kpi-value" id="saas-api-cost" style="font-size:24px; font-weight:bold; color:#ff3333; margin-top:5px;">R$ 0,00</div>
+        </div>
+        <div class="kpi-card" style="background:#111; border:1px solid #00ffff; padding:15px;">
+          <div class="kpi-title" style="color:#888; font-size:12px; text-transform:uppercase;">Faturamento (Você Recebe)</div>
+          <div class="kpi-value" id="saas-billed" style="font-size:24px; font-weight:bold; color:#00ffff; margin-top:5px;">R$ 0,00</div>
+        </div>
+        <div class="kpi-card" style="background:#111; border:1px solid #00ff00; padding:15px;">
+          <div class="kpi-title" style="color:#888; font-size:12px; text-transform:uppercase;">Lucro Líquido (Mark-up)</div>
+          <div class="kpi-value" id="saas-profit" style="font-size:24px; font-weight:bold; color:#00ff00; margin-top:5px;">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div style="margin-top:30px; overflow-x:auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 1px solid #333;">
+              <th style="padding: 10px;">ID</th>
+              <th style="padding: 10px;">Workspace</th>
+              <th style="padding: 10px;">Plano</th>
+              <th style="padding: 10px;">Cota Limite</th>
+              <th style="padding: 10px;">Consumo Atual</th>
+              <th style="padding: 10px;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="saas-tbody">
+            <!-- Renderizado via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end;">
+        <button class="btn" onclick="document.getElementById('modal-saas').style.display='none'">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/integrations.js"></script>
   <script src="/js/app.js"></script>
 <script src="js/auth.js"></script>
@@ -1517,6 +1570,7 @@
 <script src="js/skynet.js"></script>
 <script src="js/sentinel.js"></script>
 <script src="js/integrations.js"></script>
+<script src="js/saas.js"></script>
 <script type="module" src="/js/app.js"></script>
 
 <script>
