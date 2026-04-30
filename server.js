@@ -59,6 +59,7 @@ app.use('/api/automations',require('./routes/automations'));
 app.use('/api/reports',    require('./routes/reports'));
 app.use('/api/financial',  require('./routes/financial'));
 app.use('/api/webhooks',   require('./routes/webhooks'));
+app.use('/api/empire',     require('./routes/empire'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now(), node: process.version }));
 

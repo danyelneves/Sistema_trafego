@@ -71,12 +71,21 @@ export const api = {
   // CRM / Leads
   getLeads:           ()         => call('/api/pixel/leads'),
 
-  // Financial (DRE)
-  getFinancial:       (wsId)     => call(`/api/financial/${wsId}`),
-  saveFinancial:      (wsId, body) => call(`/api/financial/${wsId}`, { method: 'POST', body }),
-
-  // Reports
-  generateReport:     (body)     => call('/api/reports/generate', { method: 'POST', body }),
+  // Financial & EMPIRE
+  getFinancial:    (wsId) => call(`/api/financial/${wsId}`),
+  postFinancial:   (wsId, d) => call(`/api/financial/${wsId}`, { method: 'POST', body: d }),
+  
+  getKanban:       (wsId) => call(`/api/empire/kanban/${wsId}`),
+  postKanbanTask:  (wsId, d) => call(`/api/empire/kanban/${wsId}`, { method: 'POST', body: d }),
+  updateKanbanTask:(id, status) => call(`/api/empire/kanban/task/${id}`, { method: 'PATCH', body: { status } }),
+  
+  getWA:           (wsId) => call(`/api/empire/wa/${wsId}`),
+  postWA:          (wsId, d) => call(`/api/empire/wa/${wsId}`, { method: 'POST', body: d }),
+  
+  getBilling:      (wsId) => call(`/api/empire/billing/${wsId}`),
+  
+  // REPORTS
+  generateReport:  (body) => call('/api/reports/generate', { method: 'POST', body }),
 
   // Alertas
   alertConfigs:       ()       => call('/api/alerts/config'),

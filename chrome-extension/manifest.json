@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Maranet Spy",
+  "version": "1.0.0",
+  "description": "Salve anúncios da Biblioteca de Anúncios do Facebook direto no Raio-X do Maranet.",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": [
+    "https://www.facebook.com/ads/library/*",
+    "https://*.vercel.app/*",
+    "http://localhost:3000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Maranet Spy"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.facebook.com/ads/library/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

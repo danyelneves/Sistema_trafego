@@ -9,7 +9,8 @@ import {
   mountEntryModal, mountCampaignsModal, mountGoalsModal, mountNotesModal,
   mountUsersModal, mountImportModal, mountAlertsModal, mountBrandingModal,
   mountUTMModal, mountPixelModal, mountAutomationsModal, mountLeadsModal,
-  mountDreModal, mountCreativesModal
+  mountDreModal, mountCreativesModal,
+  mountKanbanModal, mountWAModal, mountBillingModal
 }                       from './modals.js';
 import { mountSyncModal }  from './sync-modal.js';
 import { mountDrillModal }  from './drill.js';
@@ -58,6 +59,9 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const leadsModal = mountLeadsModal();
   const dreModal = mountDreModal(refresh);
   const creativesModal = mountCreativesModal();
+  const kanbanModal = mountKanbanModal();
+  const waModal = mountWAModal();
+  const billingModal = mountBillingModal();
 
   // Modais admin-only
   let usersModal, importModal, syncModal, alertsModal, brandingModal;
@@ -107,10 +111,15 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   // ---- Botões do header ----
   const btnEntry = $('#btn-entry');
   if (btnEntry) btnEntry.addEventListener('click', () => entryModal.open());
-  $('#btn-campaigns') .addEventListener('click', () => campsModal.open());
-  $('#btn-goals')     .addEventListener('click', () => goalsModal.open());
-  $('#btn-notes')     .addEventListener('click', () => notesModal.open());
-  $('#btn-logout')    .addEventListener('click', async () => { await api.logout(); location.href = '/login'; });
+  $('#btn-campaigns')?.addEventListener('click', () => campsModal.open());
+  $('#btn-goals')?.addEventListener('click', () => goalsModal.open());
+  $('#btn-notes')?.addEventListener('click', () => notesModal.open());
+  $('#btn-logout')?.addEventListener('click', async () => { await api.logout(); location.href = '/login'; });
+  
+  // Empire triggers
+  $('#btn-kanban')?.addEventListener('click', () => kanbanModal?.open());
+  $('#btn-wa')?.addEventListener('click', () => waModal?.open());
+  $('#btn-billing')?.addEventListener('click', () => billingModal?.open());
   
   const btnRefresh = $('#btn-refresh');
   if (btnRefresh) {

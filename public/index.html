@@ -89,7 +89,10 @@
     <div></div>
 
     <div class="row right filter-actions" style="margin-top: 10px;">
-      <button class="btn" id="btn-creatives" title="Raio-X de Criativos">🖼️ Criativos</button>
+      <button class="btn" id="btn-creatives" title="Raio-X de Criativos">🖼️ Raio-X</button>
+      <button class="btn" id="btn-kanban"    title="Esteira de Criativos">🗂️ Kanban</button>
+      <button class="btn" id="btn-wa"        title="Automação WhatsApp">📱 Whats</button>
+      <button class="btn" id="btn-billing"   title="Faturamento / SaaS">💳 Planos</button>
       <button class="btn" id="btn-dre"       title="DRE / Lucro Real">💸 DRE</button>
       <button class="btn" id="btn-notes"     title="Anotações">✎ Notas</button>
       <button class="btn" id="btn-goals"     title="Metas">◎ Metas</button>
@@ -948,6 +951,105 @@
 
     <div class="modal-actions" style="margin-top:20px;">
       <button class="btn" id="creatives-close">Fechar Raio-X</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · KANBAN CRIATIVOS ================================================================= -->
+<div class="modal-overlay" id="modal-kanban">
+  <div class="modal modal-wide" style="max-width:1000px;">
+    <h2>Esteira de Produção (Kanban) 🗂️</h2>
+    <div class="modal-subtitle">Organize a criação de novos vídeos e imagens com seu time de Copy e Design.</div>
+    
+    <div style="display:flex; justify-content:space-between; margin-top:20px;">
+      <button class="btn primary" id="btn-kanban-new">Novo Card +</button>
+    </div>
+
+    <div style="display:flex; gap:15px; margin-top:20px; overflow-x:auto; padding-bottom:10px;" id="kanban-board">
+      <!-- Coluna: Backlog -->
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; min-width:220px; flex:1; padding:10px;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px; font-size:14px; text-transform:uppercase;">📝 Backlog (Ideias)</h3>
+        <div id="kanban-col-backlog" style="min-height:300px;"></div>
+      </div>
+      <!-- Coluna: Doing -->
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; min-width:220px; flex:1; padding:10px;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px; font-size:14px; text-transform:uppercase;">⚙️ Em Produção (Design)</h3>
+        <div id="kanban-col-doing" style="min-height:300px;"></div>
+      </div>
+      <!-- Coluna: Review -->
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; min-width:220px; flex:1; padding:10px;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px; font-size:14px; text-transform:uppercase;">🧐 Em Aprovação</h3>
+        <div id="kanban-col-review" style="min-height:300px;"></div>
+      </div>
+      <!-- Coluna: Done -->
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; min-width:220px; flex:1; padding:10px;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px; font-size:14px; text-transform:uppercase;">✅ Finalizado (Subir Ads)</h3>
+        <div id="kanban-col-done" style="min-height:300px;"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn" id="kanban-close">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · WHATSAPP AUTOMATION ================================================================= -->
+<div class="modal-overlay" id="modal-wa">
+  <div class="modal">
+    <h2>Automação WhatsApp (Speed-to-Lead) 📱</h2>
+    <div class="modal-subtitle">Conecte sua API do WhatsApp para enviar mensagens automáticas quando uma conversão/lead cair no CRM.</div>
+    
+    <div class="form-group" style="margin-top:20px;">
+      <label>URL da API (Ex: Evolution API, Z-API)</label>
+      <input type="text" id="wa-api-url" placeholder="https://sua-api.com/message/sendText/Maranet">
+    </div>
+    <div class="form-group">
+      <label>Token da API (Bearer / Apikey)</label>
+      <input type="password" id="wa-api-token" placeholder="Global Apikey...">
+    </div>
+    <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+      <input type="checkbox" id="wa-active" style="width:20px;height:20px;">
+      <label style="margin:0; font-weight:bold; color:var(--teal)">Ativar Automações de Disparo</label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="wa-close">Cancelar</button>
+      <button class="btn primary" id="wa-save">Salvar WhatsApp API</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · SAAS BILLING ================================================================= -->
+<div class="modal-overlay" id="modal-billing">
+  <div class="modal">
+    <h2>Faturamento e Planos (SaaS) 💳</h2>
+    <div class="modal-subtitle">Gerencie o seu plano no Maranet Central de Tráfego.</div>
+    
+    <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:20px; margin-top:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:12px; color:var(--muted); text-transform:uppercase;">Plano Atual</div>
+          <div style="font-size:24px; font-weight:800; color:var(--teal);" id="billing-plan-name">Pro (Agency)</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px; color:var(--muted); text-transform:uppercase;">Status</div>
+          <div style="font-weight:bold; color:var(--teal);" id="billing-status">🟢 Ativo</div>
+        </div>
+      </div>
+      <div style="margin-top:20px; font-size:12px;">
+        Próxima renovação: <b id="billing-period-end">15/05/2026</b>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <button class="btn primary" style="width:100%; padding:15px; background:linear-gradient(45deg, #635bff, #00d2ff); color:#fff; font-weight:bold;">
+        Acessar Portal do Cliente (Stripe)
+      </button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="billing-close">Fechar</button>
     </div>
   </div>
 </div>

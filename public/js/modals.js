@@ -474,6 +474,134 @@ export function mountSyncModal({ onSaved }) {
   };
 }
 
+// ==========================================
+// EMPIRE: KANBAN
+// ==========================================
+export function mountKanbanModal() {
+  const modal = $('#modal-kanban');
+  if (!modal) return null;
+  const btnClose = $('#kanban-close');
+  btnClose.addEventListener('click', () => modal.classList.remove('active'));
+
+  const btnNew = $('#btn-kanban-new');
+  btnNew.addEventListener('click', async () => {
+    const title = prompt("O que precisa ser criado? (Ex: 'Vídeo 01 - Chamada Forte')");
+    if(!title) return;
+    const wsId = $('#workspace-select')?.value || window.currentUser?.current_workspace_id || 1;
+    await api.postKanbanTask(wsId, { title, description: '' });
+    obj.open();
+  });
+
+  const renderCols = (tasks) => {
+    ['backlog', 'doing', 'review', 'done'].forEach(s => {
+      const col = $(`#kanban-col-${s}`);
+      if(col) col.innerHTML = '';
+    });
+    tasks.forEach(t => {
+      const col = $(`#kanban-col-${t.status}`);
+      if(!col) return;
+      const d = document.createElement('div');
+      d.style.cssText = 'background:#1a1a1a; border:1px solid var(--border); padding:10px; margin-bottom:10px; border-radius:5px; font-size:13px;';
+      d.innerHTML = `
+        <div style="font-weight:bold; margin-bottom:5px;">${t.title}</div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:11px;">
+          ${t.status !== 'backlog' ? `<a href="#" data-action="prev" data-id="${t.id}" style="color:var(--muted)">← Voltar</a>` : '<span></span>'}
+          ${t.status !== 'done' ? `<a href="#" data-action="next" data-id="${t.id}" style="color:var(--teal)">Avançar →</a>` : '<span></span>'}
+        </div>
+      `;
+      col.appendChild(d);
+    });
+
+    // Attach events
+    modal.querySelectorAll('a[data-action]').forEach(a => {
+      a.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const id = a.getAttribute('data-id');
+        const act = a.getAttribute('data-action');
+        const task = tasks.find(x => x.id == id);
+        const map = ['backlog', 'doing', 'review', 'done'];
+        const idx = map.indexOf(task.status);
+        const nextStatus = act === 'next' ? map[idx+1] : map[idx-1];
+        if(nextStatus) {
+          await api.updateKanbanTask(id, nextStatus);
+          obj.open();
+        }
+      });
+    });
+  };
+
+  const obj = {
+    open: async () => {
+      if(modal) modal.classList.add('active');
+      const wsId = $('#workspace-select')?.value || window.currentUser?.current_workspace_id || 1;
+      const tasks = await api.getKanban(wsId);
+      renderCols(tasks);
+    }
+  };
+  return obj;
+}
+
+// ==========================================
+// EMPIRE: WHATSAPP SETTINGS
+// ==========================================
+export function mountWAModal() {
+  const modal = $('#modal-wa');
+  if (!modal) return null;
+  const btnClose = $('#wa-close');
+  const btnSave = $('#wa-save');
+  btnClose.addEventListener('click', () => modal.classList.remove('active'));
+
+  btnSave.addEventListener('click', async () => {
+    const wsId = $('#workspace-select')?.value || window.currentUser?.current_workspace_id || 1;
+    await api.postWA(wsId, {
+      api_url: $('#wa-api-url').value,
+      api_token: $('#wa-api-token').value,
+      active: $('#wa-active').checked
+    });
+    alert('Configurações de WhatsApp Salvas!');
+    modal.classList.remove('active');
+  });
+
+  const obj = {
+    open: async () => {
+      if(modal) modal.classList.add('active');
+      const wsId = $('#workspace-select')?.value || window.currentUser?.current_workspace_id || 1;
+      const s = await api.getWA(wsId);
+      $('#wa-api-url').value = s.api_url || '';
+      $('#wa-api-token').value = s.api_token || '';
+      $('#wa-active').checked = s.active;
+    }
+  };
+  return obj;
+}
+
+// ==========================================
+// EMPIRE: SAAS BILLING
+// ==========================================
+export function mountBillingModal() {
+  const modal = $('#modal-billing');
+  if (!modal) return null;
+  const btnClose = $('#billing-close');
+  btnClose.addEventListener('click', () => modal.classList.remove('active'));
+
+  const obj = {
+    open: async () => {
+      if(modal) modal.classList.add('active');
+      const wsId = $('#workspace-select')?.value || window.currentUser?.current_workspace_id || 1;
+      const b = await api.getBilling(wsId);
+      if(b) {
+        $('#billing-plan-name').textContent = b.plan_name;
+        $('#billing-status').textContent = b.status === 'active' ? '🟢 Ativo' : '🔴 Inativo';
+        if(b.current_period_end) {
+          const d = new Date(b.current_period_end);
+          $('#billing-period-end').textContent = d.toLocaleDateString('pt-BR');
+        }
+      }
+    }
+  };
+  return obj;
+}
+
 // ------------------------------------------------------------
 // Modal 8 — Alertas por E-mail
 // ------------------------------------------------------------
