@@ -110,6 +110,7 @@
       <button class="btn pulse" id="btn-skynet" title="Operação Skynet" onclick="openSkynetModal()" style="color:#ff0000; border-color:#ff0000; font-weight:bold;">🤖 Skynet</button>
       <button class="btn pulse" id="btn-forge" title="NEXUS Forge (Criação de LPs com IA)" onclick="document.getElementById('modal-forge').style.display='flex'; if(window.loadForgeList) window.loadForgeList();" style="color:#a855f7; border-color:#a855f7; font-weight:bold;">🧬 Forge</button>
       <button class="btn pulse" id="btn-sentinel-force" title="Forçar Varredura Sentinel" onclick="forceSentinel()" style="color:#00ffa3; border-color:#00ffa3; font-weight:bold;">⚡ Sentinel</button>
+      <button class="btn pulse" id="btn-swarm" title="Enxame de Agentes IA (Terminal de Ações)" onclick="document.getElementById('modal-swarm').style.display='flex'; simulateSwarm();" style="color:#fff; border-color:#fff; font-weight:bold;">👾 Enxame</button>
       <button class="btn" id="btn-integrations" title="Configurar Integrações e APIs" style="border-color:#3b82f6; color:#3b82f6;">🔌 Integrações</button>
       <button class="btn primary" id="btn-report-magic" title="Gerar Link de Relatório com IA" style="background:var(--teal); color:#000;">
         ✨ Gerar Relatório Mágico
@@ -1302,25 +1303,30 @@
       <div class="field full"><label>HeyGen API Key (Vídeo)</label><input type="password" id="int-heygen" placeholder="..."></div>
     </div>
 
+    <div class="form-section" style="margin-top:20px;">Motores de Automação (Ativar/Desativar)</div>
+    <div class="form-grid">
+      <label style="display:flex; align-items:center; gap:10px;">
+        <input type="checkbox" id="toggle-forge"> Ativar Sentinel Forge V2 (Auto-Criação de Anúncios com Gemini)
+      </label>
+      <label style="display:flex; align-items:center; gap:10px;">
+        <input type="checkbox" id="toggle-oracle"> Ativar Skynet Oracle (Prospecção via Google Maps)
+      </label>
+      <label style="display:flex; align-items:center; gap:10px;">
+        <input type="checkbox" id="toggle-lazarus"> Ativar Protocolo Lázaro (Recuperação de Carrinho)
+      </label>
+      <label style="display:flex; align-items:center; gap:10px;">
+        <input type="checkbox" id="toggle-hive"> Ativar Hive Mind (Inteligência Coletiva entre Workspaces)
+      </label>
+      <label style="display:flex; align-items:center; gap:10px; color:#ff0000; font-weight:bold;">
+        <input type="checkbox" id="toggle-corsario"> Ativar NEXUS Corsário (Roubo de Leads Instagram DM)
+      </label>
+    </div>
+
     <div class="form-section" style="margin-top:20px;">Notificações e Alertas</div>
     <div class="form-grid">
       <div class="field full"><label>WhatsApp Admin (Receber alertas Sentinel)</label><input type="text" id="int-admin-phone" placeholder="5511999999999"></div>
     </div>
 
-    <div class="form-section" style="margin-top:20px; color:#00ffa3;">Automações Inteligentes (Ligar/Desligar)</div>
-    <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 15px;">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <input type="checkbox" id="toggle-forge" style="width:20px;height:20px;">
-        <label for="toggle-forge" style="margin:0;">Sentinel Forge (Auto-Criar Ads)</label>
-      </div>
-      <div style="display:flex; align-items:center; gap:10px;">
-        <input type="checkbox" id="toggle-oracle" style="width:20px;height:20px;">
-        <label for="toggle-oracle" style="margin:0;">Skynet Oracle (Hyper-Sniper Copy)</label>
-      </div>
-      <div style="display:flex; align-items:center; gap:10px;">
-        <input type="checkbox" id="toggle-lazarus" style="width:20px;height:20px;">
-        <label for="toggle-lazarus" style="margin:0;">Protocolo Lázaro (Recuperar PIX)</label>
-      </div>
       <div style="display:flex; align-items:center; gap:10px;">
         <input type="checkbox" id="toggle-hive" style="width:20px;height:20px;">
         <label for="toggle-hive" style="margin:0;">Hive Mind (Sincronização Global)</label>
@@ -1412,6 +1418,21 @@
             <!-- Preenchido via JS -->
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SWARM (Agentes Conversando) -->
+  <div class="modal-overlay" id="modal-swarm" style="display:none;">
+    <div class="modal" style="width: 800px; background: #000; border: 1px solid #333;">
+      <div class="modal-header">
+        <h2 style="font-family: 'JetBrains Mono', monospace; color: #00ffa3;">👾 NEXUS Agentic Swarm</h2>
+        <button onclick="document.getElementById('modal-swarm').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
+      </div>
+      <div class="modal-subtitle" style="font-family: 'JetBrains Mono', monospace;">Monitoramento de comunicação em tempo real entre Módulos de I.A.</div>
+      
+      <div id="swarm-terminal" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #ccc; background: #050505; border: 1px solid #222; padding: 15px; height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+        <!-- Terminal Logs -->
       </div>
     </div>
   </div>

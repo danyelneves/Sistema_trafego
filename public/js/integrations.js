@@ -21,6 +21,7 @@ async function openIntegrationsModal() {
         document.getElementById('toggle-oracle').checked = data['toggle.skynet_oracle'] === 'true';
         document.getElementById('toggle-lazarus').checked = data['toggle.lazarus_protocol'] === 'true';
         document.getElementById('toggle-hive').checked = data['toggle.hive_mind'] === 'true';
+        document.getElementById('toggle-corsario').checked = data['toggle.nexus_corsario'] === 'true';
         
         const tempMap = {
             '1': '🧊 Fria (Conservador - Corta gastos rápido)',
@@ -73,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'toggle.skynet_oracle': document.getElementById('toggle-oracle').checked ? 'true' : 'false',
             'toggle.lazarus_protocol': document.getElementById('toggle-lazarus').checked ? 'true' : 'false',
             'toggle.hive_mind': document.getElementById('toggle-hive').checked ? 'true' : 'false',
+            'toggle.nexus_corsario': document.getElementById('toggle-corsario').checked ? 'true' : 'false',
             'sentinel.temperature': document.getElementById('int-temp').value,
             
             'elevenlabs.apiKey': document.getElementById('int-eleven').value,

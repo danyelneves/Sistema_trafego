@@ -166,13 +166,40 @@ router.post('/whatsapp', async (req, res) => {
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
+    const MP_TOKEN = getSetting('mercadopago.accessToken');
+
     const prompt = `Você é um Closer (Fechador de Vendas) da empresa NEXUS.
-Sua missão: Responder o cliente, quebrar objeções usando persuasão, e forçar sutilmente o envio de um link de pagamento ou agendamento.
+Sua missão: Responder o cliente, quebrar objeções usando persuasão.
 Cliente falou: "${incomingText}"
-Responda de forma extremamente natural, curta e como se fosse um áudio ou mensagem rápida de WhatsApp. Tente não parecer um robô.`;
+
+REGRA DE GHOST CHECKOUT: Se o cliente falar que quer comprar, fechar, ou perguntar como pagar, e você perceber que ele está pronto, adicione EXATAMENTE a tag [GERAR_PIX] no final da sua resposta. O sistema irá interceptar essa tag e enviar a cobrança direto no WhatsApp dele.
+Responda de forma natural, curta e agressiva em vendas. Não pareça um robô.`;
 
     const aiResponse = await model.generateContent(prompt);
-    const responseText = aiResponse.response.text().trim();
+    let responseText = aiResponse.response.text().trim();
+    
+    let isGhostCheckout = false;
+    let pixCode = "";
+    
+    if (responseText.includes('[GERAR_PIX]') && MP_TOKEN) {
+        isGhostCheckout = true;
+        responseText = responseText.replace('[GERAR_PIX]', '').trim();
+        
+        try {
+            const axios = require('axios');
+            // Geração de PIX real no Mercado Pago
+            const mpRes = await axios.post('https://api.mercadopago.com/v1/payments', {
+                transaction_amount: 97.00, // Valor padrão para esteira
+                description: "NEXUS Automação Ghost",
+                payment_method_id: "pix",
+                payer: { email: "cliente-ghost@nexus.com" }
+            }, { headers: { 'Authorization': `Bearer ${MP_TOKEN}` }});
+            
+            pixCode = mpRes.data.point_of_interaction.transaction_data.qr_code;
+        } catch(e) {
+            console.error("[GHOST CHECKOUT] Falha ao gerar PIX:", e.response ? e.response.data : e.message);
+        }
+    }
 
     let audioBase64 = null;
     if (ELEVEN_API_KEY) {
@@ -192,20 +219,23 @@ Responda de forma extremamente natural, curta e como se fosse um áudio ou mensa
     }
 
     const axios = require('axios');
+    const waHeader = { headers: { 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }};
+    const waUrl = waSettings.api_url;
+    const number = remoteJid.replace('@s.whatsapp.net', '');
+
     if (audioBase64) {
-        await axios.post(waSettings.api_url, {
-          number: remoteJid.replace('@s.whatsapp.net', ''),
-          audio: `data:audio/mpeg;base64,${audioBase64}`,
-          text: responseText
-        }, { headers: { 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }});
+        await axios.post(waUrl, { number, audio: `data:audio/mpeg;base64,${audioBase64}`, text: responseText }, waHeader);
     } else {
-        await axios.post(waSettings.api_url, {
-          number: remoteJid.replace('@s.whatsapp.net', ''),
-          text: responseText
-        }, { headers: { 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }});
+        await axios.post(waUrl, { number, text: responseText }, waHeader);
     }
 
-    res.status(200).json({ success: true, ai_response: responseText });
+    // Se gerou o Ghost Checkout, manda o código PIX na sequência
+    if (isGhostCheckout && pixCode) {
+        await new Promise(r => setTimeout(r, 2000)); // Delay para parecer humano
+        await axios.post(waUrl, { number, text: `Aqui está o Pix Copia e Cola:\n\n${pixCode}\n\nAssim que o banco confirmar, o sistema libera seu acesso na hora!` }, waHeader);
+    }
+
+    res.status(200).json({ success: true, ai_response: responseText, ghost_checkout: isGhostCheckout });
   } catch (error) {
     console.error('[FECHADOR NLP] Erro:', error);
     res.status(500).json({ error: 'Erro interno' });

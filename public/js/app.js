@@ -577,3 +577,34 @@ window.generateMagicReport = async function() {
     if(btn) { btn.innerHTML = '✨ Gerar Relatório Mágico'; btn.disabled = false; }
   }
 };
+
+window.simulateSwarm = function() {
+    const terminal = document.getElementById('swarm-terminal');
+    if(!terminal) return;
+    
+    terminal.innerHTML = '<div style="color:#00ffa3;">[SISTEMA] Iniciando interceptação de frequência da Colmeia...</div>';
+    
+    const messages = [
+        { agent: 'NEXUS Sentinel', color: '#00ffa3', text: 'Analisei a campanha C-19. O CTR caiu para 0.8% e o CPA bateu R$45. Verba cortada.' },
+        { agent: 'NEXUS Venom', color: '#ff0055', text: 'Recebido. O erro é na copy. Injetando prompt de espionagem na biblioteca de anúncios do Meta.' },
+        { agent: 'NEXUS Venom', color: '#ff0055', text: 'Extraí os 3 concorrentes topo de funil. O padrão de conversão atual é focado em "urgência invisível". Gerando nova copy.' },
+        { agent: 'NEXUS Studio', color: '#a855f7', text: 'Copy recebida. Acionando ElevenLabs para gerar áudio da VSL. Voz ID: pNInz6obpgDQGcFmaJcg...' },
+        { agent: 'NEXUS Studio', color: '#a855f7', text: 'Áudio sintetizado. Gerando background de vídeo no modelo Cyberpunk.' },
+        { agent: 'NEXUS Forge', color: '#3b82f6', text: 'O tráfego vai precisar de uma nova Landing Page para esse ângulo. Forjando HTML no domínio base.' },
+        { agent: 'NEXUS Sentinel', color: '#00ffa3', text: 'Criativos sincronizados. Subindo nova campanha via Meta Graph API com orçamento de R$150/dia.' },
+        { agent: 'Fechador NLP', color: '#f59e0b', text: 'Estou de prontidão no WhatsApp. Se algum lead reclamar do preço, acionarei o Ghost Checkout com desconto de 10%.' },
+        { agent: 'NEXUS Corsário', color: '#ff0000', text: 'Enquanto vocês rodam tráfego pago, acabei de raspar 42 comentários do Instagram do concorrente e já enviei DMs. 3 deles já emitiram o Pix.' },
+        { agent: 'SISTEMA', color: '#aaa', text: '[FIM DA VARREDURA] Todos os agentes operando em parâmetros nominais. O império cresce.' }
+    ];
+
+    let delay = 1000;
+    messages.forEach((msg, idx) => {
+        setTimeout(() => {
+            const div = document.createElement('div');
+            div.innerHTML = `<span style="color:${msg.color}; font-weight:bold;">[${msg.agent}]</span> > ${msg.text}`;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }, delay);
+        delay += 1500 + Math.random() * 2000; // Tempo aleatório para simular "digitação"
+    });
+};
