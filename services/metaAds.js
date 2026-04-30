@@ -92,7 +92,7 @@ async function fetchMetrics(workspaceId, fromDate, toDate) {
       limit:          500,
     };
     if (after) params.after = after;
-    const data = await graphGet(`${adAccountId}/insights`, params);
+    const data = await graphGet(workspaceId, `${adAccountId}/insights`, params);
     allData = allData.concat(data.data || []);
     after = (data.paging?.cursors?.after && data.paging?.next) ? data.paging.cursors.after : null;
   } while (after);
@@ -149,7 +149,7 @@ async function fetchPlacementBreakdown(workspaceId, fromDate, toDate) {
       limit:          500,
     };
     if (after) params.after = after;
-    const data = await graphGet(`${adAccountId}/insights`, params);
+    const data = await graphGet(workspaceId, `${adAccountId}/insights`, params);
     allData = allData.concat(data.data || []);
     after = (data.paging?.cursors?.after && data.paging?.next) ? data.paging.cursors.after : null;
   } while (after);
@@ -169,10 +169,10 @@ async function fetchPlacementBreakdown(workspaceId, fromDate, toDate) {
   }));
 }
 
-async function fetchCampaigns() {
-  const { adAccountId } = await getCredentials();
+async function fetchCampaigns(workspaceId) {
+  const { adAccountId } = await getCredentials(workspaceId);
   if (!adAccountId) throw new Error('META_AD_ACCOUNT_ID não configurado');
-  const data = await graphGet(`${adAccountId}/campaigns`, {
+  const data = await graphGet(workspaceId, `${adAccountId}/campaigns`, {
     fields: 'id,name,status,objective', limit: 500,
   });
   return (data.data || []).map(c => ({ id: c.id, name: c.name, status: c.status, objective: c.objective }));
@@ -181,9 +181,9 @@ async function fetchCampaigns() {
 /**
  * Busca breakdown demográfico (Região, Idade, Gênero)
  */
-async function fetchDemographics(fromDate, toDate) {
-  const { adAccountId } = await getCredentials();
-  if (!await isConfigured()) return [];
+async function fetchDemographics(workspaceId, fromDate, toDate) {
+  const { adAccountId } = await getCredentials(workspaceId);
+  if (!await isConfigured(workspaceId)) return [];
 
   const fields = 'campaign_id,campaign_name,date_start,impressions,clicks,spend,actions';
   const baseParams = {
@@ -242,9 +242,9 @@ async function fetchDemographics(fromDate, toDate) {
 /**
  * Busca métricas a nível de Anúncio (Criativos)
  */
-async function fetchAds(fromDate, toDate) {
-  const { adAccountId } = await getCredentials();
-  if (!await isConfigured()) return [];
+async function fetchAds(workspaceId, fromDate, toDate) {
+  const { adAccountId } = await getCredentials(workspaceId);
+  if (!await isConfigured(workspaceId)) return [];
 
   const fields = [
     'campaign_id','campaign_name',
@@ -263,7 +263,7 @@ async function fetchAds(fromDate, toDate) {
       limit:          500,
     };
     if (after) params.after = after;
-    const data = await graphGet(`${adAccountId}/insights`, params);
+    const data = await graphGet(workspaceId, `${adAccountId}/insights`, params);
     allData = allData.concat(data.data || []);
     after = (data.paging?.cursors?.after && data.paging?.next) ? data.paging.cursors.after : null;
   } while (after);
