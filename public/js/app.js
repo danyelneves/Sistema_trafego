@@ -586,15 +586,18 @@ window.simulateSwarm = function() {
     
     const messages = [
         { agent: 'NEXUS Sentinel', color: '#00ffa3', text: 'Analisei a campanha C-19. O CTR caiu para 0.8% e o CPA bateu R$45. Verba cortada.' },
-        { agent: 'NEXUS Venom', color: '#ff0055', text: 'Recebido. O erro é na copy. Injetando prompt de espionagem na biblioteca de anúncios do Meta.' },
-        { agent: 'NEXUS Venom', color: '#ff0055', text: 'Extraí os 3 concorrentes topo de funil. O padrão de conversão atual é focado em "urgência invisível". Gerando nova copy.' },
-        { agent: 'NEXUS Studio', color: '#a855f7', text: 'Copy recebida. Acionando ElevenLabs para gerar áudio da VSL. Voz ID: pNInz6obpgDQGcFmaJcg...' },
-        { agent: 'NEXUS Studio', color: '#a855f7', text: 'Áudio sintetizado. Gerando background de vídeo no modelo Cyberpunk.' },
-        { agent: 'NEXUS Forge', color: '#3b82f6', text: 'O tráfego vai precisar de uma nova Landing Page para esse ângulo. Forjando HTML no domínio base.' },
-        { agent: 'NEXUS Sentinel', color: '#00ffa3', text: 'Criativos sincronizados. Subindo nova campanha via Meta Graph API com orçamento de R$150/dia.' },
-        { agent: 'Fechador NLP', color: '#f59e0b', text: 'Estou de prontidão no WhatsApp. Se algum lead reclamar do preço, acionarei o Ghost Checkout com desconto de 10%.' },
-        { agent: 'NEXUS Corsário', color: '#ff0000', text: 'Enquanto vocês rodam tráfego pago, acabei de raspar 42 comentários do Instagram do concorrente e já enviei DMs. 3 deles já emitiram o Pix.' },
-        { agent: 'SISTEMA', color: '#aaa', text: '[FIM DA VARREDURA] Todos os agentes operando em parâmetros nominais. O império cresce.' }
+        { agent: 'NEXUS Titan', color: '#ffd700', text: 'Auditoria financeira concluída. Saldo disponível: R$ 15.400. Alocando R$ 2.000 para capital de risco.' },
+        { agent: 'NEXUS Titan', color: '#ffd700', text: 'Pesquisando tendências... Nicho de "Nootrópicos Naturais" está com demanda em alta e CPA baixo. Empresa "NeuroBoost" fundada no banco de dados.' },
+        { agent: 'NEXUS Venom', color: '#ff0055', text: 'Injetando prompt de espionagem na biblioteca de anúncios do Meta para NeuroBoost. Gerando Copy focada em "alta performance corporativa".' },
+        { agent: 'NEXUS Studio', color: '#a855f7', text: 'Copy recebida. Acionando API HeyGen. Renderizando Avatar VSL para o público corporativo...' },
+        { agent: 'NEXUS Forge', color: '#3b82f6', text: 'Forjando Landing Page mutante para NeuroBoost. Deploy na Vercel executado com sucesso.' },
+        { agent: 'Fechador NLP', color: '#f59e0b', text: 'O cliente João acaba de perguntar o preço no WhatsApp da Clínica. Ativando Doppelgänger...' },
+        { agent: 'Doppelgänger', color: '#00ffff', text: 'Processando contexto histórico do Daniel... Gerada resposta com gírias corporativas. Injetando tag [GERAR_PIX] silenciosamente.' },
+        { agent: 'Ghost Checkout', color: '#00ff00', text: 'Pagamento PIX de R$ 97,00 interceptado com sucesso via Mercado Pago.' },
+        { agent: 'Poltergeist', color: '#ff00ff', text: 'Pedido confirmado. Disparando Payload ZPL para impressora térmica física na cozinha. Nenhuma interação humana foi exigida.' },
+        { agent: 'Poltergeist', color: '#ff00ff', text: 'Chamando motorista do Uber Flash via API. O entregador Carlos (ABC-1234) chega em 2 minutos.' },
+        { agent: 'NEXUS Corsário', color: '#ff0000', text: 'Enquanto isso, raspei 42 comentários do Instagram do concorrente da NeuroBoost. Enviando DMs com ofertas cruzadas.' },
+        { agent: 'SISTEMA', color: '#aaa', text: '[FIM DA VARREDURA] Todos os agentes (Titan, Poltergeist, Doppelgänger, etc) operando em parâmetros nominais. O império opera sozinho.' }
     ];
 
     let delay = 1000;
@@ -605,6 +608,6 @@ window.simulateSwarm = function() {
             terminal.appendChild(div);
             terminal.scrollTop = terminal.scrollHeight;
         }, delay);
-        delay += 1500 + Math.random() * 2000; // Tempo aleatório para simular "digitação"
+        delay += 1500 + Math.random() * 2000;
     });
 };

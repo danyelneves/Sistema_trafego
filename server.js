@@ -77,6 +77,9 @@ app.use('/api/franchise',  require('./routes/franchise')); // Motor White-Label
 app.use('/api/skynet',     require('./routes/skynet')); // Operação Skynet (Auto-Aquisição)
 app.use('/api/studio',     require('./routes/studio')); // NEXUS Studio (Clonagem de Voz/Vídeo)
 app.use('/api/heal',       require('./routes/heal')); // Agentic DevOps (Auto-Cura)
+app.use('/api/titan',      require('./routes/titan')); // CEO Autônomo e Serial
+app.use('/api/doppelganger', require('./routes/doppelganger')); // Clone Digital Neural
+app.use('/api/poltergeist', require('./routes/poltergeist')); // IoT e Logística Física
 
 // ------------------------------------------------------------
 // HOSPEDAGEM DINÂMICA DE LANDING PAGES (NEXUS FORGE)
