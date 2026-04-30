@@ -31,7 +31,7 @@ if (process.env.JWT_SECRET === DEFAULT_SECRET || !process.env.JWT_SECRET) {
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1); // Garante que req.protocol seja 'https' no Vercel
-app.use(express.json({ limit: '4mb' }));
+app.set('trust proxy', 1); // Garante que req.protocol seja 'https' no Vercel
 app.use(cookieParser());
 app.use(requestLogger);
 
@@ -46,17 +46,19 @@ app.use('/api/goals',      require('./routes/goals'));
 app.use('/api/notes',      require('./routes/notes'));
 app.use('/api/settings',   require('./routes/settings'));
 app.use('/api/users',      require('./routes/users'));
-app.use('/api/alerts',     require('./routes/alerts'));
 app.use('/api/import',     require('./routes/import'));
 app.use('/api/drill',      require('./routes/drill'));
 app.use('/api/sync',       require('./routes/sync').router);
 app.use('/api/cron',       require('./routes/cron'));
 app.use('/api/instagram',  require('./routes/instagram'));
-app.use('/api/ai',         require('./routes/ai'));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 app.use('/api/webhook',    require('./routes/webhook'));
 app.use('/api/pixel',      require('./routes/pixel'));
 app.use('/api/automations',require('./routes/automations'));
 app.use('/api/reports',    require('./routes/reports'));
+app.use('/api/ai',         require('./routes/ai'));
 app.use('/api/financial',  require('./routes/financial'));
 app.use('/api/webhooks',   require('./routes/webhooks'));
 app.use('/api/empire',     require('./routes/empire'));
@@ -66,6 +68,8 @@ app.use('/api/market',     require('./routes/market')); // Bolsa de Valores de L
 app.use('/api/lazarus',    require('./routes/lazarus')); // Protocolo Lázaro
 app.use('/api/pay',        require('./routes/pay')); // Fintech Gateway
 app.use('/api/checkout',   require('./routes/checkout')); // Kiwify Killer
+app.use('/api/hive',       require('./routes/hive')); // Mente de Colmeia
+app.use('/api/vision',     require('./routes/vision')); // Engenharia Reversa Visual
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now(), node: process.version }));
 
