@@ -16,6 +16,10 @@
     {
       "path": "/api/sentinel/cron",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/skynet/cron",
+      "schedule": "0 9 * * *"
     }
   ]
 }

@@ -74,6 +74,7 @@ app.use('/api/sentinel',   require('./routes/sentinel')); // Trader de Tráfego 
 app.use('/api/forge',      require('./routes/forge')); // O Forjador de Landing Pages Mutantes
 app.use('/api/voice',      require('./routes/voice')); // Robô de Call Center AI
 app.use('/api/franchise',  require('./routes/franchise')); // Motor White-Label
+app.use('/api/skynet',     require('./routes/skynet')); // Operação Skynet (Auto-Aquisição)
 
 // ------------------------------------------------------------
 // HOSPEDAGEM DINÂMICA DE LANDING PAGES (NEXUS FORGE)
