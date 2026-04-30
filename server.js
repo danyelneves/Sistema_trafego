@@ -71,6 +71,26 @@ app.use('/api/checkout',   require('./routes/checkout')); // Kiwify Killer
 app.use('/api/hive',       require('./routes/hive')); // Mente de Colmeia
 app.use('/api/vision',     require('./routes/vision')); // Engenharia Reversa Visual
 app.use('/api/sentinel',   require('./routes/sentinel')); // Trader de Tráfego 24/7
+app.use('/api/forge',      require('./routes/forge')); // O Forjador de Landing Pages Mutantes
+
+// ------------------------------------------------------------
+// HOSPEDAGEM DINÂMICA DE LANDING PAGES (NEXUS FORGE)
+// Rota acessível pelo público: dominio.com/f/slug-da-pagina
+// ------------------------------------------------------------
+const db = require('./db');
+app.get('/f/:slug', async (req, res) => {
+  try {
+    const funnel = await db.get('SELECT * FROM funnels WHERE slug = $1', [req.params.slug]);
+    if (!funnel) return res.status(404).send('<h1>Página não encontrada ou desativada.</h1>');
+    
+    // Incrementa visitas
+    await db.run('UPDATE funnels SET visits = visits + 1 WHERE id = $1', [funnel.id]);
+    
+    res.send(funnel.html_content);
+  } catch (err) {
+    res.status(500).send('Erro interno do servidor.');
+  }
+});
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now(), node: process.version }));
 
