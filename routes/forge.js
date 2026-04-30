@@ -42,7 +42,7 @@ Regras Obrigatórias:
 
     const result = await model.generateContent(prompt);
     let htmlContent = await result.response.text();
-    htmlContent = htmlContent.replace(/^\`\`\`html/, '').replace(/\`\`\`$/, '').trim();
+    htmlContent = htmlContent.replace("```html", "").replace("```", "").trim();
 
     // Salva no Banco de Dados
     const sql = `

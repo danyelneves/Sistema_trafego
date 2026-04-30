@@ -21,7 +21,7 @@ router.post('/create', requireAuth, async (req, res) => {
       INSERT INTO workspaces (name, is_franchise, franchise_name, nexus_fee_percentage)
       VALUES ($1, true, $2, $3) RETURNING id
     `;
-    const wsRow = await db.query(wsInsert, [\`Franquia: \${franchise_name}\`, franchise_name, nexus_fee || 5.0]);
+    const wsRow = await db.query(wsInsert, [`Franquia: ${franchise_name}`, franchise_name, nexus_fee || 5.0]);
     const newWsId = wsRow.rows[0].id;
 
     // 2. Cria o usuário Admin da Franquia (Senha padrão: Mudar123)
@@ -31,15 +31,15 @@ router.post('/create', requireAuth, async (req, res) => {
       INSERT INTO users (email, password_hash, name, role, workspace_id)
       VALUES ($1, $2, $3, 'admin', $4)
     `;
-    await db.query(uInsert, [admin_email, hash, \`Admin \${franchise_name}\`, newWsId]);
+    await db.query(uInsert, [admin_email, hash, `Admin ${franchise_name}`, newWsId]);
 
     res.json({
       ok: true,
       message: "Franquia criada com sucesso!",
-      login_url: \`https://sistrafego.vercel.app/login\`,
+      login_url: `https://sistrafego.vercel.app/login`,
       admin_email: admin_email,
       default_password: "Mudar123",
-      fee: \`\${nexus_fee}% retidos na fonte pelo NEXUS Black.\`
+      fee: `${nexus_fee}% retidos na fonte pelo NEXUS Black.`
     });
 
   } catch (error) {

@@ -11,7 +11,7 @@ router.all('/cron', async (req, res) => {
   try {
     // Autenticação básica via Header do Vercel Cron para segurança
     const authHeader = req.headers['authorization'];
-    if (process.env.NODE_ENV === 'production' && authHeader !== \`Bearer \${process.env.CRON_SECRET}\`) {
+    if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return res.status(401).json({ error: 'Unauthorized CRON' });
     }
 
@@ -26,7 +26,7 @@ router.all('/cron', async (req, res) => {
     console.log("[SENTINEL] Acordando... Iniciando varredura de Alta Frequência (HFT) no Meta Ads.");
 
     // Busca campanhas ativas no Meta
-    const campaignsUrl = \`https://graph.facebook.com/v19.0/act_\${AD_ACCOUNT_ID}/campaigns?fields=id,name,status,daily_budget,insights{spend,cost_per_action_type}&status=['ACTIVE']&access_token=\${META_TOKEN}\`;
+    const campaignsUrl = `https://graph.facebook.com/v19.0/act_${AD_ACCOUNT_ID}/campaigns?fields=id,name,status,daily_budget,insights{spend,cost_per_action_type}&status=['ACTIVE']&access_token=${META_TOKEN}`;
     
     // Simulação do comportamento HFT caso não haja API Real configurada
     let actionsTaken = [];
@@ -55,12 +55,12 @@ router.all('/cron', async (req, res) => {
         // REGRA 1: Stop Loss (Cortar Sangramento)
         if (cpa > TARGET_CPA * 1.5) {
           // Pausa campanha na API do Facebook
-          await axios.post(\`https://graph.facebook.com/v19.0/\${camp.id}\`, {
+          await axios.post(`https://graph.facebook.com/v19.0/${camp.id}`, {
             status: 'PAUSED',
             access_token: META_TOKEN
           });
-          console.log(\`[SENTINEL STOP-LOSS] Campanha \${camp.name} PAUSADA. CPA de R$\${cpa} ultrapassou o teto.\`);
-          actionsTaken.push(\`PAUSED: \${camp.name} (CPA R$ \${cpa})\`);
+          console.log(`[SENTINEL STOP-LOSS] Campanha ${camp.name} PAUSADA. CPA de R$${cpa} ultrapassou o teto.`);
+          actionsTaken.push(`PAUSED: ${camp.name} (CPA R$ ${cpa})`);
         }
 
         // REGRA 2: Auto-Scale (Acelerar Vencedores)
@@ -69,12 +69,12 @@ router.all('/cron', async (req, res) => {
           let currentBudget = parseInt(camp.daily_budget) || 10000; // Em centavos
           let newBudget = Math.floor(currentBudget * 1.20);
           
-          await axios.post(\`https://graph.facebook.com/v19.0/\${camp.id}\`, {
+          await axios.post(`https://graph.facebook.com/v19.0/${camp.id}`, {
             daily_budget: newBudget,
             access_token: META_TOKEN
           });
-          console.log(\`[SENTINEL AUTO-SCALE] Campanha \${camp.name} ESCALADA. Orçamento subiu 20% porque CPA tá barato (R$\${cpa}).\`);
-          actionsTaken.push(\`SCALED: \${camp.name} (CPA R$ \${cpa})\`);
+          console.log(`[SENTINEL AUTO-SCALE] Campanha ${camp.name} ESCALADA. Orçamento subiu 20% porque CPA tá barato (R$${cpa}).`);
+          actionsTaken.push(`SCALED: ${camp.name} (CPA R$ ${cpa})`);
         }
       }
     } catch (e) {

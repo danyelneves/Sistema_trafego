@@ -1,5 +1,5 @@
-const db = require('./db.js');
-const { getPeriodDates } = require('../utils/dates.js');
+const db = require('../db');
+
 
 async function analyzeMetrics(workspaceId, channel = 'all') {
   // Fetch last 7 days and previous 7 days

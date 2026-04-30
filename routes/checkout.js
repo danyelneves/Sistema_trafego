@@ -51,7 +51,7 @@ router.post('/process', async (req, res) => {
     if (req.body.partner_id) {
       nexus_fee = product.price * 0.30;
       partner_amount = product.price * 0.70;
-      console.log(`[NEXUS SYNDICATE] Venda processada! Retenção Automática: R$ \${nexus_fee} (NEXUS) | Repasse: R$ \${partner_amount} (Sócio)`);
+      console.log(`[NEXUS SYNDICATE] Venda processada! Retenção Automática: R$ ${nexus_fee} (NEXUS) | Repasse: R$ ${partner_amount} (Sócio)`);
     }
 
     // Grava a Ordem de Compra

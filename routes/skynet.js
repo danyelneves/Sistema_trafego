@@ -16,7 +16,7 @@ router.post('/hunt', requireAuth, async (req, res) => {
       throw new Error("Nicho e Localização são obrigatórios.");
     }
 
-    console.log(`[SKYNET] Iniciando Caçada: Buscando \${max_targets || 5} \${target_niche} em \${location}...`);
+    console.log(`[SKYNET] Iniciando Caçada: Buscando ${max_targets || 5} ${target_niche} em ${location}...`);
 
     // 1. Simulação da API do Google Maps / Scraper de B2B
     // Na vida real, chamaríamos a Google Places API textsearch
@@ -24,23 +24,23 @@ router.post('/hunt', requireAuth, async (req, res) => {
     
     // Alvos encontrados (Mock de Alta Conversão)
     const targets = [
-      { name: \`Clínica \${target_niche} Elite\`, phone: "11999999991", status: "HUNTER_DISPATCHED" },
-      { name: \`Instituto \${target_niche} Prime\`, phone: "11999999992", status: "HUNTER_DISPATCHED" },
-      { name: \`Centro \${location} de \${target_niche}\`, phone: "11999999993", status: "HUNTER_DISPATCHED" }
+      { name: `Clínica ${target_niche} Elite`, phone: "11999999991", status: "HUNTER_DISPATCHED" },
+      { name: `Instituto ${target_niche} Prime`, phone: "11999999992", status: "HUNTER_DISPATCHED" },
+      { name: `Centro ${location} de ${target_niche}`, phone: "11999999993", status: "HUNTER_DISPATCHED" }
     ];
 
-    console.log(`[SKYNET] \${targets.length} Alvos adquiridos. Acionando NEXUS Voice AI...`);
+    console.log(`[SKYNET] ${targets.length} Alvos adquiridos. Acionando NEXUS Voice AI...`);
 
     // 2. Disparo do NEXUS Voice AI para os alvos
     const callsLog = [];
     for (let target of targets) {
       // Cria um link de Checkout único para essa clínica
       // Assumindo Produto ID 2 como "Pacote de 15 Leads B2B"
-      const checkoutLink = \`https://sistrafego.vercel.app/checkout?product_id=2&partner_id=skynet\`;
+      const checkoutLink = `https://sistrafego.vercel.app/checkout?product_id=2&partner_id=skynet`;
       
-      const script = \`Olá dono da \${target.name}! Sou a Inteligência Artificial da NEXUS. Nós temos 15 clientes buscando \${target_niche} na sua região hoje. O custo para envio imediato dos contatos é R$ 500. Posso mandar o link de pagamento no seu WhatsApp?\`;
+      const script = `Olá dono da ${target.name}! Sou a Inteligência Artificial da NEXUS. Nós temos 15 clientes buscando ${target_niche} na sua região hoje. O custo para envio imediato dos contatos é R$ 500. Posso mandar o link de pagamento no seu WhatsApp?`;
       
-      console.log(\`[SKYNET VOICE] Ligando para \${target.phone}: "\${script}"\`);
+      console.log(`[SKYNET VOICE] Ligando para ${target.phone}: "${script}"`);
       
       // Simulação da resposta da Voice AI (Cliente aceita e compra)
       callsLog.push({
@@ -73,7 +73,7 @@ router.post('/hunt', requireAuth, async (req, res) => {
 router.all('/cron', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
-    if (process.env.NODE_ENV === 'production' && authHeader !== \`Bearer \${process.env.CRON_SECRET}\`) {
+    if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return res.status(401).json({ error: 'Unauthorized SKYNET CRON' });
     }
     

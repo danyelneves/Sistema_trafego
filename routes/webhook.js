@@ -125,12 +125,6 @@ router.post('/crm', async (req, res) => {
   }
 });
 
-    console.log(`[Webhook Sales] Venda registrada. Workspace: ${workspace_id} | Valor: ${contract_value} | Canal: ${channel}`);
-    res.json({ success: true, external_id });
-  } catch (e) {
-    console.error('[Webhook Sales] Erro:', e);
-    res.status(500).json({ error: e.message });
-  }
-});
+
 
 module.exports = router;

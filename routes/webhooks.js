@@ -55,6 +55,7 @@ router.post('/kiwify/:wsId', async (req, res) => {
       console.error('[WA] Erro ao disparar zap:', waError.message);
     }
     // FIM WA AUTOMATION
+    }
 
     return res.status(200).json({ received: true });
   } catch (error) {
