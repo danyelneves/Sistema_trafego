@@ -8,6 +8,7 @@ async function openIntegrationsModal() {
         document.getElementById('int-google').value = data['google.mapsApiKey'] || '';
         document.getElementById('int-meta-token').value = data['meta.accessToken'] || '';
         document.getElementById('int-meta-adaccount').value = data['meta.adAccountId'] || '';
+        document.getElementById('int-meta-backup').value = data['meta.backupAdAccountId'] || '';
         document.getElementById('int-stripe').value = data['stripe.secretKey'] || '';
         document.getElementById('int-mp').value = data['mercadopago.accessToken'] || '';
         document.getElementById('int-admin-phone').value = data['admin.phone'] || '';
@@ -64,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'google.mapsApiKey': document.getElementById('int-google').value,
             'meta.accessToken': document.getElementById('int-meta-token').value,
             'meta.adAccountId': document.getElementById('int-meta-adaccount').value,
+            'meta.backupAdAccountId': document.getElementById('int-meta-backup').value,
             'stripe.secretKey': document.getElementById('int-stripe').value,
             'mercadopago.accessToken': document.getElementById('int-mp').value,
             'admin.phone': document.getElementById('int-admin-phone').value,
