@@ -44,6 +44,16 @@ router.post('/process', async (req, res) => {
       message = 'Pix gerado com sucesso. Aguardando pagamento.';
     }
 
+    // Simulação do Split de Pagamento (NEXUS Syndicate)
+    // Se o partner_id for passado, 30% fica com o dono do sistema (NEXUS) e 70% com o parceiro.
+    let nexus_fee = 0;
+    let partner_amount = product.price;
+    if (req.body.partner_id) {
+      nexus_fee = product.price * 0.30;
+      partner_amount = product.price * 0.70;
+      console.log(`[NEXUS SYNDICATE] Venda processada! Retenção Automática: R$ \${nexus_fee} (NEXUS) | Repasse: R$ \${partner_amount} (Sócio)`);
+    }
+
     // Grava a Ordem de Compra
     const sqlInsert = `
       INSERT INTO orders (product_id, workspace_id, customer_name, customer_email, customer_phone, amount, payment_method, status)
