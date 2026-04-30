@@ -8,7 +8,7 @@ const db = require('../db');
 // ----------------------------------------------------------------
 router.get('/product/:id', async (req, res) => {
   try {
-    const product = await db.get(`SELECT * FROM products WHERE id = $1`, [req.params.id]);
+    const product = await db.get(`SELECT * FROM products WHERE id = $1`, req.params.id);
     if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
     res.json(product);
   } catch (error) {
@@ -24,24 +24,72 @@ router.post('/process', async (req, res) => {
   try {
     const { product_id, customer_name, customer_email, customer_phone, payment_method, card_data } = req.body;
 
-    const product = await db.get(`SELECT * FROM products WHERE id = $1`, [product_id]);
+    const product = await db.get(`SELECT * FROM products WHERE id = $1`, product_id);
     if (!product) throw new Error("Produto inválido.");
 
-    // SIMULAÇÃO DE GATEWAY (Stripe / Mercado Pago)
     let status = 'PENDING';
     let message = '';
+    let pix_code = null;
+    let pix_qr_code_base64 = null;
     
     if (payment_method === 'CREDIT_CARD') {
-      // Simula autorização do cartão
-      if (card_data && card_data.number.startsWith('4')) {
-        status = 'PAID'; // Sucesso instantâneo para VISA
-        message = 'Pagamento aprovado com sucesso no Cartão de Crédito!';
-      } else {
-        throw new Error('Cartão recusado pela operadora.');
+      if (!process.env.STRIPE_SECRET_KEY) throw new Error('Stripe não configurado (Falta variável STRIPE_SECRET_KEY).');
+      
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      
+      // Assumindo token gerado pelo Stripe Elements no frontend (tok_xxx) ou payment_method (pm_xxx)
+      const source = card_data?.token || card_data?.payment_method_id || 'tok_visa'; // Fallback de teste caso venha vazio
+      
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(product.price * 100), // Stripe opera em centavos
+          currency: 'brl',
+          payment_method: source.startsWith('pm_') ? source : undefined,
+          payment_method_data: source.startsWith('tok_') ? { type: 'card', card: { token: source } } : undefined,
+          confirm: true,
+          automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+          description: `NEXUS Black - ${product.name}`,
+          receipt_email: customer_email
+        });
+
+        if (paymentIntent.status === 'succeeded') {
+          status = 'PAID';
+          message = 'Pagamento aprovado com sucesso via Stripe!';
+        } else {
+          throw new Error(`Falha no pagamento (Stripe Status: ${paymentIntent.status}).`);
+        }
+      } catch (err) {
+        throw new Error(`Erro operadora Stripe: ${err.message}`);
       }
+
     } else if (payment_method === 'PIX') {
-      status = 'WAITING_PAYMENT';
-      message = 'Pix gerado com sucesso. Aguardando pagamento.';
+      if (!process.env.MERCADOPAGO_ACCESS_TOKEN) throw new Error('Mercado Pago não configurado (Falta variável MERCADOPAGO_ACCESS_TOKEN).');
+      
+      const { MercadoPagoConfig, Payment } = require('mercadopago');
+      const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN, options: { timeout: 10000 } });
+      const mpPayment = new Payment(client);
+
+      try {
+        const paymentData = {
+          transaction_amount: Number(product.price),
+          description: `NEXUS Black - ${product.name}`,
+          payment_method_id: 'pix',
+          payer: {
+            email: customer_email,
+            first_name: customer_name.split(' ')[0],
+            last_name: customer_name.split(' ').slice(1).join(' ') || 'Cliente'
+          }
+        };
+
+        const mpResponse = await mpPayment.create({ body: paymentData });
+        
+        status = 'WAITING_PAYMENT';
+        message = 'Pix gerado com sucesso via Mercado Pago.';
+        pix_code = mpResponse.point_of_interaction.transaction_data.qr_code;
+        pix_qr_code_base64 = mpResponse.point_of_interaction.transaction_data.qr_code_base64;
+      } catch (err) {
+        throw new Error(`Erro Mercado Pago: ${err.message}`);
+      }
     }
 
     // Simulação do Split de Pagamento (NEXUS Syndicate)
@@ -76,7 +124,8 @@ router.post('/process', async (req, res) => {
       order_id: orderId,
       status: status,
       message: message,
-      pix_code: payment_method === 'PIX' ? `00020101021126580014br.gov.bcb.pix0136NEXUS${orderId}` : null
+      pix_code: pix_code,
+      pix_qr_code_base64: pix_qr_code_base64
     });
 
   } catch (error) {
