@@ -699,3 +699,157 @@ export function mountUTMModal() {
 
   return modal;
 }
+
+// ---------------------------------------------------------------
+// Pixel Modal
+// ---------------------------------------------------------------
+export function mountPixelModal() {
+  const modal = $('#modal-pixel');
+  const btnOpen = $('#btn-pixel');
+  const btnClose = $('#pixel-close');
+  const btnCopyBase = $('#pixel-copy-base');
+  const btnCopyConv = $('#pixel-copy-conversion');
+  const txtBase = $('#pixel-code-base');
+  const txtConv = $('#pixel-code-conversion');
+
+  if (!modal || !btnOpen) return null;
+
+  btnOpen.addEventListener('click', async () => {
+    try {
+      const res = await api.me();
+      const workspaceId = res.user.workspace_id || 1;
+      const host = window.location.origin;
+      
+      const snippet = `<script>
+  window.maranetQueue = window.maranetQueue || [];
+  function maranet(){ maranetQueue.push(arguments); }
+  maranet('init', '${workspaceId}');
+  maranet('track', 'pageview');
+</script>
+<script async src="${host}/js/maranet-pixel.js"></script>`;
+      
+      txtBase.value = snippet;
+    } catch(e) {}
+    openModal('modal-pixel');
+  });
+
+  btnClose.addEventListener('click', () => closeModal('modal-pixel'));
+
+  btnCopyBase.addEventListener('click', () => {
+    if (txtBase.value) {
+      navigator.clipboard.writeText(txtBase.value);
+      toast('Código Base Copiado!');
+    }
+  });
+
+  btnCopyConv.addEventListener('click', () => {
+    if (txtConv.value) {
+      navigator.clipboard.writeText(txtConv.value);
+      toast('Código de Conversão Copiado!');
+    }
+  });
+
+  return modal;
+}
+
+// ---------------------------------------------------------------
+// Automations (Stop-Loss) Modal
+// ---------------------------------------------------------------
+export function mountAutomationsModal() {
+  const modal = $('#modal-automations');
+  const btnOpen = $('#btn-automations');
+  const btnClose = $('#automations-close');
+  const btnAdd = $('#auto-add');
+  const tbody = $('#automations-table tbody');
+
+  if (!modal || !btnOpen) return null;
+
+  btnOpen.style.display = 'inline-block'; // Admin only by default via CSS/JS
+
+  async function loadAutomations() {
+    try {
+      const rows = await api.automations();
+      tbody.innerHTML = '';
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="center muted" style="padding:15px;">Nenhuma automação configurada.</td></tr>';
+        return;
+      }
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const metricName = {spend:'Gasto',roas:'ROAS',cpl:'CPL',cpc:'CPC'}[r.metric] || r.metric;
+        const actName = {pause_campaign:'Pausar Campanha',notify_whatsapp:'Notificar'}[r.action] || r.action;
+        tr.innerHTML = `
+          <td>${escapeAttr(r.name)}</td>
+          <td>${metricName}</td>
+          <td>${r.operator} ${r.value}</td>
+          <td>${actName}</td>
+          <td>
+            <label class="switch">
+              <input type="checkbox" class="auto-toggle" data-id="${r.id}" ${r.active ? 'checked' : ''}>
+              <span class="slider"></span>
+            </label>
+          </td>
+          <td class="right">
+            <button class="btn btn-sm auto-del" data-id="${r.id}" style="color:var(--laranja); border-color:var(--laranja);">Excluir</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      $$('.auto-toggle', tbody).forEach(el => {
+        el.addEventListener('change', async (e) => {
+          try {
+            await api.toggleAutomation(e.target.dataset.id, e.target.checked);
+            toast('Status atualizado');
+          } catch(err) {
+            toast(err.message, { error: true });
+            e.target.checked = !e.target.checked;
+          }
+        });
+      });
+
+      $$('.auto-del', tbody).forEach(el => {
+        el.addEventListener('click', async (e) => {
+          if (!confirm('Excluir automação?')) return;
+          try {
+            await api.deleteAutomation(e.target.dataset.id);
+            toast('Excluída com sucesso');
+            loadAutomations();
+          } catch(err) { toast(err.message, { error: true }); }
+        });
+      });
+    } catch(e) {}
+  }
+
+  btnOpen.addEventListener('click', () => {
+    loadAutomations();
+    openModal('modal-automations');
+  });
+
+  btnClose.addEventListener('click', () => closeModal('modal-automations'));
+
+  btnAdd.addEventListener('click', async () => {
+    const name = $('#auto-name').value.trim();
+    const metric = $('#auto-metric').value;
+    const operator = $('#auto-operator').value;
+    const value = $('#auto-value').value;
+    const action = $('#auto-action').value;
+
+    if (!name || !value) return toast('Preencha nome e valor', { error: true });
+    
+    btnAdd.disabled = true;
+    try {
+      await api.createAutomation({ name, metric, operator, value: Number(value), action });
+      toast('Automação criada!');
+      $('#auto-name').value = '';
+      $('#auto-value').value = '';
+      loadAutomations();
+    } catch(e) {
+      toast(e.message, { error: true });
+    } finally {
+      btnAdd.disabled = false;
+    }
+  });
+
+  return modal;
+}

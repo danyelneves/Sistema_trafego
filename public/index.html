@@ -51,6 +51,8 @@
         <select id="workspace-select" style="display:none; margin-right:5px; background: transparent; color: var(--text); border: 1px solid var(--border); padding: 5px 10px; border-radius: var(--border-radius-btn);" title="Trocar de Cliente (Workspace)"></select>
         <button class="btn" id="btn-new-workspace" style="display:none; padding: 5px 8px; margin-right: 5px; min-height:unset; line-height:1;" title="Novo Cliente (Workspace)">+</button>
         <button class="btn" id="btn-utm" style="padding: 5px 8px; margin-right: 5px; min-height:unset; line-height:1;" title="Gerador de UTM">🔗</button>
+        <button class="btn" id="btn-pixel" style="padding: 5px 8px; margin-right: 5px; min-height:unset; line-height:1;" title="Instalar Pixel (Tracking)">🎯</button>
+        <button class="btn" id="btn-automations" style="display:none; padding: 5px 8px; margin-right: 5px; min-height:unset; line-height:1;" title="Automações (Stop-Loss)">⚡</button>
         <button class="btn" id="btn-branding" style="display:none; padding: 5px 8px; margin-right: 10px; min-height:unset; line-height:1;" title="Personalizar White-Label (Cor/Logo)">🎨</button>
       </div>
       <div class="user-chip" id="user-chip"><b>●</b> …</div>
@@ -750,6 +752,101 @@
     <div class="modal-actions">
       <button class="btn" id="utm-close">Fechar</button>
       <button class="btn teal" id="utm-copy">Copiar Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · Instalação do Pixel ================================================================= -->
+<div class="modal-overlay" id="modal-pixel">
+  <div class="modal modal-wide">
+    <h2>Instalação do Pixel Maranet 🎯</h2>
+    <div class="modal-subtitle">Cole este código na tag <code>&lt;head&gt;</code> de todas as páginas do seu site.</div>
+    
+    <div class="form-group" style="margin-top:15px;">
+      <label>1. Código de Acompanhamento (Server-Side Tracking)</label>
+      <textarea id="pixel-code-base" readonly style="height: 120px; font-family: monospace; font-size: 12px; background: #111; color: #4ecb71;"></textarea>
+      <button class="btn teal" id="pixel-copy-base" style="margin-top: 10px;">Copiar Código Base</button>
+    </div>
+
+    <div class="form-group" style="margin-top:20px; padding-top: 20px; border-top: 1px solid var(--border);">
+      <label>2. Código de Conversão (Opcional - Ex: Página de Obrigado)</label>
+      <p style="font-size:12px; color:var(--muted); margin-bottom:5px;">Dispare este evento apenas quando uma compra for confirmada.</p>
+      <textarea id="pixel-code-conversion" readonly style="height: 60px; font-family: monospace; font-size: 12px; background: #111; color: #4ecb71;">
+<script>
+  maranet('track', 'purchase', { value: 97.00 });
+</script>
+      </textarea>
+      <button class="btn teal" id="pixel-copy-conversion" style="margin-top: 10px;">Copiar Código de Conversão</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="pixel-close">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · Automações (Stop-Loss) ================================================================= -->
+<div class="modal-overlay" id="modal-automations">
+  <div class="modal modal-wide">
+    <h2>Automações de Campanha (Stop-Loss) ⚡</h2>
+    <div class="modal-subtitle">Desative campanhas automaticamente quando atingirem métricas indesejadas.</div>
+    
+    <div class="table-container" style="margin-top:20px; max-height:250px;">
+      <table class="data-table" id="automations-table">
+        <thead>
+          <tr>
+            <th>Nome / Regra</th>
+            <th>Métrica</th>
+            <th>Condição</th>
+            <th>Ação</th>
+            <th>Status</th>
+            <th class="right">Opções</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:20px; padding-top: 20px; border-top: 1px solid var(--border);">
+      <h3 style="font-size:14px; margin-bottom:15px; color:var(--teal);">Criar Nova Regra</h3>
+      <div class="grid" style="grid-template-columns: 2fr 1fr 1fr 1fr 2fr; gap:10px; align-items:end;">
+        <div class="form-group">
+          <label>Nome da Regra</label>
+          <input type="text" id="auto-name" placeholder="Ex: Stop-Loss Diário">
+        </div>
+        <div class="form-group">
+          <label>Métrica</label>
+          <select id="auto-metric">
+            <option value="spend">Gasto (R$)</option>
+            <option value="roas">ROAS</option>
+            <option value="cpl">Custo p/ Lead (R$)</option>
+            <option value="cpc">CPC (R$)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Condição</label>
+          <select id="auto-operator">
+            <option value=">">Maior que (>)</option>
+            <option value="<">Menor que (<)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valor</label>
+          <input type="number" id="auto-value" step="0.01" placeholder="Ex: 50.00">
+        </div>
+        <div class="form-group">
+          <label>Ação</label>
+          <select id="auto-action">
+            <option value="pause_campaign">Pausar Campanha no Meta/Google</option>
+            <option value="notify_whatsapp">Apenas Notificar no WhatsApp</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn teal" id="auto-add" style="margin-top: 15px; width: 100%;">Adicionar Regra</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="automations-close">Fechar</button>
     </div>
   </div>
 </div>

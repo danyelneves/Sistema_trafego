@@ -54,6 +54,8 @@ app.use('/api/cron',       require('./routes/cron'));
 app.use('/api/instagram',  require('./routes/instagram'));
 app.use('/api/ai',         require('./routes/ai'));
 app.use('/api/webhook',    require('./routes/webhook'));
+app.use('/api/pixel',      require('./routes/pixel'));
+app.use('/api/automations',require('./routes/automations'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now(), node: process.version }));
 

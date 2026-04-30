@@ -8,7 +8,7 @@ import { renderKPIs, renderHealthPanel, renderSocialKPIs, renderPacingPanel, ren
 import {
   mountEntryModal, mountCampaignsModal, mountGoalsModal, mountNotesModal,
   mountUsersModal, mountImportModal, mountAlertsModal, mountBrandingModal,
-  mountUTMModal
+  mountUTMModal, mountPixelModal, mountAutomationsModal
 }                       from './modals.js';
 import { mountSyncModal }  from './sync-modal.js';
 import { mountDrillModal }  from './drill.js';
@@ -52,6 +52,8 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   window.__drillModal = drillModal;
 
   const utmModal = mountUTMModal();
+  const pixelModal = mountPixelModal();
+  const autoModal = mountAutomationsModal();
 
   // Modais admin-only
   let usersModal, importModal, syncModal, alertsModal, brandingModal;

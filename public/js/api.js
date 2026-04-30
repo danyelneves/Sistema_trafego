@@ -62,6 +62,12 @@ export const api = {
   switchWorkspace: (wId)       => call('/api/workspaces/switch', { method: 'POST', body: { workspace_id: wId } }),
   updateBranding:  (id, body)  => call(`/api/workspaces/${id}/branding`, { method: 'PUT', body }),
 
+  // Automations
+  automations:        ()         => call('/api/automations'),
+  createAutomation:   (body)     => call('/api/automations', { method: 'POST', body }),
+  deleteAutomation:   (id)       => call(`/api/automations/${id}`, { method: 'DELETE' }),
+  toggleAutomation:   (id, act)  => call(`/api/automations/${id}/toggle`, { method: 'PATCH', body: { active: act } }),
+
   // Alertas
   alertConfigs:       ()       => call('/api/alerts/config'),
   createAlertConfig:  (body)   => call('/api/alerts/config', { method: 'POST', body }),
