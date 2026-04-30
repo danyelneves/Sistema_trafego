@@ -106,6 +106,8 @@
       <button class="btn" id="btn-alerts"    title="Alertas por e-mail">🔔 Alertas</button>
       <button class="btn" id="btn-viewer-link" title="Gerar link de acesso para Diretoria">🔗 Link Diretoria</button>
       <button class="btn" id="btn-sync"      title="Sincronizar Google Ads / Meta">⚡ Sincronizar</button>
+      <button class="btn" id="btn-franchise" title="Gestor de Franquias" onclick="openFranchiseModal()" style="color:#ff0055; border-color:#ff0055;">🏢 Franquias</button>
+      <button class="btn pulse" id="btn-skynet" title="Operação Skynet" onclick="openSkynetModal()" style="color:#ff0000; border-color:#ff0000; font-weight:bold;">🤖 Skynet</button>
       <button class="btn primary" id="btn-report-magic" title="Gerar Link de Relatório com IA" style="background:var(--teal); color:#000;">
         ✨ Gerar Relatório Mágico
       </button>
@@ -791,6 +793,56 @@
 
     <div class="modal-actions">
       <button class="btn" id="pixel-close">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · NEXUS SKYNET ================================================================= -->
+<div class="modal-overlay" id="modal-skynet">
+  <div class="modal modal-wide" style="max-width: 700px; border: 1px solid #ff0000; box-shadow: 0 0 50px rgba(255,0,0,0.2);">
+    <h2 style="color: #ff0000; text-transform:uppercase;">Operação Skynet 🤖🔥</h2>
+    <div class="modal-subtitle">O grau máximo de automação. A máquina caça, liga, vende e cobra as empresas sozinha. Você só recebe os recibos do Checkout.</div>
+    
+    <div class="form-group" style="margin-top:20px;">
+      <label style="color:#aaa;">Qual nicho a máquina deve caçar?</label>
+      <input type="text" id="skynet-niche" placeholder="Ex: Dentistas de Implante" style="width:100%; padding:10px; background:#111; color:#fff; border:1px solid #ff0000; margin-top:5px; margin-bottom:15px;">
+      
+      <label style="color:#aaa;">Qual cidade ou região?</label>
+      <input type="text" id="skynet-location" placeholder="Ex: São Paulo, Capital" style="width:100%; padding:10px; background:#111; color:#fff; border:1px solid #ff0000; margin-top:5px; margin-bottom:15px;">
+    </div>
+
+    <button class="btn-save pulse" id="btn-skynet-launch" onclick="launchSkynet()" style="width: 100%; background: #ff0000; color: #fff; margin-top:10px; font-weight:bold; font-size:18px;">INICIAR CAÇADA GLOBAL</button>
+    
+    <div id="skynet-result" style="margin-top:20px; text-align:left; background:#050505; padding:15px; border-radius:8px; border:1px solid #ff0000; display:none; font-family:monospace;"></div>
+
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn-cancel" onclick="document.getElementById('modal-skynet').style.display='none'">Abortar Missão</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= MODAL · NEXUS FRANCHISE ================================================================= -->
+<div class="modal-overlay" id="modal-franchise">
+  <div class="modal modal-wide" style="max-width: 600px; border: 1px solid #ff0055;">
+    <h2 style="color: #ff0055;">Licenciamento NEXUS (SaaS) 🏢</h2>
+    <div class="modal-subtitle">Alugue o sistema para outras agências. Configure o nome deles e cobre um pedágio invisível.</div>
+    
+    <div class="form-group" style="margin-top:20px;">
+      <label style="color:#aaa;">Nome da Franquia (Ex: Agência XYZ)</label>
+      <input type="text" id="fran-name" placeholder="Agência XYZ" style="width:100%; padding:10px; background:#111; color:#fff; border:1px solid #333; margin-top:5px; margin-bottom:15px;">
+      
+      <label style="color:#aaa;">Email do Dono da Franquia</label>
+      <input type="email" id="fran-email" placeholder="dono@agenciaxyz.com" style="width:100%; padding:10px; background:#111; color:#fff; border:1px solid #333; margin-top:5px; margin-bottom:15px;">
+      
+      <label style="color:#aaa;">Seu Pedágio (% do Checkout NEXUS Black deles)</label>
+      <input type="number" id="fran-fee" value="5.0" style="width:100%; padding:10px; background:#111; color:#fff; border:1px solid #333; margin-top:5px; margin-bottom:15px;">
+    </div>
+
+    <button class="btn-save pulse" id="btn-fran-create" onclick="createFranchise()" style="width: 100%; background: #ff0055; color: #fff; margin-top:10px; font-weight:bold;">GERAR NOVA FRANQUIA</button>
+    <div id="fran-result" style="margin-top:20px; text-align:left; background:#111; padding:15px; border-radius:8px; border:1px solid #333; display:none;"></div>
+
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn-cancel" onclick="document.getElementById('modal-franchise').style.display='none'">Fechar</button>
     </div>
   </div>
 </div>
