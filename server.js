@@ -34,6 +34,8 @@ app.set('trust proxy', 1); // Garante que req.protocol seja 'https' no Vercel
 app.set('trust proxy', 1); // Garante que req.protocol seja 'https' no Vercel
 app.use(cookieParser());
 app.use(requestLogger);
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ------------------------------------------------------------
 // API Routes
@@ -51,8 +53,6 @@ app.use('/api/drill',      require('./routes/drill'));
 app.use('/api/sync',       require('./routes/sync').router);
 app.use('/api/cron',       require('./routes/cron'));
 app.use('/api/instagram',  require('./routes/instagram'));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use('/api/webhook',    require('./routes/webhook'));
 app.use('/api/pixel',      require('./routes/pixel'));
