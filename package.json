@@ -4,11 +4,11 @@
   "description": "Maranet Telecom · Central de Tráfego — Dashboard profissional Google Ads + Meta Ads",
   "main": "server.js",
   "scripts": {
-    "start":        "node --no-warnings server.js",
-    "dev":          "node --no-warnings --watch server.js",
-    "seed":         "node --no-warnings db/seed.js",
-    "reset":        "node --no-warnings db/reset.js",
-    "db:migrate":   "node --no-warnings db/migrate.js",
+    "start": "node --no-warnings server.js",
+    "dev": "node --no-warnings --watch server.js",
+    "seed": "node --no-warnings db/seed.js",
+    "reset": "node --no-warnings db/reset.js",
+    "db:migrate": "node --no-warnings db/migrate.js",
     "vercel-build": "echo Build OK"
   },
   "keywords": [
@@ -25,6 +25,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.4.5",

@@ -79,4 +79,7 @@ export const api = {
   syncStatus:   ()             => call('/api/sync/status'),
   syncGoogle:   (body)         => call('/api/sync/google', { method: 'POST', body }),
   syncMeta:     (body)         => call('/api/sync/meta',   { method: 'POST', body }),
+
+  // AI Copilot
+  aiChat:       (body)         => call('/api/ai/chat', { method: 'POST', body }),
 };

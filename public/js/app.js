@@ -239,6 +239,7 @@ async function refresh() {
     state.lastMonthly = monthly.rows || [];
     state.lastByCamp  = byCamp.rows  || [];
     state.lastGoals   = goals;
+    state.lastKpis    = kpis.current;
 
     renderHeaderPeriod();
 
@@ -367,3 +368,76 @@ function updateSyncTime() {
   if (footerUpdate) footerUpdate.textContent = 'Atualizado: ' + lastSyncTime.toLocaleString('pt-BR');
 }
 setInterval(updateSyncTime, 30000);
+// ---------------------------------------------------------------
+// AI Copilot Logic
+// ---------------------------------------------------------------
+(function initCopilot() {
+  const fab = $('#copilot-fab');
+  const panel = $('#copilot-panel');
+  const closeBtn = $('#copilot-close');
+  const input = $('#copilot-input');
+  const sendBtn = $('#copilot-send');
+  const messagesDiv = $('#copilot-messages');
+
+  if (!fab || !panel) return;
+
+  fab.addEventListener('click', () => {
+    panel.classList.toggle('active');
+    if (panel.classList.contains('active')) input.focus();
+  });
+
+  closeBtn.addEventListener('click', () => {
+    panel.classList.remove('active');
+  });
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    // Append User Message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'msg-user';
+    userMsg.textContent = text;
+    messagesDiv.appendChild(userMsg);
+    input.value = '';
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    // Append Typing Indicator
+    const typingMsg = document.createElement('div');
+    typingMsg.className = 'msg-bot';
+    typingMsg.style.fontStyle = 'italic';
+    typingMsg.style.color = 'var(--muted)';
+    typingMsg.textContent = 'Analisando dados...';
+    messagesDiv.appendChild(typingMsg);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    try {
+      // Build context
+      const contextData = window.state && window.state.lastKpis ? window.state.lastKpis : {};
+      
+      const res = await api.aiChat({ message: text, contextData });
+      
+      typingMsg.remove();
+
+      const botMsg = document.createElement('div');
+      botMsg.className = 'msg-bot';
+      // simple line break replace
+      botMsg.innerHTML = (res.text || 'Desculpe, ocorreu um erro.').replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+      messagesDiv.appendChild(botMsg);
+    } catch (e) {
+      typingMsg.remove();
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'msg-bot';
+      errorMsg.style.color = 'var(--laranja)';
+      errorMsg.style.borderColor = 'var(--laranja)';
+      errorMsg.textContent = e.message || 'Erro ao comunicar com a IA.';
+      messagesDiv.appendChild(errorMsg);
+    }
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+})();

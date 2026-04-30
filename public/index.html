@@ -756,6 +756,27 @@
     <div class="modal-actions"><button class="btn" id="drill-close">Fechar</button></div>
   </div>
 </div>
+<!-- ================================================================= COPILOT UI ================================================================= -->
+<div id="copilot-fab" title="Maranet Copilot">
+  <i class="ph ph-robot"></i>
+</div>
+
+<div id="copilot-panel">
+  <div class="copilot-header">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <i class="ph ph-robot" style="font-size:20px; color:var(--teal)"></i>
+      <strong>Maranet Copilot</strong>
+    </div>
+    <button id="copilot-close" style="background:transparent; border:none; color:var(--text); cursor:pointer; font-size:20px;">&times;</button>
+  </div>
+  <div class="copilot-body" id="copilot-messages">
+    <div class="msg-bot">Olá! Sou o Maranet Copilot. Como posso ajudar a analisar seus dados de tráfego hoje?</div>
+  </div>
+  <div class="copilot-input-area">
+    <input type="text" id="copilot-input" placeholder="Pergunte sobre seus dados...">
+    <button id="copilot-send"><i class="ph ph-paper-plane-right"></i></button>
+  </div>
+</div>
 
 <script type="module" src="/js/app.js"></script>
 </body>
