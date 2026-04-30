@@ -74,4 +74,28 @@ router.post('/process', async (req, res) => {
   }
 });
 
+// ----------------------------------------------------------------
+// GET /api/checkout/orders
+// Lista as vendas do NEXUS Black para o Dashboard
+// ----------------------------------------------------------------
+const { requireAuth } = require('../middleware/auth');
+router.get('/orders', requireAuth, async (req, res) => {
+  try {
+    const orders = await db.all(`
+      SELECT o.*, p.name as product_name 
+      FROM orders o 
+      JOIN products p ON o.product_id = p.id 
+      WHERE o.workspace_id = $1 
+      ORDER BY o.created_at DESC LIMIT 50
+    `, [req.user.workspace_id]);
+    
+    let totalSales = 0;
+    orders.forEach(o => { if(o.status === 'PAID') totalSales += Number(o.amount); });
+
+    res.json({ ok: true, total: totalSales, orders });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

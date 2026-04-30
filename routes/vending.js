@@ -1,12 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const rateLimit = require('express-rate-limit');
+
+// Bloqueia se um atacante tentar bater mais de 3 vezes em 10 minutos
+const vendingLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, 
+  max: 3, 
+  message: { error: 'Calma lá! Muitos pedidos de robô. Tente novamente mais tarde.' }
+});
 
 // ----------------------------------------------------------------
 // POST /api/vending/checkout
 // Endpoint chamado quando o Dentista/Advogado paga pelo Pix
 // ----------------------------------------------------------------
-router.post('/checkout', async (req, res) => {
+router.post('/checkout', vendingLimiter, async (req, res) => {
   try {
     const { business_type, city, phone, amount_paid } = req.body;
 
