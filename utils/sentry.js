@@ -84,6 +84,27 @@ function captureMessage(msg, level = 'info', context = {}) {
 
 /** Middleware Express: captura erros não tratados e envia ao Sentry antes de responder. */
 function errorHandler(err, req, res, next) {
+  // ValidationError é "esperado" — não notifica Sentry, retorna 400 com detalhe
+  if (err && err.name === 'ValidationError') {
+    if (res.headersSent) return next(err);
+    return res.status(400).json({
+      error: err.message,
+      fields: err.fields,
+      requestId: req.requestId,
+    });
+  }
+
+  // Erros 4xx esperados (status setado): só responde, não notifica Sentry
+  const status = err.status || err.statusCode || 500;
+  if (status >= 400 && status < 500) {
+    if (res.headersSent) return next(err);
+    return res.status(status).json({
+      error: err.message,
+      requestId: req.requestId,
+    });
+  }
+
+  // 5xx ou sem status: notifica Sentry e responde mensagem genérica em prod
   captureException(err, {
     path: req.path,
     method: req.method,
@@ -92,8 +113,10 @@ function errorHandler(err, req, res, next) {
     userId: req.user?.id,
   });
   if (res.headersSent) return next(err);
-  res.status(err.status || 500).json({
-    error: process.env.NODE_ENV === 'production' ? 'Erro interno. Tente novamente em instantes.' : err.message,
+  res.status(status).json({
+    error: process.env.NODE_ENV === 'production'
+      ? 'Erro interno. Tente novamente em instantes.'
+      : err.message,
     requestId: req.requestId,
   });
 }

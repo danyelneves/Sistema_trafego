@@ -16,16 +16,24 @@ const assert = require('assert');
 let pass = 0;
 let fail = 0;
 const failures = [];
+const queue = [];
 
 function test(name, fn) {
-  try {
-    fn();
-    pass++;
-    console.log(`✅ ${name}`);
-  } catch (err) {
-    fail++;
-    failures.push(`${name}: ${err.message}`);
-    console.log(`❌ ${name}\n    ${err.message}`);
+  // Empilha pra rodar serializado depois (suporta sync e async)
+  queue.push({ name, fn });
+}
+
+async function runAll() {
+  for (const { name, fn } of queue) {
+    try {
+      await fn();
+      pass++;
+      console.log(`✅ ${name}`);
+    } catch (err) {
+      fail++;
+      failures.push(`${name}: ${err.message}`);
+      console.log(`❌ ${name}\n    ${err.message}`);
+    }
   }
 }
 
@@ -115,12 +123,113 @@ test('logger.error aceita Error como segundo arg', () => {
 });
 
 // =========================
+// utils/validate.js
+// =========================
+const v = require('../utils/validate');
+
+test('validate.parse aceita campos válidos', () => {
+  const result = v.parse({ plan_name: 'STARTER', amount: 97 }, {
+    plan_name: v.enum(['STARTER', 'GROWTH', 'ELITE']),
+    amount: v.number({ min: 0 }),
+  });
+  assert.strictEqual(result.plan_name, 'STARTER');
+  assert.strictEqual(result.amount, 97);
+});
+
+test('validate rejeita enum inválido', () => {
+  assert.throws(() => v.parse({ plan_name: 'PIRATE' }, { plan_name: v.enum(['STARTER', 'GROWTH', 'ELITE']) }), /Plano|inválido/i);
+});
+
+test('validate rejeita campo obrigatório vazio', () => {
+  assert.throws(() => v.parse({}, { name: v.string() }), /obrigatório/i);
+});
+
+test('validate aceita opcional com default', () => {
+  const result = v.parse({}, { name: v.string({ optional: true, default: 'anon' }) });
+  assert.strictEqual(result.name, 'anon');
+});
+
+test('validate phone aceita 10-13 dígitos', () => {
+  const result = v.parse({ phone: '(11) 99999-8888' }, { phone: v.phone() });
+  assert.strictEqual(result.phone, '11999998888');
+});
+
+test('validate phone rejeita formato curto', () => {
+  assert.throws(() => v.parse({ phone: '123' }, { phone: v.phone() }), /dígitos/);
+});
+
+test('validate email normaliza para lowercase', () => {
+  const result = v.parse({ email: 'JOAO@nexus.COM' }, { email: v.email() });
+  assert.strictEqual(result.email, 'joao@nexus.com');
+});
+
+test('validate ValidationError tem status 400', () => {
+  try {
+    v.parse({}, { name: v.string() });
+    assert.fail('deveria ter lançado');
+  } catch (err) {
+    assert.strictEqual(err.status, 400);
+    assert.strictEqual(err.name, 'ValidationError');
+    assert.deepStrictEqual(err.fields, ['name']);
+  }
+});
+
+// =========================
+// utils/retry.js
+// =========================
+const { retry, isTransientError } = require('../utils/retry');
+
+test('retry funciona em primeira tentativa', async () => {
+  let calls = 0;
+  const result = await retry(async () => { calls++; return 'ok'; }, { attempts: 3, baseDelayMs: 10 });
+  assert.strictEqual(result, 'ok');
+  assert.strictEqual(calls, 1);
+});
+
+test('retry retenta em erro transient', async () => {
+  let calls = 0;
+  const result = await retry(async () => {
+    calls++;
+    if (calls < 3) {
+      const err = new Error('timeout');
+      err.code = 'ETIMEDOUT';
+      throw err;
+    }
+    return 'ok';
+  }, { attempts: 5, baseDelayMs: 10 });
+  assert.strictEqual(result, 'ok');
+  assert.strictEqual(calls, 3);
+});
+
+test('retry NÃO retenta em erro 4xx', async () => {
+  let calls = 0;
+  await assert.rejects(
+    retry(async () => {
+      calls++;
+      const err = new Error('bad request');
+      err.response = { status: 400 };
+      throw err;
+    }, { attempts: 3, baseDelayMs: 10 }),
+    /bad request/
+  );
+  assert.strictEqual(calls, 1);
+});
+
+test('isTransientError reconhece 5xx', () => {
+  assert.strictEqual(isTransientError({ response: { status: 502 } }), true);
+  assert.strictEqual(isTransientError({ response: { status: 404 } }), false);
+  assert.strictEqual(isTransientError({ code: 'ETIMEDOUT' }), true);
+});
+
+// =========================
 // resumo
 // =========================
-console.log(`\n${pass}/${pass + fail} passou | ${fail} falhou\n`);
-if (fail > 0) {
-  console.log('Falhas:');
-  failures.forEach(f => console.log(`  - ${f}`));
-  process.exit(1);
-}
-process.exit(0);
+runAll().then(() => {
+  console.log(`\n${pass}/${pass + fail} passou | ${fail} falhou\n`);
+  if (fail > 0) {
+    console.log('Falhas:');
+    failures.forEach(f => console.log(`  - ${f}`));
+    process.exit(1);
+  }
+  process.exit(0);
+});
