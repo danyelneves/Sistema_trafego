@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS webhook_events (
   UNIQUE(provider, external_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_webhook_events_processed 
+  ON webhook_events(processed_at);
+
 -- 2. Auditoria de Pagamentos
 CREATE TABLE IF NOT EXISTS payments_log (
   id BIGSERIAL PRIMARY KEY,
@@ -21,7 +24,24 @@ CREATE TABLE IF NOT EXISTS payments_log (
   timestamp TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_payments_log_workspace 
+  ON payments_log(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_payments_log_payment_id 
+  ON payments_log(payment_id);
+
 -- 3. Inserção de tokens de webhook do WhatsApp (UUIDs)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'workspace_settings_ws_key_unique'
+  ) THEN
+    ALTER TABLE workspace_settings 
+      ADD CONSTRAINT workspace_settings_ws_key_unique 
+      UNIQUE (workspace_id, key);
+  END IF;
+END $$;
+
 INSERT INTO workspace_settings (workspace_id, key, value)
 SELECT id, 'whatsapp.webhook.token', gen_random_uuid()::text
 FROM workspaces

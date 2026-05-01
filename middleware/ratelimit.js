@@ -4,6 +4,7 @@ const { Redis } = require("@upstash/redis");
 let redisClient = null;
 let ratelimitAuth = null;
 let ratelimitWa = null;
+let ratelimitKiwify = null;
 
 try {
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
@@ -15,6 +16,10 @@ try {
     ratelimitWa = new Ratelimit({
       redis: redisClient,
       limiter: Ratelimit.slidingWindow(10, '1 s')
+    });
+    ratelimitKiwify = new Ratelimit({
+      redis: redisClient,
+      limiter: Ratelimit.slidingWindow(60, '1 m')
     });
   }
 } catch (e) {
@@ -41,6 +46,16 @@ module.exports = {
     
     if (!success) {
       return res.status(429).json({ error: "Rate limit excedido para envios de WhatsApp." });
+    }
+    next();
+  },
+  checkKiwifyRateLimit: async (req, res, next) => {
+    if (!ratelimitKiwify) return next();
+    const wsId = req.params.wsId || 'global';
+    const { success } = await ratelimitKiwify.limit(`kiwify:${wsId}`);
+    
+    if (!success) {
+      return res.status(429).json({ error: "Rate limit excedido para webhooks da Kiwify." });
     }
     next();
   }

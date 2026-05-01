@@ -43,11 +43,10 @@ pool.on('error', (err) => {
  * Converte placeholders SQLite (?) para PostgreSQL ($1, $2...).
  * Se o sql já contém $1 não faz nada.
  */
-function pgify(sql, params) {
-  if (/\$\d+/.test(sql)) return params ? { sql, params } : sql;
+function pgify(sql) {
+  if (/\$\d+/.test(sql)) return sql;
   let i = 0;
-  const newSql = sql.replace(/\?/g, () => `$${++i}`);
-  return params ? { sql: newSql, params } : newSql;
+  return sql.replace(/\?/g, () => `$${++i}`);
 }
 
 /** Executa uma query e retorna o QueryResult do pg. */
@@ -84,22 +83,18 @@ function transaction(fn) {
       await client.query('BEGIN');
       const clientDb = {
         async query(sql, params = []) {
-          const { sql: s, params: p } = pgify(sql, params);
-          return client.query(s, p);
+          return client.query(pgify(sql), params);
         },
         async get(sql, ...params) {
-          const { sql: s, params: p } = pgify(sql, params);
-          const { rows } = await client.query(s, p);
+          const { rows } = await client.query(pgify(sql), params);
           return rows[0];
         },
         async all(sql, ...params) {
-          const { sql: s, params: p } = pgify(sql, params);
-          const { rows } = await client.query(s, p);
+          const { rows } = await client.query(pgify(sql), params);
           return rows;
         },
         async run(sql, ...params) {
-          const { sql: s, params: p } = pgify(sql, params);
-          const result = await client.query(s, p);
+          const result = await client.query(pgify(sql), params);
           return { rowCount: result.rowCount, rows: result.rows };
         },
       };

@@ -65,50 +65,45 @@ router.post('/upgrade', requireAuth, async (req, res) => {
         const ownerSettings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = 1");
         let ownerMpToken = ownerSettings.find(s => s.key === 'mercadopago.accessToken')?.value;
         
-        // Fallback Global: Tenta puxar direto da Vercel se não tiver no banco de dados
-        if (!ownerMpToken && process.env.MERCADOPAGO_ACCESS_TOKEN) {
-            ownerMpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+        if (!ownerMpToken || !ownerMpToken.startsWith('APP_USR')) {
+            return res.status(503).json({ 
+                error: 'Pagamento indisponível no momento. Contate o suporte.' 
+            });
         }
 
         const newLimit = plan_name === 'ELITE' ? 200.00 : (plan_name === 'GROWTH' ? 50.00 : 0.00);
         const price = plan_name === 'ELITE' ? 997.00 : (plan_name === 'GROWTH' ? 297.00 : 97.00);
 
-        if (ownerMpToken && ownerMpToken.startsWith('APP_USR')) {
-            // Cria um link de Checkout real no Mercado Pago do Dono
-            const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
-            const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${ownerMpToken}`,
-                    'Content-Type': 'application/json'
+        const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+        const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${ownerMpToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                items: [{
+                    title: `NEXUS OS - Plano ${plan_name}`,
+                    quantity: 1,
+                    unit_price: price,
+                    currency_id: 'BRL'
+                }],
+                external_reference: `UPGRADE_${req.user.workspace_id}_${plan_name}`,
+                back_urls: {
+                    success: `${protocol}://${req.get('host')}/dashboard`,
+                    failure: `${protocol}://${req.get('host')}/dashboard`,
+                    pending: `${protocol}://${req.get('host')}/dashboard`
                 },
-                body: JSON.stringify({
-                    items: [{
-                        title: `NEXUS OS - Plano ${plan_name}`,
-                        quantity: 1,
-                        unit_price: price,
-                        currency_id: 'BRL'
-                    }],
-                    external_reference: `UPGRADE_${req.user.workspace_id}_${plan_name}`,
-                    back_urls: {
-                        success: `${protocol}://${req.get('host')}/dashboard`,
-                        failure: `${protocol}://${req.get('host')}/dashboard`,
-                        pending: `${protocol}://${req.get('host')}/dashboard`
-                    },
-                    auto_return: "approved"
-                })
-            });
-            const mpData = await mpRes.json();
-            
-            if (mpData.init_point) {
-                // Removemos o "UPDATE provisório". O plano só vai mudar via Webhook após o pagamento.
-                return res.json({ ok: true, checkout_url: mpData.init_point });
-            }
+                auto_return: "approved"
+            })
+        });
+        const mpData = await mpRes.json();
+        
+        if (mpData.init_point) {
+            return res.json({ ok: true, checkout_url: mpData.init_point });
+        } else {
+            return res.status(500).json({ error: 'Erro ao gerar checkout no Mercado Pago.' });
         }
-
-        // Fallback: Se o dono ainda não configurou o Mercado Pago, fazemos o upgrade "Fiado/Mock" para não travar os testes
-        await db.run("UPDATE workspace_billing SET plan_type = $1, credits_limit = $2 WHERE workspace_id = $3", [plan_name, newLimit, req.user.workspace_id]);
-        res.json({ ok: true, message: `Mock: Plano atualizado para ${plan_name}. Limite aumentado para R$${newLimit} (Adicione sua chave do MP para cobrar real).` });
     } catch(e) {
         res.status(500).json({ error: e.message });
     }

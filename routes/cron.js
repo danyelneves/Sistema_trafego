@@ -26,8 +26,13 @@ router.get('/alerts', async (req, res) => {
   }
 
   try {
+    const db = require('../db');
     await runChecks();
     await runAutomations();
+    
+    // Limpeza mensal/diária de webhooks muito antigos (90 dias)
+    await db.run("DELETE FROM webhook_events WHERE processed_at < NOW() - INTERVAL '90 days'");
+    
     res.json({ ok: true, ran_at: new Date().toISOString() });
   } catch (e) {
     console.error('[CRON] Erro ao verificar alertas:', e.message);
