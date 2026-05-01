@@ -87,6 +87,8 @@ app.use('/api/reports',    require('./routes/reports'));
 app.use('/api/ai',         require('./routes/ai'));
 app.use('/api/financial',  require('./routes/financial'));
 app.use('/api/webhooks',   require('./routes/webhooks'));
+app.use('/api/billing',    require('./routes/billing'));
+app.use('/api/alerts',     require('./routes/alerts'));
 app.use('/api/empire',     require('./routes/empire'));
 app.use('/api/launcher',   require('./routes/launcher'));
 app.use('/api/vending',    require('./routes/vending')); // Vending Machine
