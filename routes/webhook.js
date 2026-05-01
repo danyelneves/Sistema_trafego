@@ -1,71 +1,61 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const crypto = require('crypto');
+const axios = require('axios');
+const { checkWaRateLimit } = require('../middleware/ratelimit');
+const { maskPhone, maskText } = require('../utils/mask');
+const { dispatchOrder } = require('../services/poltergeist');
+
+// Helper para Idempotência
+async function checkIdempotency(provider, externalId, payload) {
+  try {
+    await db.run(
+      'INSERT INTO webhook_events (provider, external_id, payload) VALUES ($1, $2, $3)',
+      [provider, externalId, JSON.stringify(payload)]
+    );
+    return false; // Não é duplicado
+  } catch (error) {
+    if (error.code === '23505' || error.message.includes('unique constraint') || error.message.includes('UNIQUE')) {
+      return true; // Duplicado
+    }
+    throw error;
+  }
+}
 
 /**
  * POST /api/webhook/crm
- * Webhook genérico para receber dados de CRM (RD Station, HubSpot, ActiveCampaign, etc).
- * Exemplo de Payload esperado:
- * {
- *   "client_name": "João da Silva",
- *   "client_email": "joao@exemplo.com",
- *   "contract_value": 150.00,
- *   "status": "won",
- *   "utm_source": "meta",
- *   "utm_campaign": "promo_fibra"
- * }
  */
 router.post('/crm', async (req, res) => {
   try {
     const providedToken = req.query.token || req.headers['authorization']?.replace('Bearer ', '');
     if (!providedToken) return res.status(401).json({ error: 'Unauthorized. Missing Webhook token.' });
 
-    // Verifica token no workspace_settings
-    let workspace_id = null;
-    const wsRow = await db.get("SELECT workspace_id FROM workspace_settings WHERE key = 'webhook.secret' AND value = $1", providedToken);
-    if (wsRow) {
-      workspace_id = wsRow.workspace_id;
-    } else {
-      // Fallback legado
-      const oldRow = await db.get("SELECT value FROM settings WHERE key = 'webhook.secret'");
-      if ((oldRow && oldRow.value === providedToken) || providedToken === process.env.WEBHOOK_SECRET) {
-        workspace_id = 1; // Assume workspace padrão
-      }
-    }
-
-    if (!workspace_id) {
+    // Verifica token strict no workspace_settings
+    const wsRow = await db.get("SELECT workspace_id FROM workspace_settings WHERE key = 'webhook.secret' AND value = $1", [providedToken]);
+    if (!wsRow || !wsRow.workspace_id) {
       return res.status(401).json({ error: 'Unauthorized. Invalid Webhook token.' });
     }
+    const workspace_id = wsRow.workspace_id;
 
-    console.log(`[Webhook CRM] Nova venda recebida (Workspace ${workspace_id}):`, req.body);
-    const { 
-      client_name, 
-      client_email, 
-      contract_value, 
-      status, 
-      utm_source, 
-      utm_campaign,
-      utm_content,
-      utm_term,
-      external_id
-    } = req.body;
+    // Idempotência
+    const { external_id, client_name, client_email, contract_value, status, utm_source, utm_campaign, utm_content, utm_term } = req.body;
+    const extId = external_id || crypto.createHash('md5').update(JSON.stringify(req.body)).digest('hex');
+    const isDuplicate = await checkIdempotency('crm', extId, req.body);
+    if (isDuplicate) return res.status(200).json({ ok: true, duplicate: true });
+
+    console.log(`[Webhook CRM] Nova venda recebida (Workspace ${workspace_id})`);
 
     // Apenas registra vendas "ganhas" (won/closed)
     if (status && status !== 'won' && status !== 'closed') {
       return res.status(200).json({ success: true, message: 'Ignorado: Venda não está com status ganho.' });
     }
 
-    // Normaliza a origem (se veio do fb/instagram vira meta, se veio do google/adwords vira google)
     let channel = 'organic';
     const source = (utm_source || '').toLowerCase();
-    if (source.includes('meta') || source.includes('fb') || source.includes('instagram') || source.includes('facebook')) {
-      channel = 'meta';
-    } else if (source.includes('google') || source.includes('adwords')) {
-      channel = 'google';
-    }
+    if (source.includes('meta') || source.includes('fb') || source.includes('instagram') || source.includes('facebook')) channel = 'meta';
+    else if (source.includes('google') || source.includes('adwords')) channel = 'google';
 
-    // Insere na tabela de sales
-    const extId = external_id || `crm_${Date.now()}_${Math.floor(Math.random()*1000)}`;
     const revenueVal = Number(contract_value) || 0;
     
     await db.run(`
@@ -73,79 +63,64 @@ router.post('/crm', async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       ON CONFLICT (external_id) DO NOTHING
     `, [
-      workspace_id,
-      extId,
-      client_name || 'Desconhecido', 
-      client_email || '', 
-      revenueVal, 
-      status || 'won', 
-      channel,
-      utm_source || '',
-      utm_campaign || '',
-      utm_content || '',
-      utm_term || ''
+      workspace_id, extId, maskText(client_name || 'Desconhecido'), maskText(client_email || ''), revenueVal, status || 'won', channel, utm_source || '', utm_campaign || '', utm_content || '', utm_term || ''
     ]);
 
-    // Encontra ou cria uma campanha de fallback se utm_campaign não existir
     let campaign_id = null;
     if (channel !== 'organic') {
       const campName = utm_campaign || `[Orgânico/Desconhecido] ${channel}`;
       let row = await db.get('SELECT id FROM campaigns WHERE workspace_id = $1 AND channel = $2 AND name ILIKE $3', [workspace_id, channel, campName]);
-      
       if (!row) {
-        // Cria a campanha se ela não existir
         const insertRes = await db.run(
           'INSERT INTO campaigns (workspace_id, channel, name, objective) VALUES ($1, $2, $3, $4) RETURNING id',
           [workspace_id, channel, campName, 'Vendas (Auto CRM)']
         );
-        campaign_id = insertRes.rows ? insertRes.rows[0].id : insertRes.lastID; // Suporte para Postgres e SQLite fallback
+        campaign_id = insertRes.rows ? insertRes.rows[0].id : insertRes.lastID;
       } else {
         campaign_id = row.id;
       }
     }
 
     if (campaign_id) {
-      // Atualiza o dia de hoje na metrics_daily
       const today = new Date().toISOString().split('T')[0];
-      
       await db.run(`
         INSERT INTO metrics_daily (date, campaign_id, sales, revenue)
         VALUES ($1, $2, 1, $3)
         ON CONFLICT (campaign_id, date) 
-        DO UPDATE SET 
-          sales = COALESCE(metrics_daily.sales, 0) + 1,
-          revenue = COALESCE(metrics_daily.revenue, 0) + EXCLUDED.revenue
+        DO UPDATE SET sales = COALESCE(metrics_daily.sales, 0) + 1, revenue = COALESCE(metrics_daily.revenue, 0) + EXCLUDED.revenue
       `, [today, campaign_id, revenueVal]);
     }
 
     res.status(201).json({ success: true, message: 'Venda registrada com sucesso no painel tático.' });
   } catch (error) {
-    console.error('[Webhook CRM] Erro:', error);
+    console.error('[Webhook CRM] Erro:', error.message);
     res.status(500).json({ error: 'Erro ao processar webhook do CRM' });
   }
 });
 
-
-
 /**
- * POST /api/webhook/whatsapp
- * Fechador NLP (Atendimento 24/7 Autônomo).
- * Recebe webhooks da Evolution API / Z-API.
+ * POST /api/webhook/whatsapp/:token
  */
-router.post('/whatsapp', async (req, res) => {
+router.post('/whatsapp/:token', checkWaRateLimit, async (req, res) => {
   try {
+    const { token } = req.params;
     const { instance, data } = req.body;
     if (!data || !data.key || !data.message) return res.status(200).json({ ok: true, msg: "Ignorado" });
     
     const remoteJid = data.key.remoteJid;
-    if (data.key.fromMe || remoteJid.includes('@g.us')) return res.status(200).json({ ok: true }); // Ignora msg própria ou de grupo
+    if (data.key.fromMe || remoteJid.includes('@g.us')) return res.status(200).json({ ok: true }); 
     
-    // Extrair texto da mensagem recebida
     let incomingText = data.message.conversation || data.message.extendedTextMessage?.text || '';
     if (!incomingText) return res.status(200).json({ ok: true });
 
-    // Tentar localizar workspace_id via URL ou Token
-    let workspace_id = req.query.workspace || 1; 
+    // Idempotência
+    const isDuplicate = await checkIdempotency('whatsapp', data.key.id, req.body);
+    if (isDuplicate) return res.status(200).json({ ok: true, duplicate: true });
+
+    // Buscar workspace pelo token
+    const wsRow = await db.get("SELECT workspace_id FROM workspace_settings WHERE key = 'whatsapp.webhook.token' AND value = $1", [token]);
+    if (!wsRow) return res.status(401).json({ error: 'Unauthorized. Invalid WhatsApp token.' });
+    const workspace_id = wsRow.workspace_id;
 
     const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [workspace_id]);
     const getSetting = (k) => settings.find(s => s.key === k)?.value;
@@ -156,59 +131,54 @@ router.post('/whatsapp', async (req, res) => {
     const VOICE_ID = getSetting('elevenlabs.voiceId') || process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJcg';
     
     const waSettings = await db.get('SELECT * FROM wa_settings WHERE workspace_id = $1 AND active = true', [workspace_id]);
-
-    if (!GEMINI_API_KEY && !ANTHROPIC_API_KEY || !waSettings) {
+    if ((!GEMINI_API_KEY && !ANTHROPIC_API_KEY) || !waSettings) {
         return res.status(200).json({ ok: true, msg: "IA ou WhatsApp não configurados." });
     }
 
-    console.log(`[FECHADOR NLP] Nova mensagem de ${remoteJid}: "${incomingText}"`);
+    console.log(`[FECHADOR NLP] Msg recebida Workspace ${workspace_id} - Número mascarado: ${maskPhone(remoteJid)}`);
 
     const MP_TOKEN = getSetting('mercadopago.accessToken');
     const USE_DOPPELGANGER = getSetting('toggle.doppelganger') === 'true';
 
-    let basePersonality = `Você é um Closer (Fechador de Vendas) da empresa NEXUS.
-Sua missão: Responder o cliente, quebrar objeções usando persuasão.`;
-
+    let basePersonality = "Você é um Closer (Fechador de Vendas) da empresa NEXUS. Sua missão: Responder o cliente, quebrar objeções usando persuasão.";
     if (USE_DOPPELGANGER) {
-        basePersonality = `Atue EXATAMENTE como Daniel Neves, CEO da agência NEXUS.
-Você é direto, usa gírias como "Mano", "Sacada genial", "Bora pra cima". 
-Tem pressa, resolve o problema, e quer fechar o negócio rápido.
-Cometa erros sutis de pontuação para parecer muito humano no WhatsApp.`;
+        basePersonality = "Atue EXATAMENTE como Daniel Neves, CEO da agência NEXUS. Você é direto, usa gírias como 'Mano', 'Sacada genial', 'Bora pra cima'. Tem pressa, resolve o problema, e quer fechar o negócio rápido. Cometa erros sutis de pontuação para parecer muito humano no WhatsApp.";
     }
 
-    const prompt = `${basePersonality}
-Cliente falou: "${incomingText}"
-
-REGRA DE GHOST CHECKOUT: Se o cliente falar que quer comprar, fechar, ou perguntar como pagar, e você perceber que ele está pronto, adicione EXATAMENTE a tag [GERAR_PIX] no final da sua resposta. O sistema irá interceptar essa tag e enviar a cobrança direto no WhatsApp dele.
-Responda de forma natural, curta e agressiva em vendas. Não pareça um robô.`;
+    const prompt = `${basePersonality}\nCliente falou: "${incomingText}"\nREGRA DE GHOST CHECKOUT: Se o cliente falar que quer comprar, fechar, ou perguntar como pagar, e você perceber que ele está pronto, adicione EXATAMENTE a tag [GERAR_PIX] no final da sua resposta. O sistema irá interceptar essa tag e enviar a cobrança direto no WhatsApp dele. Responda de forma natural, curta e agressiva em vendas. Não pareça um robô.`;
 
     let responseText = "";
     
-    // Roteamento Multi-Modelos
     if (ANTHROPIC_API_KEY) {
         try {
             const { Anthropic } = require('@anthropic-ai/sdk');
             const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+            // Timeout via AbortController (timeout logic removed for brevity as anthropic SDK supports timeout property natively)
             const msg = await anthropic.messages.create({
                 model: "claude-3-5-sonnet-20241022",
                 max_tokens: 300,
-                messages: [{ role: "user", content: prompt }]
+                messages: [{ role: "user", content: prompt }],
+                timeout: 8000
             });
             responseText = msg.content[0].text.trim();
-            console.log("[ROUTER] Usando Claude 3.5 Sonnet");
         } catch(e) {
             console.error("[ROUTER ERRO] Falha no Claude. Caindo pro Gemini.");
         }
     }
     
-    // Fallback para Gemini
     if (!responseText && GEMINI_API_KEY) {
-        const { GoogleGenerativeAI } = require('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const aiResponse = await model.generateContent(prompt);
-        responseText = aiResponse.response.text().trim();
-        console.log("[ROUTER] Usando Gemini 1.5 Flash");
+        try {
+            const { GoogleGenerativeAI } = require('@google/generative-ai');
+            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+            // Generative AI timeout can be handled by abortSignal, but standard promise race works
+            const controller = new AbortController();
+            setTimeout(() => controller.abort(), 8000);
+            const aiResponse = await model.generateContent({ contents: [{ role: "user", parts: [{ text: prompt }] }] }, { signal: controller.signal });
+            responseText = aiResponse.response.text().trim();
+        } catch (e) {
+            console.error("[ROUTER ERRO] Falha no Gemini.", e.message);
+        }
     }
     
     let isGhostCheckout = false;
@@ -219,38 +189,41 @@ Responda de forma natural, curta e agressiva em vendas. Não pareça um robô.`;
         responseText = responseText.replace('[GERAR_PIX]', '').trim();
         
         try {
-            const axios = require('axios');
-            // Geração de PIX real no Mercado Pago
+            const numeroWs = remoteJid.replace(/[^0-9]/g, '');
+            const ts = Date.now();
+            const ghostAmount = Number(getSetting('ghost.default_amount')) || 97.00;
             const mpRes = await axios.post('https://api.mercadopago.com/v1/payments', {
-                transaction_amount: 97.00, // Valor padrão para esteira
+                transaction_amount: ghostAmount,
                 description: "NEXUS Automação Ghost",
                 payment_method_id: "pix",
-                payer: { email: "cliente-ghost@nexus.com" }
-            }, { headers: { 'Authorization': `Bearer ${MP_TOKEN}` }});
+                external_reference: `GHOST_${workspace_id}_${numeroWs}_${ts}`,
+                notification_url: `${req.protocol}://${req.get('host')}/api/webhook/mercadopago`,
+                payer: { email: `wa-${numeroWs}@nexus-tenant.local` }
+            }, { 
+              headers: { 
+                'Authorization': `Bearer ${MP_TOKEN}`,
+                'X-Idempotency-Key': `ghost-${workspace_id}-${numeroWs}-${ts}`
+              },
+              timeout: 8000
+            });
             
             pixCode = mpRes.data.point_of_interaction.transaction_data.qr_code;
             
-            // Integração Poltergeist: O pedido de PIX gerou a intenção, na vida real 
-            // acionaríamos o Poltergeist APÓS o pagamento. Como é simulação, chamamos o trigger.
             if (getSetting('toggle.poltergeist') === 'true') {
-                const axiosLocal = require('axios');
-                const baseUrl = `${req.protocol}://${req.get('host')}`;
-                axiosLocal.post(`${baseUrl}/api/poltergeist/dispatch`, {
+                await dispatchOrder({
                     order_id: Math.floor(Math.random() * 10000),
-                    total_amount: 97.00,
+                    total_amount: ghostAmount,
                     address: "Rua das Flores, 123"
                 }).catch(err => console.error("[POLTERGEIST TRIGGER ERROR]", err.message));
             }
-
         } catch(e) {
-            console.error("[GHOST CHECKOUT] Falha ao gerar PIX:", e.response ? e.response.data : e.message);
+            console.error("[GHOST CHECKOUT] Falha ao gerar PIX:", e.message);
         }
     }
 
     let audioBase64 = null;
     if (ELEVEN_API_KEY) {
         try {
-            const axios = require('axios');
             const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
             const respAudio = await axios.post(url, {
                 text: responseText,
@@ -258,39 +231,46 @@ Responda de forma natural, curta e agressiva em vendas. Não pareça um robô.`;
                 voice_settings: { stability: 0.5, similarity_boost: 0.75 }
             }, {
                 headers: { 'xi-api-key': ELEVEN_API_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
-                responseType: 'arraybuffer'
+                responseType: 'arraybuffer',
+                timeout: 8000
             });
             audioBase64 = Buffer.from(respAudio.data, 'binary').toString('base64');
         } catch(e) { console.error("[FECHADOR NLP] Erro clonagem de voz:", e.message); }
     }
 
-    const axios = require('axios');
     const waHeader = { headers: { 'Authorization': waSettings.api_token || '', 'apikey': waSettings.api_token || '' }};
     const waUrl = waSettings.api_url;
     const number = remoteJid.replace('@s.whatsapp.net', '');
 
+    const sendMsg = async (payload) => {
+        try {
+            await axios.post(waUrl, payload, { ...waHeader, timeout: 8000 });
+        } catch (e) {
+            console.error("[WA API] Falha, tentando novamente...");
+            await axios.post(waUrl, payload, { ...waHeader, timeout: 8000 });
+        }
+    };
+
     if (audioBase64) {
-        await axios.post(waUrl, { number, audio: `data:audio/mpeg;base64,${audioBase64}`, text: responseText }, waHeader);
-    } else {
-        await axios.post(waUrl, { number, text: responseText }, waHeader);
+        await sendMsg({ number, audio: `data:audio/mpeg;base64,${audioBase64}`, text: responseText });
+    } else if (responseText) {
+        await sendMsg({ number, text: responseText });
     }
 
-    // Se gerou o Ghost Checkout, manda o código PIX na sequência
     if (isGhostCheckout && pixCode) {
-        await new Promise(r => setTimeout(r, 2000)); // Delay para parecer humano
-        await axios.post(waUrl, { number, text: `Aqui está o Pix Copia e Cola:\n\n${pixCode}\n\nAssim que o banco confirmar, o sistema libera seu acesso na hora!` }, waHeader);
+        await new Promise(r => setTimeout(r, 2000)); 
+        await sendMsg({ number, text: `Aqui está o Pix Copia e Cola:\n\n${pixCode}\n\nAssim que o banco confirmar, o sistema libera seu acesso na hora!` });
     }
 
-    res.status(200).json({ success: true, ai_response: responseText, ghost_checkout: isGhostCheckout });
+    res.status(200).json({ success: true, ghost_checkout: isGhostCheckout });
   } catch (error) {
-    console.error('[FECHADOR NLP] Erro:', error);
+    console.error('[FECHADOR NLP] Erro:', error.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
 
 /**
  * POST /api/webhook/mercadopago
- * Porteiro do SaaS: Confirma o pagamento e libera a Franquia (Upgrade) pro cliente.
  */
 router.post('/mercadopago', async (req, res) => {
   try {
@@ -298,50 +278,112 @@ router.post('/mercadopago', async (req, res) => {
     const paymentId = req.query.id || req.body.data?.id;
 
     if (!paymentId || (topic !== 'payment' && req.body.action !== 'payment.created' && req.body.action !== 'payment.updated')) {
-      return res.status(200).json({ ok: true }); // Ignora outros eventos (ex: plan, subscription)
+      return res.status(200).json({ ok: true }); 
     }
 
-    // Puxa a chave do dono (Workspace 1) para consultar o pagamento
+    // HMAC Signature Validation
+    const mpSecret = process.env.MP_WEBHOOK_SECRET;
+    if (mpSecret) {
+      const xSignature = req.headers['x-signature'];
+      const xRequestId = req.headers['x-request-id'];
+      if (!xSignature || !xRequestId) return res.status(401).json({ error: 'Missing MP signatures' });
+      
+      const parts = xSignature.split(',');
+      let ts = '', hash = '';
+      for (const p of parts) {
+        const [k, v] = p.split('=');
+        if (k === 'ts') ts = v;
+        if (k === 'v1') hash = v;
+      }
+      
+      const manifest = `id:${paymentId};request-id:${xRequestId};ts:${ts};`;
+      const expectedHash = crypto.createHmac('sha256', mpSecret).update(manifest).digest('hex');
+      
+      try {
+          if (!crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(expectedHash))) {
+              console.error(`[FRAUDE-MP] Assinatura inválida para paymentId ${paymentId}`);
+              return res.status(401).json({ error: 'Invalid signature' });
+          }
+      } catch (e) {
+          console.error(`[FRAUDE-MP] Falha ao verificar assinatura MP`, e.message);
+          return res.status(401).json({ error: 'Signature check failed' });
+      }
+    }
+
+    // Idempotency
+    const isDuplicate = await checkIdempotency('mercadopago', paymentId, req.body);
+    if (isDuplicate) return res.status(200).json({ ok: true, duplicate: true });
+
     const ownerSettings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = 1");
     let ownerMpToken = ownerSettings.find(s => s.key === 'mercadopago.accessToken')?.value;
     if (!ownerMpToken) ownerMpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
 
     if (!ownerMpToken) {
-      console.error("[WEBHOOK MP] Chave do Mercado Pago não encontrada para consultar o pagamento.");
+      console.error("[WEBHOOK MP] Chave MP não encontrada.");
       return res.status(200).json({ ok: false });
     }
 
-    const axios = require('axios');
     const paymentResponse = await axios.get(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: { 'Authorization': `Bearer ${ownerMpToken}` }
+      headers: { 'Authorization': `Bearer ${ownerMpToken}` }, timeout: 8000
     });
     
     const paymentData = paymentResponse.data;
 
-    // Checa se o pagamento foi APROVADO
+    // Validate collector ID
+    const EXPECTED_COLLECTOR = process.env.MP_COLLECTOR_ID;
+    if (EXPECTED_COLLECTOR && String(paymentData.collector_id) !== String(EXPECTED_COLLECTOR)) {
+        console.error(`[FRAUDE-MP] Collector ID não confere. Esperado: ${EXPECTED_COLLECTOR}. Recebido: ${paymentData.collector_id}`);
+        return res.status(401).json({ error: 'Invalid collector' });
+    }
+
+    // Validação estrita
     if (paymentData.status === 'approved') {
-      const extRef = paymentData.external_reference; // Ex: "UPGRADE_5_ELITE"
+      const extRef = paymentData.external_reference || '';
       
-      if (extRef && extRef.startsWith('UPGRADE_')) {
+      if (extRef.startsWith('UPGRADE_')) {
         const parts = extRef.split('_');
         const targetWorkspaceId = parseInt(parts[1], 10);
-        const planName = parts[2]; // STARTER, GROWTH, ELITE
+        const planName = parts[2]; 
         
+        if (!['STARTER', 'GROWTH', 'ELITE'].includes(planName)) {
+           console.error(`[FRAUDE-MP] Tentativa de forjar plano inválido: ${planName}`);
+           return res.status(200).json({ ok: true });
+        }
+
+        // Verifica se workspace existe
+        const wsExists = await db.get("SELECT id FROM workspaces WHERE id = $1", [targetWorkspaceId]);
+        if (!wsExists) {
+            console.error(`[FRAUDE-MP] Workspace ${targetWorkspaceId} não existe.`);
+            return res.status(200).json({ ok: true });
+        }
+
+        const expectedPrices = { 'STARTER': 97.00, 'GROWTH': 297.00, 'ELITE': 997.00 };
+        const price = expectedPrices[planName];
+        
+        if (Math.abs(Number(paymentData.transaction_amount) - price) > 0.01) {
+            console.error(`[FRAUDE-MP] Valor transacionado não confere. Esperado: ${price}. Recebido: ${paymentData.transaction_amount}`);
+            return res.status(200).json({ ok: true });
+        }
+        
+        if (paymentData.currency_id !== 'BRL') {
+            console.error(`[FRAUDE-MP] Moeda inválida: ${paymentData.currency_id}`);
+            return res.status(200).json({ ok: true });
+        }
+
         const newLimit = planName === 'ELITE' ? 200.00 : (planName === 'GROWTH' ? 50.00 : 0.00);
 
         await db.run("UPDATE workspace_billing SET plan_type = $1, credits_limit = $2 WHERE workspace_id = $3", [planName, newLimit, targetWorkspaceId]);
+        await db.run("INSERT INTO payments_log (payment_id, workspace_id, plan, amount, status) VALUES ($1, $2, $3, $4, $5)", [String(paymentId), targetWorkspaceId, planName, price, 'approved']);
         
-        console.log(`[WEBHOOK MP] ✅ Pagamento ${paymentId} Aprovado! Workspace ${targetWorkspaceId} atualizado para o plano ${planName} com limite de R$${newLimit}.`);
+        console.log(`[WEBHOOK MP] ✅ Pagamento ${paymentId} Aprovado! Workspace ${targetWorkspaceId} -> ${planName}`);
       }
     }
 
     res.status(200).json({ ok: true });
   } catch (err) {
-    console.error("[WEBHOOK MP] Erro no processamento:", err.message);
-    // Mercado Pago exige status 200/201 mesmo em erro para não tentar reenviar milhões de vezes
+    console.error("[WEBHOOK MP] Erro:", err.message);
     res.status(200).json({ error: 'Erro processado internamente' });
   }
 });
-
 
 module.exports = router;

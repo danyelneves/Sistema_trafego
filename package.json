@@ -27,6 +27,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",
     "@google/generative-ai": "^0.24.1",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
     "axios": "^1.15.2",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",

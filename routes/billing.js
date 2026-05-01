@@ -75,6 +75,7 @@ router.post('/upgrade', requireAuth, async (req, res) => {
 
         if (ownerMpToken && ownerMpToken.startsWith('APP_USR')) {
             // Cria um link de Checkout real no Mercado Pago do Dono
+            const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
             const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
                 method: 'POST',
                 headers: {
@@ -90,9 +91,9 @@ router.post('/upgrade', requireAuth, async (req, res) => {
                     }],
                     external_reference: `UPGRADE_${req.user.workspace_id}_${plan_name}`,
                     back_urls: {
-                        success: `${req.protocol}://${req.get('host')}/dashboard`,
-                        failure: `${req.protocol}://${req.get('host')}/dashboard`,
-                        pending: `${req.protocol}://${req.get('host')}/dashboard`
+                        success: `${protocol}://${req.get('host')}/dashboard`,
+                        failure: `${protocol}://${req.get('host')}/dashboard`,
+                        pending: `${protocol}://${req.get('host')}/dashboard`
                     },
                     auto_return: "approved"
                 })

@@ -10,10 +10,17 @@
  */
 
 require('dotenv').config();
+/*
+ * OBSERVAÇÃO DE SERVERLESS (VERCEL):
+ * Configure a variável DATABASE_URL com o Transaction Pooler do Supabase (porta 6543).
+ * Exemplo: postgres://postgres.[ref]:[senha]@aws-0-[regiao].pooler.supabase.com:6543/postgres
+ */
 const { Pool } = require('pg');
 
 if (!process.env.DATABASE_URL) {
-  console.warn('\x1b[33m⚠  DATABASE_URL não definida — banco indisponível.\x1b[0m');
+  console.warn('⚠ Aviso: DATABASE_URL não definida.');
+} else if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL.includes(':6543')) {
+  console.warn('⚠ AVISO [DB]: Em produção é ALTAMENTE recomendado usar o transaction pooler do Supabase (porta 6543).');
 }
 
 const pool = new Pool({
@@ -21,8 +28,8 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL?.includes('localhost')
     ? false
     : { rejectUnauthorized: false },
-  max: 10,
-  idleTimeoutMillis: 30_000,
+  max: 1,
+  idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 5_000,
 });
 
@@ -36,33 +43,33 @@ pool.on('error', (err) => {
  * Converte placeholders SQLite (?) para PostgreSQL ($1, $2...).
  * Se o sql já contém $1 não faz nada.
  */
-function pgify(sql, params = []) {
-  if (!params.length || sql.includes('$1')) return { sql, params };
+function pgify(sql, params) {
+  if (/\$\d+/.test(sql)) return params ? { sql, params } : sql;
   let i = 0;
-  return { sql: sql.replace(/\?/g, () => `$${++i}`), params };
+  const newSql = sql.replace(/\?/g, () => `$${++i}`);
+  return params ? { sql: newSql, params } : newSql;
 }
 
 /** Executa uma query e retorna o QueryResult do pg. */
 async function query(sql, params = []) {
-  const { sql: s, params: p } = pgify(sql, params);
-  return pool.query(s, p);
+  return pool.query(pgify(sql), params);
 }
 
 /** Retorna a primeira linha ou undefined. */
 async function get(sql, ...params) {
-  const { rows } = await query(sql, params);
+  const { rows } = await pool.query(pgify(sql), params);
   return rows[0];
 }
 
 /** Retorna todas as linhas. */
 async function all(sql, ...params) {
-  const { rows } = await query(sql, params);
+  const { rows } = await pool.query(pgify(sql), params);
   return rows;
 }
 
 /** Executa DML e retorna { rowCount, rows }. */
 async function run(sql, ...params) {
-  const result = await query(sql, params);
+  const result = await pool.query(pgify(sql), params);
   return { rowCount: result.rowCount, rows: result.rows };
 }
 

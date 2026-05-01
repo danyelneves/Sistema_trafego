@@ -26,16 +26,20 @@ if (process.env.JWT_SECRET === DEFAULT_SECRET || !process.env.JWT_SECRET) {
     ? '⛔  ERRO CRÍTICO: JWT_SECRET está com o valor padrão em produção! Altere nas env vars da Vercel imediatamente.'
     : '⚠   JWT_SECRET não definido — usando valor padrão (apenas dev).';
   console.warn('\x1b[33m' + msg + '\x1b[0m');
-  if (isProduction) process.exit(1);
+  if (isProduction) throw new Error(msg);
 }
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1); // Garante que req.protocol seja 'https' no Vercel
-app.set('trust proxy', 1); // Garante que req.protocol seja 'https' no Vercel
 app.use(cookieParser());
 app.use(requestLogger);
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Limit global de 1mb para mitigar DoS
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ limit: '1mb', extended: true }));
+
+// Rota de importação com limite maior
+app.use('/api/import', express.json({ limit: '50mb' }), express.urlencoded({ limit: '50mb', extended: true }), require('./routes/import'));
 
 // ------------------------------------------------------------
 // API Routes
@@ -48,7 +52,7 @@ app.use('/api/goals',      require('./routes/goals'));
 app.use('/api/notes',      require('./routes/notes'));
 app.use('/api/settings',   require('./routes/settings'));
 app.use('/api/users',      require('./routes/users'));
-app.use('/api/import',     require('./routes/import'));
+// Import already mounted above
 app.use('/api/drill',      require('./routes/drill'));
 app.use('/api/sync',       require('./routes/sync').router);
 app.use('/api/cron',       require('./routes/cron'));
@@ -94,6 +98,7 @@ app.get('/f/:slug', async (req, res) => {
     // Incrementa visitas
     await db.run('UPDATE funnels SET visits = visits + 1 WHERE id = $1', [funnel.id]);
     
+    res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'");
     res.send(funnel.html_content);
   } catch (err) {
     res.status(500).send('Erro interno do servidor.');
