@@ -1,49 +1,110 @@
-# Maranet · Central de Tráfego
+# NEXUS OS
 
-Dashboard profissional de **Google Ads + Meta Ads** para a NVia Holding — Maranet Telecom.
-Sistema full-stack com backend Node.js, banco SQLite, autenticação, metas,
-anotações, comparativos MoM/YoY e exportação para PDF/CSV.
+> Plataforma SaaS B2B multi-tenant de automação de tráfego pago, vendas com IA
+> e operações comerciais autônomas. Construída para rodar negócios — não só medi-los.
+
+**Produção:** https://nexusagencia.app
+**Status atual:** 23/23 unit tests + 8/8 smoke em produção · agência-grade
+
+---
+
+## O que o sistema faz
+
+NEXUS OS é uma plataforma multi-tenant onde cada workspace (cliente, agência ou
+franquia) opera num ambiente isolado, com seus próprios dados, configurações e
+robôs de IA. A plataforma combina:
+
+- **Painel de tráfego pago** com sync automático (Google Ads + Meta Ads)
+- **Vendedor IA por WhatsApp** (Doppelgänger imita estilo do dono, com Ghost Checkout)
+- **Sentinel** — robô que pausa/escala campanhas com Gemini a cada 15min
+- **Skynet** — prospecção automática via Google Maps + IA
+- **Lazarus** — recuperador de carrinhos abandonados e leads frios
+- **Forge** — gerador de landing pages mutantes
+- **Vending Machine** — campanhas autônomas pagas via PIX
+- **Market** — bolsa de leads em leilão por nicho/cidade
+- **Franchise** — módulo white-label para agências
+- **Titan** — auditor que decide novos spin-offs com IA
 
 ---
 
 ## Stack
 
-- **Backend** — Node.js 22 + Express 4
-- **Banco** — SQLite (via `node:sqlite` nativo — **zero** dependência nativa compilada)
-- **Auth** — JWT em cookie httpOnly + bcrypt
-- **Frontend** — HTML + CSS + ES Modules + Chart.js (carregado via CDN)
-
-Apenas 5 dependências npm, todas em puro JavaScript: `express`, `bcryptjs`,
-`cookie-parser`, `jsonwebtoken`, `dotenv`.
+| Camada | Tecnologia |
+|--------|-----------|
+| Backend | Node.js 22 + Express 4 |
+| Banco | PostgreSQL via Supabase (Supavisor pooler porta 6543) |
+| Deploy | Vercel (serverless functions + edge) |
+| Cache/Rate limit | Upstash Redis (sliding window) |
+| Auth | JWT httpOnly cookie + bcrypt |
+| Pagamentos | Mercado Pago (HMAC SHA-256), Kiwify (HMAC SHA-1) |
+| IA | Anthropic Claude 4.6 Sonnet, Gemini 1.5 Flash, GPT-4o (omni-router) |
+| Voz | ElevenLabs |
+| WhatsApp | Z-API / Evolution API |
+| Observabilidade | Sentry (opt-in), logs JSON estruturados, UptimeRobot |
 
 ---
 
-## Instalação
+## Recursos de qualidade
 
-Requer **Node.js 22.5+** (para o módulo nativo `node:sqlite`).
+- ✅ **Testes automatizados** — `npm test` roda 23 testes unitários, `npm run test:smoke:prod` roda 8 testes de integração
+- ✅ **CI/CD** — GitHub Actions valida sintaxe + roda testes em cada PR e após cada merge em main
+- ✅ **Segurança** — HMAC validation, idempotência, rate limit Upstash, CSP, HSTS, COOP, audit log
+- ✅ **Observabilidade** — logger estruturado, health checks granulares, Sentry integrado
+- ✅ **LGPD** — PII mascarada em logs (CPF, e-mail, telefone)
+
+---
+
+## Instalação local
+
+Requer **Node.js 22+** e acesso ao Postgres do Supabase.
 
 ```bash
+git clone <repo>
 cd sistrafego
-cp .env.example .env        # ajuste o JWT_SECRET e a senha admin
+cp .env.example .env        # configure as env vars (ver tabela abaixo)
 npm install
-npm run seed                # cria usuário admin e 2.9k linhas de dados de exemplo
+npm run db:migrate          # roda migrations
+npm run seed                # opcional: dados de exemplo
 npm start                   # sobe em http://localhost:3000
+npm test                    # roda testes unitários
 ```
 
 Credenciais padrão do seed (altere em `.env` antes do primeiro `seed`):
 - **usuário:** `admin`
-- **senha:** `maranet2026`
+- **senha:** definida em `ADMIN_PASS` do `.env`
 
 ---
 
 ## Scripts npm
 
-| Comando         | O que faz |
-|-----------------|-----------|
-| `npm start`     | Sobe o servidor na porta `PORT` (default 3000). |
-| `npm run dev`   | Mesma coisa, com `--watch` (auto-reload). |
-| `npm run seed`  | Cria usuário admin, 6 campanhas, ~2.900 linhas diárias (jan/25 a abr/26), metas e notas de exemplo. Idempotente — pula o que já existe. |
-| `npm run reset` | **Apaga o banco.** Rode `npm run seed` depois para recriar. |
+| Comando | O que faz |
+|---------|-----------|
+| `npm start` | Sobe o servidor na porta `PORT` (default 3000) |
+| `npm run dev` | Mesma coisa, com `--watch` (auto-reload em arquivos modificados) |
+| `npm run seed` | Cria usuário admin + dados de exemplo. Idempotente |
+| `npm run reset` | **Apaga o banco.** Rode `npm run seed` depois |
+| `npm run db:migrate` | Roda as migrations em `db/migrate.js` |
+| `npm test` | Testes unitários (sem rede, < 1s) |
+| `npm run test:smoke` | Smoke tests contra `localhost` (ou `DOMAIN` env) |
+| `npm run test:smoke:prod` | Smoke tests contra `https://nexusagencia.app` |
+
+---
+
+## Env vars críticas
+
+Tudo configurado em `.env.example`. Em produção, só configurar via Vercel UI.
+
+| Variável | Crítico? | Descrição |
+|----------|----------|-----------|
+| `DATABASE_URL` | 🔴 SIM | Postgres via Supavisor pooler (porta 6543) |
+| `JWT_SECRET` | 🔴 SIM | `openssl rand -hex 32` |
+| `MP_WEBHOOK_SECRET` | 🔴 SIM | Assinatura HMAC do Mercado Pago |
+| `MP_COLLECTOR_ID` | 🔴 SIM | Seu User ID no MP (impede aceitar pagamento de outras contas) |
+| `UPSTASH_REDIS_REST_URL` | 🟡 IMPORTANTE | Rate limiter sem ele = sistema vulnerável a brute force |
+| `UPSTASH_REDIS_REST_TOKEN` | 🟡 IMPORTANTE | Idem |
+| `CRON_SECRET` | 🟡 IMPORTANTE | Protege endpoints de cron |
+| `SENTRY_DSN` | 🟢 OPCIONAL | Captura automática de erros 5xx em produção |
+| `LOG_LEVEL` | 🟢 OPCIONAL | `debug`, `info` (default), `warn`, `error` |
 
 ---
 
@@ -51,140 +112,55 @@ Credenciais padrão do seed (altere em `.env` antes do primeiro `seed`):
 
 ```
 sistrafego/
-├── server.js                  # Express entrypoint
+├── server.js                  # Express entrypoint, monta todas as 41 rotas
 ├── db/
-│   ├── schema.sql             # DDL (users, campaigns, metrics_daily, goals, notes)
-│   ├── index.js               # conexão com compat shim (pragma + transaction)
-│   ├── seed.js                # dados de exemplo realistas
-│   └── reset.js               # apaga o banco
+│   ├── index.js              # Pool Postgres + helpers (get/all/run/transaction)
+│   ├── schema.sql            # DDL inicial
+│   ├── migrate.js            # Runner de migrations
+│   ├── seed.js               # Dados de exemplo
+│   └── reset.js              # Apaga banco
 ├── middleware/
-│   └── auth.js                # JWT + requireAuth / requireAdmin
-├── routes/
-│   ├── auth.js                # /api/auth  (login, logout, me)
-│   ├── campaigns.js           # /api/campaigns (CRUD)
-│   ├── metrics.js             # /api/metrics  (CRUD + agregações + KPIs)
-│   ├── goals.js               # /api/goals    (CRUD)
-│   ├── notes.js               # /api/notes    (CRUD)
-│   └── settings.js            # /api/settings (branding)
-├── public/
-│   ├── login.html
-│   ├── index.html             # dashboard principal
-│   ├── css/styles.css
-│   └── js/
-│       ├── api.js             # wrapper fetch → backend
-│       ├── utils.js           # formatadores, datas, toast
-│       ├── kpis.js            # cards com MoM, YoY, semáforo de metas
-│       ├── charts.js          # 4 gráficos Chart.js
-│       ├── tables.js          # detalhe por mês + ranking por campanha
-│       ├── modals.js          # entrada de dados, campanhas, metas, notas
-│       ├── export.js          # PDF (print-to-pdf), CSV, backup JSON
-│       └── app.js             # orquestrador
-└── .env.example
+│   ├── auth.js               # JWT + requireAuth + requireAdmin
+│   ├── logger.js             # Logger estruturado (JSON em prod, color em dev)
+│   └── ratelimit.js          # Rate limit Upstash com fail-open
+├── routes/                   # 41 arquivos, um por domínio
+│   ├── auth.js               # Login/logout/me/viewer-link
+│   ├── billing.js            # Upgrade de plano (MP)
+│   ├── webhook.js            # CRM, WhatsApp, Mercado Pago
+│   ├── webhooks.js           # Kiwify
+│   ├── sentinel.js           # Robô trader de campanhas
+│   ├── skynet.js             # Prospecção autônoma
+│   ├── ... (40+ módulos)
+│   └── health.js             # Liveness, readiness, db, redis, mp
+├── services/                 # Lógica reutilizável fora de rotas
+├── utils/
+│   ├── validate.js           # Validação leve de input (sem libs externas)
+│   ├── retry.js              # Exponential backoff para APIs externas
+│   ├── idempotency.js        # checkIdempotency centralizado
+│   ├── audit.js              # audit_log para ações sensíveis
+│   ├── sentry.js             # Wrapper opt-in do @sentry/node
+│   ├── mask.js               # PII masking (LGPD)
+│   └── omni-router.js        # Roteador IA com lazy require
+├── tests/
+│   ├── unit.js               # 23 testes unitários (rede zero)
+│   └── smoke.js              # 8 smoke tests contra ambiente real
+├── migrations/               # SQL de evolução do schema
+├── public/                   # Frontend HTML + JS vanilla
+├── chrome-extension/         # Espião de criativos do Facebook Ad Library
+└── .github/workflows/ci.yml  # CI: unit tests + syntax + smoke pós-deploy
 ```
 
 ---
 
-## Funcionalidades
+## Documentação adicional
 
-### Filtros
-- Ano (dropdown), mês específico (dropdown), 1º/2º semestre, ano todo.
-- Canal: Consolidado, Google Ads, Meta Ads.
-
-### KPIs
-Cada card traz:
-- **Valor absoluto** do período.
-- **Δ vs período anterior** (MoM para mês, SoS para semestre, YoY para ano).
-- **Δ vs mesmo período do ano anterior** (YoY).
-- **Semáforo de meta** (verde/amarelo/vermelho) quando há meta cadastrada,
-  com direção `mínimo` (precisa alcançar) ou `máximo` (não ultrapassar).
-
-Métricas: Impressões, Cliques, CTR, Conversões, Investimento, CPL, CPC, Tx Conversão, ROAS.
-
-### Gráficos
-- **Impressões por Mês** — barras Google vs Meta (respeita o canal filtrado).
-- **Distribuição de Verba** — doughnut Google vs Meta.
-- **Cliques & CTR** — barras + linha eixo duplo.
-- **Conversões** — linhas empilhadas por canal.
-
-### Tabelas
-- **Detalhamento Mês × Canal** — uma linha por combinação, com indicador `•` se houver anotação.
-- **Ranking de Campanhas** — ordenadas por investimento, com barra de gasto relativa, CPL e ROAS.
-
-### Gestão (modais)
-- **Campanhas** — criar / renomear / marcar pausada-encerrada / excluir.
-- **Metas** — cadastrar por (ano, mês, canal, métrica) com alvo e direção.
-- **Anotações** — observações por (ano, mês, dia opcional, canal), com tag e texto. Aparecem como bolinha na tabela de detalhe.
-- **Inserir Dados** — dois modos:
-  - **Por mês** — consolida o período inteiro em uma linha diária (dia 15) por campanha. Bom para importar agregado do Looker.
-  - **Por dia** — granularidade diária para uma campanha específica. Permite quem usa Google Ads Editor + CSV diário.
-
-### Exportações
-- **PDF** — usa o diálogo nativo de impressão (Cmd/Ctrl+P → "Salvar como PDF"). CSS dedicado para impressão já está aplicado.
-- **CSV** — exporta a tabela de detalhamento atual (1 linha por mês × canal) com colunas numéricas prontas para Excel.
-- **JSON backup** — dump completo (campanhas, metas, notas, métricas diárias) — útil para arquivar ou migrar.
-
-### Modo apresentação
-Clique em **▶ Apresentar** no cabeçalho. Oculta botões operacionais e aumenta os KPIs. Boa para reunião com a diretoria sem fechar a tela.
-
----
-
-## API (referência rápida)
-
-Todas as rotas exigem cookie `auth` (obtido via `/api/auth/login`), exceto `/api/auth/login` e `/api/health`.
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST   | `/api/auth/login`                          | `{ username, password }` |
-| POST   | `/api/auth/logout`                         | limpa cookie |
-| GET    | `/api/auth/me`                             | usuário logado |
-| GET    | `/api/campaigns`                           | `?channel=google&status=active` |
-| POST   | `/api/campaigns`                           | cria campanha |
-| PATCH  | `/api/campaigns/:id`                       | atualiza |
-| DELETE | `/api/campaigns/:id`                       | remove (em cascata) |
-| GET    | `/api/metrics/daily`                       | `?from=&to=&channel=&campaign_id=` |
-| POST   | `/api/metrics/daily`                       | upsert uma linha |
-| POST   | `/api/metrics/bulk`                        | upsert em lote |
-| DELETE | `/api/metrics/daily/:id`                   | apaga uma linha |
-| GET    | `/api/metrics/monthly?year=2026`           | 1 linha por mês × canal |
-| GET    | `/api/metrics/summary?year=2026&month=4`   | diário do mês; sem `month` → anual por canal |
-| GET    | `/api/metrics/by-campaign?year=&month=`    | agregado por campanha |
-| GET    | `/api/metrics/kpis?year=&month=&channel=`  | totais + previous + yoy |
-| GET/POST/DELETE | `/api/goals`                      | metas mensais |
-| GET/POST/DELETE | `/api/notes`                      | anotações |
-| GET/PUT | `/api/settings`                           | chave/valor (branding) |
-| GET    | `/api/health`                              | liveness check |
-
----
-
-## Modelo de dados
-
-- **users** — `id, username, password_hash, display_name, role('admin'|'viewer')`
-- **campaigns** — `id, channel('google'|'meta'), name, objective, status, color`
-- **metrics_daily** — `id, campaign_id, date, impressions, clicks, conversions, spend, revenue`
-  - chave única `(campaign_id, date)`
-- **goals** — `id, year, month, channel('google'|'meta'|'all'), metric, target, direction('min'|'max')`
-  - chave única `(year, month, channel, metric)`
-- **notes** — `id, year, month, day?, channel?, text, tag`
-
----
-
-## Deploy / Produção
-
-Para uso na web:
-
-1. Ponha atrás de um proxy HTTPS (Nginx, Caddy, Cloudflare Tunnel).
-2. No `middleware/auth.js` (`routes/auth.js`), mude `secure: false` para `secure: true` no cookie.
-3. Troque `JWT_SECRET` por um valor forte (`openssl rand -hex 32`).
-4. Se for expor na internet, considere trocar a auth para SSO da sua organização.
-5. Back-up do banco: o arquivo `db/maranet.db` é tudo que importa. Faça snapshot dele periodicamente.
-
-Para uso local (rede interna):
-
-1. `npm start` e pronto — acesse de qualquer máquina via `http://IP-DA-MAQUINA:3000`.
-2. Para auto-start no boot do mac: crie um LaunchAgent apontando para `npm --prefix /caminho/do/sistrafego start`.
+- **[RUNBOOK.md](RUNBOOK.md)** — manual operacional para incidentes, deploys, rollbacks
+- **[DEPLOY.md](DEPLOY.md)** — guia de primeiro deploy
+- **[CHANGELOG_SECURITY.md](CHANGELOG_SECURITY.md)** — histórico de hardening
+- **[roadmap-v3.md](roadmap-v3.md)** — visão de futuro
 
 ---
 
 ## Licença
 
-Uso interno NVia Holding · Maranet Telecom.
+Software proprietário (UNLICENSED). Direitos reservados.

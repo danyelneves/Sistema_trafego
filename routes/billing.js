@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const v = require('../utils/validate');
+const log = require('../middleware/logger');
+const audit = require('../utils/audit');
 
 // ----------------------------------------------------------------
 // GET /api/billing/master
@@ -49,28 +52,24 @@ router.get('/master', requireAuth, async (req, res) => {
 // POST /api/billing/upgrade
 // Cliente pede Upgrade de Plano
 // ----------------------------------------------------------------
-router.post('/upgrade', requireAuth, async (req, res) => {
+router.post('/upgrade', requireAuth, async (req, res, next) => {
     try {
-        const { plan_name } = req.body;
-
-        const VALID_PLANS = ['STARTER', 'GROWTH', 'ELITE'];
-        if (!VALID_PLANS.includes(plan_name)) {
-            return res.status(400).json({ error: 'Plano inválido. Use STARTER, GROWTH ou ELITE.' });
-        }
+        const { plan_name } = v.parse(req.body, {
+            plan_name: v.enum(['STARTER', 'GROWTH', 'ELITE']),
+        });
 
         // Puxa a chave do Mercado Pago do Dono do Sistema (Workspace 1)
         const ownerSettings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = 1");
         const ownerMpToken = ownerSettings.find(s => s.key === 'mercadopago.accessToken')?.value;
 
         if (!ownerMpToken || !ownerMpToken.startsWith('APP_USR')) {
+            log.warn('Tentativa de upgrade com MP não configurado', { workspaceId: req.user.workspace_id });
             return res.status(503).json({
                 error: 'Pagamento indisponível no momento. Contate o suporte.'
             });
         }
 
-        const PLAN_LIMITS = { STARTER: 0.00, GROWTH: 50.00, ELITE: 200.00 };
         const PLAN_PRICES = { STARTER: 97.00, GROWTH: 297.00, ELITE: 997.00 };
-        const newLimit = PLAN_LIMITS[plan_name];
         const price = PLAN_PRICES[plan_name];
 
         const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
@@ -97,14 +96,23 @@ router.post('/upgrade', requireAuth, async (req, res) => {
             })
         });
         const mpData = await mpRes.json();
-        
+
         if (mpData.init_point) {
+            log.info('Checkout MP gerado', { workspaceId: req.user.workspace_id, plan_name, price });
+            audit.log('billing.upgrade.checkout_created', {
+                workspaceId: req.user.workspace_id,
+                userId: req.user.id,
+                ip: req.ip,
+                plan_name,
+                price,
+            });
             return res.json({ ok: true, checkout_url: mpData.init_point });
-        } else {
-            return res.status(500).json({ error: 'Erro ao gerar checkout no Mercado Pago.' });
         }
-    } catch(e) {
-        res.status(500).json({ error: e.message });
+
+        log.error('MP retornou sem init_point', null, { workspaceId: req.user.workspace_id, plan_name, mpResponse: mpData });
+        return res.status(502).json({ error: 'Falha ao gerar checkout no Mercado Pago. Tente novamente em instantes.' });
+    } catch (e) {
+        next(e); // ValidationError vira 400, outros viram 500 com Sentry
     }
 });
 

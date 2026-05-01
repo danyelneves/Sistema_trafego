@@ -9,6 +9,9 @@
     "seed": "node --no-warnings db/seed.js",
     "reset": "node --no-warnings db/reset.js",
     "db:migrate": "node --no-warnings db/migrate.js",
+    "test": "node tests/unit.js",
+    "test:smoke": "node tests/smoke.js",
+    "test:smoke:prod": "DOMAIN=https://nexusagencia.app node tests/smoke.js",
     "vercel-build": "echo Build OK"
   },
   "keywords": [
@@ -27,6 +30,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",
     "@google/generative-ai": "^0.24.1",
+    "@sentry/node": "^8.55.2",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "axios": "^1.15.2",

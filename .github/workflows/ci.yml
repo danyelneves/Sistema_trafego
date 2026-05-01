@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    name: Unit tests + syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Syntax check de todos os arquivos JS
+        run: |
+          for f in $(find . -name "*.js" -not -path "./node_modules/*" -not -path "./public/*" -not -path "./.git/*"); do
+            node --check "$f" || exit 1
+          done
+      - name: Unit tests
+        run: node tests/unit.js
+
+  smoke-prod:
+    name: Smoke tests (production)
+    needs: unit-tests
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Aguarda Vercel deploy concluir (60s)
+        run: sleep 60
+      - name: Roda smoke tests contra nexusagencia.app
+        env:
+          DOMAIN: https://nexusagencia.app
+        run: node tests/smoke.js
