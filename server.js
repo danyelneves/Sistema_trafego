@@ -35,8 +35,25 @@ app.use(cookieParser());
 app.use(requestLogger);
 
 // Limit global de 1mb para mitigar DoS
-app.use(express.json({ limit: '1mb' }));
+// Captura rawBody nos webhooks da Kiwify para validação HMAC SHA-1
+app.use(express.json({
+  limit: '1mb',
+  verify: (req, _res, buf) => {
+    if (req.originalUrl && req.originalUrl.startsWith('/api/webhooks/kiwify')) {
+      req.rawBody = buf.toString('utf8');
+    }
+  },
+}));
 app.use(express.urlencoded({ limit: '1mb', extended: true }));
+
+// Headers globais de segurança (mínimo viável sem helmet)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  next();
+});
 
 // Rota de importação com limite maior
 app.use('/api/import', express.json({ limit: '50mb' }), express.urlencoded({ limit: '50mb', extended: true }), require('./routes/import'));

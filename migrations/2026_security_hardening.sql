@@ -33,11 +33,11 @@ CREATE INDEX IF NOT EXISTS idx_payments_log_payment_id
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint 
+    SELECT 1 FROM pg_constraint
     WHERE conname = 'workspace_settings_ws_key_unique'
   ) THEN
-    ALTER TABLE workspace_settings 
-      ADD CONSTRAINT workspace_settings_ws_key_unique 
+    ALTER TABLE workspace_settings
+      ADD CONSTRAINT workspace_settings_ws_key_unique
       UNIQUE (workspace_id, key);
   END IF;
 END $$;
@@ -46,3 +46,11 @@ INSERT INTO workspace_settings (workspace_id, key, value)
 SELECT id, 'whatsapp.webhook.token', gen_random_uuid()::text
 FROM workspaces
 ON CONFLICT (workspace_id, key) DO NOTHING;
+
+-- 4. Tabela de billing por workspace (movida de routes/billing.js)
+CREATE TABLE IF NOT EXISTS workspace_billing (
+  workspace_id INTEGER PRIMARY KEY REFERENCES workspaces(id),
+  plan_type VARCHAR(50) DEFAULT 'TRIAL',
+  credits_limit NUMERIC(10,2) DEFAULT 5.00,
+  credits_used NUMERIC(10,2) DEFAULT 0.00
+);

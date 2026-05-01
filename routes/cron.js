@@ -15,15 +15,22 @@ const { runAutomations } = require('../services/automationsRunner');
 
 const router = express.Router();
 
-router.get('/alerts', async (req, res) => {
-  // Verifica a chave secreta do cron (apenas em produção)
-  if (process.env.NODE_ENV === 'production') {
-    const auth = req.headers['authorization'] || '';
-    const secret = process.env.CRON_SECRET;
-    if (secret && auth !== `Bearer ${secret}`) {
-      return res.status(401).json({ error: 'unauthorized' });
-    }
+function requireCronAuth(req, res) {
+  if (process.env.NODE_ENV !== 'production') return true;
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    res.status(503).json({ error: 'CRON_SECRET not configured' });
+    return false;
   }
+  if ((req.headers['authorization'] || '') !== `Bearer ${secret}`) {
+    res.status(401).json({ error: 'unauthorized' });
+    return false;
+  }
+  return true;
+}
+
+router.get('/alerts', async (req, res) => {
+  if (!requireCronAuth(req, res)) return;
 
   try {
     const db = require('../db');
@@ -41,11 +48,7 @@ router.get('/alerts', async (req, res) => {
 });
 
 router.get('/sync', async (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    const auth = req.headers['authorization'] || '';
-    const secret = process.env.CRON_SECRET;
-    if (secret && auth !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
-  }
+  if (!requireCronAuth(req, res)) return;
 
   try {
     const db = require('../db');
