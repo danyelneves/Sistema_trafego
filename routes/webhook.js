@@ -234,7 +234,8 @@ Responda de forma natural, curta e agressiva em vendas. Não pareça um robô.`;
             // acionaríamos o Poltergeist APÓS o pagamento. Como é simulação, chamamos o trigger.
             if (getSetting('toggle.poltergeist') === 'true') {
                 const axiosLocal = require('axios');
-                axiosLocal.post('http://localhost:3000/api/poltergeist/dispatch', {
+                const baseUrl = `${req.protocol}://${req.get('host')}`;
+                axiosLocal.post(`${baseUrl}/api/poltergeist/dispatch`, {
                     order_id: Math.floor(Math.random() * 10000),
                     total_amount: 97.00,
                     address: "Rua das Flores, 123"
