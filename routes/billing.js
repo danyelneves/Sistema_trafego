@@ -60,12 +60,49 @@ router.get('/master', requireAuth, async (req, res) => {
 router.post('/upgrade', requireAuth, async (req, res) => {
     try {
         const { plan_name } = req.body;
-        // Na vida real, redirecionaria pro Checkout da Stripe
-        // Aqui simulamos o limite sendo aumentado
+        
+        // Puxa a chave do Mercado Pago do Dono do Sistema (Workspace 1)
+        const ownerSettings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = 1");
+        const ownerMpToken = ownerSettings.find(s => s.key === 'mercadopago.accessToken')?.value;
+
         const newLimit = plan_name === 'ELITE' ? 200.00 : (plan_name === 'GROWTH' ? 50.00 : 0.00);
-        
+        const price = plan_name === 'ELITE' ? 997.00 : (plan_name === 'GROWTH' ? 297.00 : 97.00);
+
+        if (ownerMpToken && ownerMpToken.startsWith('APP_USR')) {
+            // Cria um link de Checkout real no Mercado Pago do Dono
+            const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${ownerMpToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    items: [{
+                        title: `NEXUS OS - Plano ${plan_name}`,
+                        quantity: 1,
+                        unit_price: price,
+                        currency_id: 'BRL'
+                    }],
+                    external_reference: `UPGRADE_${req.user.workspace_id}_${plan_name}`,
+                    back_urls: {
+                        success: "https://nexustrafego.com/dashboard",
+                        failure: "https://nexustrafego.com/dashboard",
+                        pending: "https://nexustrafego.com/dashboard"
+                    },
+                    auto_return: "approved"
+                })
+            });
+            const mpData = await mpRes.json();
+            
+            if (mpData.init_point) {
+                // Atualiza provisoriamente (num cenário ideal seria via webhook pós-pago)
+                await db.run("UPDATE workspace_billing SET plan_type = $1, credits_limit = $2 WHERE workspace_id = $3", [plan_name, newLimit, req.user.workspace_id]);
+                return res.json({ ok: true, checkout_url: mpData.init_point });
+            }
+        }
+
+        // Fallback: Se o dono ainda não configurou o Mercado Pago, fazemos o upgrade "Fiado/Mock"
         await db.run("UPDATE workspace_billing SET plan_type = $1, credits_limit = $2 WHERE workspace_id = $3", [plan_name, newLimit, req.user.workspace_id]);
-        
         res.json({ ok: true, message: `Plano atualizado para ${plan_name}. Limite de Inteligência Artificial aumentado para R$${newLimit}.` });
     } catch(e) {
         res.status(500).json({ error: e.message });

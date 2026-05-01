@@ -52,8 +52,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     const data = await res.json();
                     if (res.ok) {
-                        alert(`Sucesso! ${data.message}`);
-                        loadMyPlan(); // Reload progress bar
+                        if (data.checkout_url) {
+                            // Se a API retornou um link de pagamento do Mercado Pago (Chave real configurada)
+                            alert(`Você será redirecionado para o Checkout Seguro do Mercado Pago.`);
+                            window.location.href = data.checkout_url;
+                        } else {
+                            // Upgrade Fiado (Dono não colocou a chave ainda)
+                            alert(`Sucesso! ${data.message}`);
+                            loadMyPlan(); // Reload progress bar
+                        }
                     } else {
                         alert(`Erro: ${data.error}`);
                     }
