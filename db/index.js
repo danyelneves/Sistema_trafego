@@ -49,26 +49,36 @@ function pgify(sql) {
   return sql.replace(/\?/g, () => `$${++i}`);
 }
 
+/**
+ * Normaliza params para aceitar tanto rest args quanto array.
+ *   db.get(sql, a, b)   → params = [a, b]
+ *   db.get(sql, [a, b]) → params = [a, b]
+ *   db.get(sql, [id])   → params = [id]
+ */
+function normalizeParams(rest) {
+  return (rest.length === 1 && Array.isArray(rest[0])) ? rest[0] : rest;
+}
+
 /** Executa uma query e retorna o QueryResult do pg. */
 async function query(sql, params = []) {
   return pool.query(pgify(sql), params);
 }
 
 /** Retorna a primeira linha ou undefined. */
-async function get(sql, ...params) {
-  const { rows } = await pool.query(pgify(sql), params);
+async function get(sql, ...rest) {
+  const { rows } = await pool.query(pgify(sql), normalizeParams(rest));
   return rows[0];
 }
 
 /** Retorna todas as linhas. */
-async function all(sql, ...params) {
-  const { rows } = await pool.query(pgify(sql), params);
+async function all(sql, ...rest) {
+  const { rows } = await pool.query(pgify(sql), normalizeParams(rest));
   return rows;
 }
 
 /** Executa DML e retorna { rowCount, rows }. */
-async function run(sql, ...params) {
-  const result = await pool.query(pgify(sql), params);
+async function run(sql, ...rest) {
+  const result = await pool.query(pgify(sql), normalizeParams(rest));
   return { rowCount: result.rowCount, rows: result.rows };
 }
 
@@ -85,16 +95,16 @@ function transaction(fn) {
         async query(sql, params = []) {
           return client.query(pgify(sql), params);
         },
-        async get(sql, ...params) {
-          const { rows } = await client.query(pgify(sql), params);
+        async get(sql, ...rest) {
+          const { rows } = await client.query(pgify(sql), normalizeParams(rest));
           return rows[0];
         },
-        async all(sql, ...params) {
-          const { rows } = await client.query(pgify(sql), params);
+        async all(sql, ...rest) {
+          const { rows } = await client.query(pgify(sql), normalizeParams(rest));
           return rows;
         },
-        async run(sql, ...params) {
-          const result = await client.query(pgify(sql), params);
+        async run(sql, ...rest) {
+          const result = await client.query(pgify(sql), normalizeParams(rest));
           return { rowCount: result.rowCount, rows: result.rows };
         },
       };
