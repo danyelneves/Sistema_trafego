@@ -90,9 +90,9 @@ router.post('/upgrade', requireAuth, async (req, res) => {
                     }],
                     external_reference: `UPGRADE_${req.user.workspace_id}_${plan_name}`,
                     back_urls: {
-                        success: "https://nexustrafego.com/dashboard",
-                        failure: "https://nexustrafego.com/dashboard",
-                        pending: "https://nexustrafego.com/dashboard"
+                        success: `${req.protocol}://${req.get('host')}/dashboard`,
+                        failure: `${req.protocol}://${req.get('host')}/dashboard`,
+                        pending: `${req.protocol}://${req.get('host')}/dashboard`
                     },
                     auto_return: "approved"
                 })
