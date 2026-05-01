@@ -1,91 +1,111 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { Anthropic } = require('@anthropic-ai/sdk');
-const { OpenAI } = require('openai');
-
 /**
- * NEXUS OmniRouter (Roteador de Modelos Dinâmico)
- * Escolhe automaticamente a I.A. mais adequada e sua versão exata
- * baseada no nível de "necessidade/complexidade" da tarefa.
+ * utils/omni-router.js — roteador de modelos de IA com fallback automático.
+ *
+ * Imports lazy: SDKs só são carregados quando uma chamada real é feita,
+ * economizando memória/cold start em rotas que não usam IA.
+ *
+ * Níveis de complexidade:
+ *  LOW    → Gemini Flash (ultra rápido, barato)
+ *  MEDIUM → Claude Sonnet (balanceado, bom em copy/vendas)
+ *  HIGH   → GPT-4o ou Claude Opus (raciocínio denso, planejamento)
  */
-async function generateWithOmniRouter(prompt, complexity = 'MEDIUM', keys) {
-    const { GEMINI_API_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY } = keys;
+const log = require('../middleware/logger');
 
-    // Níveis de Complexidade:
-    // LOW: Tarefas rápidas, análise de dados curtos. Usa modelos ultrarrápidos (Flash / Haiku / Mini)
-    // MEDIUM: Copywriting, Vendas NLP, Landing Pages. Usa modelos robustos (Sonnet / GPT-4o)
-    // HIGH: Engenharia reversa profunda, planejamento estratégico. Usa modelos pesados (Opus / o1 / Pro)
+let _genAI, _Anthropic, _OpenAI;
 
-    try {
-        if (complexity === 'HIGH') {
-            // Prioridade para raciocínio denso: OpenAI GPT-4o (ou modelo mais pesado) / Claude Opus
-            if (OPENAI_API_KEY) {
-                console.log("[OMNI-ROUTER] Complexidade HIGH -> Invocando OpenAI (gpt-4o)");
-                const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
-                const res = await openai.chat.completions.create({
-                    model: "gpt-4o",
-                    messages: [{ role: "user", content: prompt }]
-                });
-                return res.choices[0].message.content.trim();
-            } else if (ANTHROPIC_API_KEY) {
-                console.log("[OMNI-ROUTER] Complexidade HIGH -> Invocando Claude Opus (Fallback)");
-                const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-                const msg = await anthropic.messages.create({
-                    model: "claude-3-opus-20240229", // Modelo de alta densidade
-                    max_tokens: 1024,
-                    messages: [{ role: "user", content: prompt }]
-                });
-                return msg.content[0].text.trim();
-            }
-        }
+function getGoogleGenerativeAI() {
+  if (!_genAI) _genAI = require('@google/generative-ai').GoogleGenerativeAI;
+  return _genAI;
+}
 
-        if (complexity === 'MEDIUM') {
-            // Prioridade para Vendas/Copy/Desenvolvimento Web: Claude 3.5 Sonnet
-            if (ANTHROPIC_API_KEY) {
-                console.log("[OMNI-ROUTER] Complexidade MEDIUM -> Invocando Claude 3.5 Sonnet");
-                const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-                const msg = await anthropic.messages.create({
-                    model: "claude-3-5-sonnet-20241022",
-                    max_tokens: 800,
-                    messages: [{ role: "user", content: prompt }]
-                });
-                return msg.content[0].text.trim();
-            } else if (OPENAI_API_KEY) {
-                console.log("[OMNI-ROUTER] Complexidade MEDIUM -> Invocando OpenAI gpt-4o (Fallback)");
-                const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
-                const res = await openai.chat.completions.create({
-                    model: "gpt-4o",
-                    messages: [{ role: "user", content: prompt }]
-                });
-                return res.choices[0].message.content.trim();
-            }
-        }
+function getAnthropic() {
+  if (!_Anthropic) _Anthropic = require('@anthropic-ai/sdk').Anthropic;
+  return _Anthropic;
+}
 
-        if (complexity === 'LOW') {
-            // Prioridade para velocidade e custo: Gemini 1.5 Flash
-            if (GEMINI_API_KEY) {
-                console.log("[OMNI-ROUTER] Complexidade LOW -> Invocando Gemini 1.5 Flash");
-                const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-                const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-                const res = await model.generateContent(prompt);
-                return res.response.text().trim();
-            }
-        }
+function getOpenAI() {
+  if (!_OpenAI) _OpenAI = require('openai').OpenAI;
+  return _OpenAI;
+}
 
-        // FALLBACK GERAL: Se o modelo requisitado não tiver chave, usamos o que tiver disponível
-        console.log("[OMNI-ROUTER] Fallback de Emergência Ativado.");
-        if (GEMINI_API_KEY) {
-            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' }); // Tenta usar a pro como backup geral
-            const res = await model.generateContent(prompt);
-            return res.response.text().trim();
-        }
+async function callOpenAI(apiKey, model, prompt, maxTokens = 800) {
+  const OpenAI = getOpenAI();
+  const openai = new OpenAI({ apiKey, timeout: 30000 });
+  const res = await openai.chat.completions.create({
+    model,
+    messages: [{ role: 'user', content: prompt }],
+    max_tokens: maxTokens,
+  });
+  return res.choices[0].message.content.trim();
+}
 
-        throw new Error("Nenhuma API Key de Inteligência Artificial está configurada no painel.");
+async function callAnthropic(apiKey, model, prompt, maxTokens = 800) {
+  const Anthropic = getAnthropic();
+  const anthropic = new Anthropic({ apiKey, timeout: 30000 });
+  const msg = await anthropic.messages.create({
+    model,
+    max_tokens: maxTokens,
+    messages: [{ role: 'user', content: prompt }],
+  });
+  return msg.content[0].text.trim();
+}
 
-    } catch (error) {
-        console.error("[OMNI-ROUTER ERRO]", error.message);
-        throw error;
+async function callGemini(apiKey, modelName, prompt) {
+  const GoogleGenerativeAI = getGoogleGenerativeAI();
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: modelName });
+  // Promise.race garante timeout independente do SDK
+  const res = await Promise.race([
+    model.generateContent(prompt),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Gemini timeout 30s')), 30000)),
+  ]);
+  return res.response.text().trim();
+}
+
+async function generateWithOmniRouter(prompt, complexity = 'MEDIUM', keys = {}) {
+  const { GEMINI_API_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY } = keys;
+
+  try {
+    if (complexity === 'HIGH') {
+      if (OPENAI_API_KEY) {
+        log.debug('omni-router: HIGH → OpenAI gpt-4o');
+        return await callOpenAI(OPENAI_API_KEY, 'gpt-4o', prompt, 1024);
+      }
+      if (ANTHROPIC_API_KEY) {
+        log.debug('omni-router: HIGH → Claude Opus (fallback)');
+        return await callAnthropic(ANTHROPIC_API_KEY, 'claude-3-opus-20240229', prompt, 1024);
+      }
     }
+
+    if (complexity === 'MEDIUM') {
+      if (ANTHROPIC_API_KEY) {
+        log.debug('omni-router: MEDIUM → Claude Sonnet');
+        return await callAnthropic(ANTHROPIC_API_KEY, 'claude-sonnet-4-6', prompt, 800);
+      }
+      if (OPENAI_API_KEY) {
+        log.debug('omni-router: MEDIUM → gpt-4o (fallback)');
+        return await callOpenAI(OPENAI_API_KEY, 'gpt-4o', prompt, 800);
+      }
+    }
+
+    if (complexity === 'LOW') {
+      if (GEMINI_API_KEY) {
+        log.debug('omni-router: LOW → Gemini Flash');
+        return await callGemini(GEMINI_API_KEY, 'gemini-1.5-flash', prompt);
+      }
+    }
+
+    // Fallback geral: usa qualquer modelo disponível
+    log.warn('omni-router: nenhum modelo do nível solicitado disponível, usando fallback');
+    if (GEMINI_API_KEY) return await callGemini(GEMINI_API_KEY, 'gemini-1.5-pro', prompt);
+    if (ANTHROPIC_API_KEY) return await callAnthropic(ANTHROPIC_API_KEY, 'claude-sonnet-4-6', prompt, 800);
+    if (OPENAI_API_KEY) return await callOpenAI(OPENAI_API_KEY, 'gpt-4o', prompt, 800);
+
+    throw new Error('Nenhuma API Key de IA configurada (GEMINI/ANTHROPIC/OPENAI).');
+  } catch (error) {
+    log.error('omni-router falhou', error, { complexity });
+    throw error;
+  }
 }
 
 module.exports = { generateWithOmniRouter };

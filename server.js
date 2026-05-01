@@ -56,14 +56,25 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ limit: '1mb', extended: true }));
 
-// Headers globais de segurança (mínimo viável sem helmet)
+// Headers globais de segurança (helmet-like sem dependência externa)
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  // HSTS: força HTTPS por 6 meses (só em produção real)
+  if (process.env.VERCEL_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+  }
+  // Isolamento cross-origin (mitiga Spectre + COOP)
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  // X-DNS-Prefetch-Control: economiza, não vaza pra DNS providers
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
   next();
 });
+
+// Compression: gzip/brotli em respostas grandes (a Vercel já faz, mas reforça)
+// (a Vercel auto-comprime na edge, então não precisamos da lib compression)
 
 // Rota de importação com limite maior
 app.use('/api/import', express.json({ limit: '50mb' }), express.urlencoded({ limit: '50mb', extended: true }), require('./routes/import'));
@@ -119,20 +130,55 @@ app.use('/api/poltergeist', require('./routes/poltergeist')); // IoT e Logístic
 // Rota acessível pelo público: dominio.com/f/slug-da-pagina
 // ------------------------------------------------------------
 const db = require('./db');
-app.get('/f/:slug', async (req, res) => {
+app.get('/f/:slug', async (req, res, next) => {
   try {
     const funnel = await db.get('SELECT * FROM funnels WHERE slug = $1', [req.params.slug]);
-    if (!funnel) return res.status(404).send('<h1>Página não encontrada ou desativada.</h1>');
-    
-    // Incrementa visitas
-    await db.run('UPDATE funnels SET visits = visits + 1 WHERE id = $1', [funnel.id]);
-    
-    res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'");
+    if (!funnel) {
+      return res.status(404).send(renderHtmlError(404, 'Página não encontrada', 'O link que você acessou não existe ou foi desativado.'));
+    }
+
+    // Incrementa visitas (best-effort, não bloqueia a resposta)
+    db.run('UPDATE funnels SET visits = visits + 1 WHERE id = $1', [funnel.id]).catch(err =>
+      log.error('falha ao incrementar visitas', err, { funnel_id: funnel.id })
+    );
+
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:");
     res.send(funnel.html_content);
   } catch (err) {
-    res.status(500).send('Erro interno do servidor.');
+    next(err);
   }
 });
+
+function renderHtmlError(status, title, message) {
+  return `<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${status} - ${title}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0a0a0a;color:#e8e8e8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+    .box{max-width:520px;text-align:center}
+    .code{font-size:96px;font-weight:900;color:#39ff14;line-height:1;margin-bottom:12px;font-family:'JetBrains Mono',monospace}
+    h1{font-size:28px;margin-bottom:12px;font-weight:700}
+    p{color:#999;line-height:1.6;margin-bottom:32px}
+    a{display:inline-block;padding:12px 24px;background:#39ff14;color:#000;text-decoration:none;font-weight:700;border-radius:4px;transition:transform .15s}
+    a:hover{transform:translateY(-2px)}
+    .footer{margin-top:48px;font-size:12px;color:#555}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="code">${status}</div>
+    <h1>${title}</h1>
+    <p>${message}</p>
+    <a href="https://nexusagencia.app">← Voltar ao início</a>
+    <div class="footer">NEXUS · Engenharia Operacional</div>
+  </div>
+</body>
+</html>`;
+}
 
 // Health checks granulares (liveness, readiness, db, redis, mp)
 app.use('/api/health', require('./routes/health'));

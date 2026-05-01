@@ -6,6 +6,8 @@ const axios = require('axios');
 const { checkWaRateLimit } = require('../middleware/ratelimit');
 const { maskPhone } = require('../utils/mask');
 const { dispatchOrder } = require('../services/poltergeist');
+const audit = require('../utils/audit');
+const log = require('../middleware/logger');
 
 // Helper para Idempotência
 async function checkIdempotency(provider, externalId, payload) {
@@ -376,14 +378,23 @@ router.post('/mercadopago', async (req, res) => {
 
         await db.run("UPDATE workspace_billing SET plan_type = $1, credits_limit = $2 WHERE workspace_id = $3", [planName, newLimit, targetWorkspaceId]);
         await db.run("INSERT INTO payments_log (payment_id, workspace_id, plan, amount, status) VALUES ($1, $2, $3, $4, $5)", [String(paymentId), targetWorkspaceId, planName, price, 'approved']);
-        
-        console.log(`[WEBHOOK MP] ✅ Pagamento ${paymentId} Aprovado! Workspace ${targetWorkspaceId} -> ${planName}`);
+
+        log.info('Pagamento MP aprovado, workspace upgraded', {
+          paymentId, workspaceId: targetWorkspaceId, plan: planName, amount: price,
+        });
+        audit.log('billing.upgrade.approved', {
+          workspaceId: targetWorkspaceId,
+          paymentId: String(paymentId),
+          plan: planName,
+          amount: price,
+        });
       }
     }
 
     res.status(200).json({ ok: true });
   } catch (err) {
-    console.error("[WEBHOOK MP] Erro:", err.message);
+    log.error('webhook MP falhou', err);
+    // Retorna 200 mesmo em erro pra MP não ficar reentregando o webhook indefinidamente
     res.status(200).json({ error: 'Erro processado internamente' });
   }
 });

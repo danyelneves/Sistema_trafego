@@ -4,6 +4,7 @@ const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const v = require('../utils/validate');
 const log = require('../middleware/logger');
+const audit = require('../utils/audit');
 
 // ----------------------------------------------------------------
 // GET /api/billing/master
@@ -98,6 +99,13 @@ router.post('/upgrade', requireAuth, async (req, res, next) => {
 
         if (mpData.init_point) {
             log.info('Checkout MP gerado', { workspaceId: req.user.workspace_id, plan_name, price });
+            audit.log('billing.upgrade.checkout_created', {
+                workspaceId: req.user.workspace_id,
+                userId: req.user.id,
+                ip: req.ip,
+                plan_name,
+                price,
+            });
             return res.json({ ok: true, checkout_url: mpData.init_point });
         }
 
