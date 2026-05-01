@@ -11,7 +11,12 @@ const cookieParser = require('cookie-parser');
 const path         = require('path');
 
 const { verifyToken }        = require('./middleware/auth');
-const { requestLogger, log } = require('./middleware/logger');
+const logger                 = require('./middleware/logger');
+const { requestLogger, log } = logger;
+const sentry                 = require('./utils/sentry');
+
+// Inicializa Sentry o mais cedo possível (antes de qualquer require pesado)
+sentry.init();
 
 const app  = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -129,7 +134,8 @@ app.get('/f/:slug', async (req, res) => {
   }
 });
 
-app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now(), node: process.version }));
+// Health checks granulares (liveness, readiness, db, redis, mp)
+app.use('/api/health', require('./routes/health'));
 
 // ------------------------------------------------------------
 // Frontend estático (protegido)
@@ -152,7 +158,10 @@ app.get('/report/:uuid', (req, res) => {
 });
 
 // Fallback 404 para /api
-app.use('/api/*', (req, res) => res.status(404).json({ error: 'rota não encontrada' }));
+app.use('/api/*', (req, res) => res.status(404).json({ error: 'rota não encontrada', path: req.path }));
+
+// Error handler global (captura no Sentry e formata resposta amigável)
+app.use(sentry.errorHandler);
 
 // ------------------------------------------------------------
 // Modo local: escuta na porta quando executado via `node server.js`
