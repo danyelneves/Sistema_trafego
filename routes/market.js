@@ -25,7 +25,8 @@ router.post('/capture', async (req, res) => {
     // O sistema dispararia WhatsApp para cada comprador
     buyers.forEach(buyer => {
       // Usaria a API de Z-API / Evolution aqui
-      console.log(`[ZAP PARA ${buyer.buyer_phone}]: Olá ${buyer.company_name}! Um novo lead de ${niche} acabou de pedir orçamento em ${city}. Clique no link para comprar o contato por R$ 35: https://seu-maranet.vercel.app/api/market/buy/${leadId}/${buyer.id}`);
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      console.log(`[ZAP PARA ${buyer.buyer_phone}]: Olá ${buyer.company_name}! Um novo lead de ${niche} acabou de pedir orçamento em ${city}. Clique no link para comprar o contato por R$ 35: ${baseUrl}/api/market/buy/${leadId}/${buyer.id}`);
     });
 
     res.json({ ok: true, message: `Lead capturado. ${buyers.length} compradores notificados no leilão.` });

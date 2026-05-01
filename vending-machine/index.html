@@ -61,8 +61,8 @@
 
       try {
         // Chamando a Vending Machine API (NEXUS)
-        // Substitua pelo link real do seu Vercel
-        const apiRes = await fetch('https://seu-maranet.vercel.app/api/vending/checkout', {
+        // Simular Checkout via API
+        const apiRes = await fetch('/api/vending/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
