@@ -18,15 +18,20 @@ const PORT = Number(process.env.PORT) || 3000;
 
 // ------------------------------------------------------------
 // Aviso de segurança: JWT_SECRET padrão em produção
+// Distingue produção REAL (VERCEL_ENV=production) de preview (NODE_ENV=production
+// mas VERCEL_ENV=preview). Só dispara em produção real.
 // ------------------------------------------------------------
 const DEFAULT_SECRET = 'dev-secret-change-me';
+const IS_REAL_PROD =
+  process.env.VERCEL_ENV === 'production' ||
+  (!process.env.VERCEL_ENV && !process.env.AWS_LAMBDA_FUNCTION_NAME && process.env.NODE_ENV === 'production');
+
 if (process.env.JWT_SECRET === DEFAULT_SECRET || !process.env.JWT_SECRET) {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const msg = isProduction
+  const msg = IS_REAL_PROD
     ? '⛔  ERRO CRÍTICO: JWT_SECRET está com o valor padrão em produção! Altere nas env vars da Vercel imediatamente.'
-    : '⚠   JWT_SECRET não definido — usando valor padrão (apenas dev).';
+    : '⚠   JWT_SECRET não definido — usando valor padrão (preview/dev).';
   console.warn('\x1b[33m' + msg + '\x1b[0m');
-  if (isProduction) throw new Error(msg);
+  if (IS_REAL_PROD) throw new Error(msg);
 }
 
 app.disable('x-powered-by');
