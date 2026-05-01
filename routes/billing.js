@@ -100,15 +100,14 @@ router.post('/upgrade', requireAuth, async (req, res) => {
             const mpData = await mpRes.json();
             
             if (mpData.init_point) {
-                // Atualiza provisoriamente (num cenário ideal seria via webhook pós-pago)
-                await db.run("UPDATE workspace_billing SET plan_type = $1, credits_limit = $2 WHERE workspace_id = $3", [plan_name, newLimit, req.user.workspace_id]);
+                // Removemos o "UPDATE provisório". O plano só vai mudar via Webhook após o pagamento.
                 return res.json({ ok: true, checkout_url: mpData.init_point });
             }
         }
 
-        // Fallback: Se o dono ainda não configurou o Mercado Pago, fazemos o upgrade "Fiado/Mock"
+        // Fallback: Se o dono ainda não configurou o Mercado Pago, fazemos o upgrade "Fiado/Mock" para não travar os testes
         await db.run("UPDATE workspace_billing SET plan_type = $1, credits_limit = $2 WHERE workspace_id = $3", [plan_name, newLimit, req.user.workspace_id]);
-        res.json({ ok: true, message: `Plano atualizado para ${plan_name}. Limite de Inteligência Artificial aumentado para R$${newLimit}.` });
+        res.json({ ok: true, message: `Mock: Plano atualizado para ${plan_name}. Limite aumentado para R$${newLimit} (Adicione sua chave do MP para cobrar real).` });
     } catch(e) {
         res.status(500).json({ error: e.message });
     }

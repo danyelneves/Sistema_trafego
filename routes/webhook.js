@@ -287,5 +287,60 @@ Responda de forma natural, curta e agressiva em vendas. Não pareça um robô.`;
   }
 });
 
+/**
+ * POST /api/webhook/mercadopago
+ * Porteiro do SaaS: Confirma o pagamento e libera a Franquia (Upgrade) pro cliente.
+ */
+router.post('/mercadopago', async (req, res) => {
+  try {
+    const topic = req.query.topic || req.body.type;
+    const paymentId = req.query.id || req.body.data?.id;
+
+    if (!paymentId || (topic !== 'payment' && req.body.action !== 'payment.created' && req.body.action !== 'payment.updated')) {
+      return res.status(200).json({ ok: true }); // Ignora outros eventos (ex: plan, subscription)
+    }
+
+    // Puxa a chave do dono (Workspace 1) para consultar o pagamento
+    const ownerSettings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = 1");
+    let ownerMpToken = ownerSettings.find(s => s.key === 'mercadopago.accessToken')?.value;
+    if (!ownerMpToken) ownerMpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+
+    if (!ownerMpToken) {
+      console.error("[WEBHOOK MP] Chave do Mercado Pago não encontrada para consultar o pagamento.");
+      return res.status(200).json({ ok: false });
+    }
+
+    const axios = require('axios');
+    const paymentResponse = await axios.get(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+      headers: { 'Authorization': `Bearer ${ownerMpToken}` }
+    });
+    
+    const paymentData = paymentResponse.data;
+
+    // Checa se o pagamento foi APROVADO
+    if (paymentData.status === 'approved') {
+      const extRef = paymentData.external_reference; // Ex: "UPGRADE_5_ELITE"
+      
+      if (extRef && extRef.startsWith('UPGRADE_')) {
+        const parts = extRef.split('_');
+        const targetWorkspaceId = parseInt(parts[1], 10);
+        const planName = parts[2]; // STARTER, GROWTH, ELITE
+        
+        const newLimit = planName === 'ELITE' ? 200.00 : (planName === 'GROWTH' ? 50.00 : 0.00);
+
+        await db.run("UPDATE workspace_billing SET plan_type = $1, credits_limit = $2 WHERE workspace_id = $3", [planName, newLimit, targetWorkspaceId]);
+        
+        console.log(`[WEBHOOK MP] ✅ Pagamento ${paymentId} Aprovado! Workspace ${targetWorkspaceId} atualizado para o plano ${planName} com limite de R$${newLimit}.`);
+      }
+    }
+
+    res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error("[WEBHOOK MP] Erro no processamento:", err.message);
+    // Mercado Pago exige status 200/201 mesmo em erro para não tentar reenviar milhões de vezes
+    res.status(200).json({ error: 'Erro processado internamente' });
+  }
+});
+
 
 module.exports = router;
