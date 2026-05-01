@@ -63,7 +63,12 @@ router.post('/upgrade', requireAuth, async (req, res) => {
         
         // Puxa a chave do Mercado Pago do Dono do Sistema (Workspace 1)
         const ownerSettings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = 1");
-        const ownerMpToken = ownerSettings.find(s => s.key === 'mercadopago.accessToken')?.value;
+        let ownerMpToken = ownerSettings.find(s => s.key === 'mercadopago.accessToken')?.value;
+        
+        // Fallback Global: Tenta puxar direto da Vercel se não tiver no banco de dados
+        if (!ownerMpToken && process.env.MERCADOPAGO_ACCESS_TOKEN) {
+            ownerMpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+        }
 
         const newLimit = plan_name === 'ELITE' ? 200.00 : (plan_name === 'GROWTH' ? 50.00 : 0.00);
         const price = plan_name === 'ELITE' ? 997.00 : (plan_name === 'GROWTH' ? 297.00 : 97.00);
