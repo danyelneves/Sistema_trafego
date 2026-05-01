@@ -14,15 +14,7 @@ router.get('/master', requireAuth, async (req, res) => {
             return res.status(403).json({ error: "Acesso Negado. Apenas o Administrator (Workspace 1) pode ver o faturamento geral." });
         }
 
-        // Se a tabela não existir, criar automaticamente na primeira vez
-        await db.run(`
-            CREATE TABLE IF NOT EXISTS workspace_billing (
-                workspace_id INTEGER PRIMARY KEY,
-                plan_type VARCHAR(50) DEFAULT 'TRIAL',
-                credits_limit NUMERIC(10,2) DEFAULT 5.00,
-                credits_used NUMERIC(10,2) DEFAULT 0.00
-            )
-        `);
+        // Tabela workspace_billing é criada via migrations/2026_security_hardening.sql
 
         const tenants = await db.all(`
             SELECT 
@@ -60,19 +52,26 @@ router.get('/master', requireAuth, async (req, res) => {
 router.post('/upgrade', requireAuth, async (req, res) => {
     try {
         const { plan_name } = req.body;
-        
+
+        const VALID_PLANS = ['STARTER', 'GROWTH', 'ELITE'];
+        if (!VALID_PLANS.includes(plan_name)) {
+            return res.status(400).json({ error: 'Plano inválido. Use STARTER, GROWTH ou ELITE.' });
+        }
+
         // Puxa a chave do Mercado Pago do Dono do Sistema (Workspace 1)
         const ownerSettings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = 1");
-        let ownerMpToken = ownerSettings.find(s => s.key === 'mercadopago.accessToken')?.value;
-        
+        const ownerMpToken = ownerSettings.find(s => s.key === 'mercadopago.accessToken')?.value;
+
         if (!ownerMpToken || !ownerMpToken.startsWith('APP_USR')) {
-            return res.status(503).json({ 
-                error: 'Pagamento indisponível no momento. Contate o suporte.' 
+            return res.status(503).json({
+                error: 'Pagamento indisponível no momento. Contate o suporte.'
             });
         }
 
-        const newLimit = plan_name === 'ELITE' ? 200.00 : (plan_name === 'GROWTH' ? 50.00 : 0.00);
-        const price = plan_name === 'ELITE' ? 997.00 : (plan_name === 'GROWTH' ? 297.00 : 97.00);
+        const PLAN_LIMITS = { STARTER: 0.00, GROWTH: 50.00, ELITE: 200.00 };
+        const PLAN_PRICES = { STARTER: 97.00, GROWTH: 297.00, ELITE: 997.00 };
+        const newLimit = PLAN_LIMITS[plan_name];
+        const price = PLAN_PRICES[plan_name];
 
         const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
         const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {

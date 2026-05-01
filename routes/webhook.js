@@ -4,7 +4,7 @@ const db = require('../db');
 const crypto = require('crypto');
 const axios = require('axios');
 const { checkWaRateLimit } = require('../middleware/ratelimit');
-const { maskPhone, maskText } = require('../utils/mask');
+const { maskPhone } = require('../utils/mask');
 const { dispatchOrder } = require('../services/poltergeist');
 
 // Helper para Idempotência
@@ -46,8 +46,10 @@ router.post('/crm', async (req, res) => {
 
     console.log(`[Webhook CRM] Nova venda recebida (Workspace ${workspace_id})`);
 
-    // Apenas registra vendas "ganhas" (won/closed)
-    if (status && status !== 'won' && status !== 'closed') {
+    // Apenas registra vendas "ganhas" (suporta variações de CRMs distintos)
+    const WON_STATUSES = ['won', 'closed', 'paid', 'confirmed', 'success', 'approved', 'completed'];
+    const normalizedStatus = (status || '').toString().toLowerCase().trim();
+    if (normalizedStatus && !WON_STATUSES.includes(normalizedStatus)) {
       return res.status(200).json({ success: true, message: 'Ignorado: Venda não está com status ganho.' });
     }
 
@@ -58,12 +60,13 @@ router.post('/crm', async (req, res) => {
 
     const revenueVal = Number(contract_value) || 0;
     
+    // PII (client_name/client_email) é gravada COMPLETA. maskText() é apenas para logs.
     await db.run(`
       INSERT INTO sales (workspace_id, external_id, client_name, client_email, contract_value, status, channel, utm_source, utm_campaign, utm_content, utm_term)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       ON CONFLICT (external_id) DO NOTHING
     `, [
-      workspace_id, extId, maskText(client_name || 'Desconhecido'), maskText(client_email || ''), revenueVal, status || 'won', channel, utm_source || '', utm_campaign || '', utm_content || '', utm_term || ''
+      workspace_id, extId, client_name || 'Desconhecido', client_email || '', revenueVal, status || 'won', channel, utm_source || '', utm_campaign || '', utm_content || '', utm_term || ''
     ]);
 
     let campaign_id = null;
@@ -152,29 +155,28 @@ router.post('/whatsapp/:token', checkWaRateLimit, async (req, res) => {
     if (ANTHROPIC_API_KEY) {
         try {
             const { Anthropic } = require('@anthropic-ai/sdk');
-            const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-            // Timeout via AbortController (timeout logic removed for brevity as anthropic SDK supports timeout property natively)
+            const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY, timeout: 8000 });
             const msg = await anthropic.messages.create({
-                model: "claude-3-5-sonnet-20241022",
+                model: "claude-sonnet-4-6",
                 max_tokens: 300,
                 messages: [{ role: "user", content: prompt }],
-                timeout: 8000
             });
             responseText = msg.content[0].text.trim();
         } catch(e) {
             console.error("[ROUTER ERRO] Falha no Claude. Caindo pro Gemini.");
         }
     }
-    
+
     if (!responseText && GEMINI_API_KEY) {
         try {
             const { GoogleGenerativeAI } = require('@google/generative-ai');
             const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
             const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-            // Generative AI timeout can be handled by abortSignal, but standard promise race works
-            const controller = new AbortController();
-            setTimeout(() => controller.abort(), 8000);
-            const aiResponse = await model.generateContent({ contents: [{ role: "user", parts: [{ text: prompt }] }] }, { signal: controller.signal });
+            // Promise.race garante o timeout independente de suporte do SDK ao AbortSignal.
+            const aiResponse = await Promise.race([
+                model.generateContent({ contents: [{ role: "user", parts: [{ text: prompt }] }] }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Gemini timeout 8s')), 8000)),
+            ]);
             responseText = aiResponse.response.text().trim();
         } catch (e) {
             console.error("[ROUTER ERRO] Falha no Gemini.", e.message);
@@ -192,14 +194,15 @@ router.post('/whatsapp/:token', checkWaRateLimit, async (req, res) => {
             const numeroWs = remoteJid.replace(/[^0-9]/g, '');
             const ts = Date.now();
             const ghostAmount = Number(getSetting('ghost.default_amount')) || 97.00;
+            const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
             const mpRes = await axios.post('https://api.mercadopago.com/v1/payments', {
                 transaction_amount: ghostAmount,
                 description: "NEXUS Automação Ghost",
                 payment_method_id: "pix",
                 external_reference: `GHOST_${workspace_id}_${numeroWs}_${ts}`,
-                notification_url: `${req.protocol}://${req.get('host')}/api/webhook/mercadopago`,
+                notification_url: `${protocol}://${req.get('host')}/api/webhook/mercadopago`,
                 payer: { email: `wa-${numeroWs}@nexus-tenant.local` }
-            }, { 
+            }, {
               headers: { 
                 'Authorization': `Bearer ${MP_TOKEN}`,
                 'X-Idempotency-Key': `ghost-${workspace_id}-${numeroWs}-${ts}`
@@ -315,12 +318,11 @@ router.post('/mercadopago', async (req, res) => {
     if (isDuplicate) return res.status(200).json({ ok: true, duplicate: true });
 
     const ownerSettings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = 1");
-    let ownerMpToken = ownerSettings.find(s => s.key === 'mercadopago.accessToken')?.value;
-    if (!ownerMpToken) ownerMpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+    const ownerMpToken = ownerSettings.find(s => s.key === 'mercadopago.accessToken')?.value;
 
-    if (!ownerMpToken) {
-      console.error("[WEBHOOK MP] Chave MP não encontrada.");
-      return res.status(200).json({ ok: false });
+    if (!ownerMpToken || !ownerMpToken.startsWith('APP_USR')) {
+      console.error("[WEBHOOK MP] Chave MP não configurada em workspace_settings (workspace_id=1).");
+      return res.status(503).json({ ok: false, error: 'MP not configured' });
     }
 
     const paymentResponse = await axios.get(`https://api.mercadopago.com/v1/payments/${paymentId}`, {

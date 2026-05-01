@@ -1,33 +1,52 @@
 /**
  * middleware/logger.js — logger persistente em arquivo com rotação diária.
- * Escreve em logs/app-YYYY-MM-DD.log e mantém até KEEP_DAYS arquivos.
+ *
+ * Em ambiente serverless (Vercel/AWS Lambda) o filesystem é read-only fora de
+ * /tmp, então o file logging fica desativado e tudo cai apenas em stdout
+ * (capturado pelos Runtime Logs da Vercel automaticamente).
  */
 const fs   = require('fs');
 const path = require('path');
 
-const LOG_DIR   = path.join(__dirname, '..', 'logs');
+const IS_SERVERLESS = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const LOG_DIR   = IS_SERVERLESS ? null : path.join(__dirname, '..', 'logs');
 const KEEP_DAYS = Number(process.env.LOG_KEEP_DAYS) || 30;
 
-if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+let _fileLoggingEnabled = false;
+if (!IS_SERVERLESS && LOG_DIR) {
+  try {
+    if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+    _fileLoggingEnabled = true;
+  } catch (e) {
+    console.warn(`[logger] file logging desativado: ${e.message}`);
+  }
+}
 
 let _currentDate = '';
 let _stream      = null;
 
 function getStream() {
+  if (!_fileLoggingEnabled) return null;
   const today = new Date().toISOString().slice(0, 10);
   if (today !== _currentDate) {
-    if (_stream) _stream.end();
+    if (_stream) { try { _stream.end(); } catch {} }
     _currentDate = today;
-    _stream = fs.createWriteStream(
-      path.join(LOG_DIR, `app-${today}.log`),
-      { flags: 'a', encoding: 'utf8' }
-    );
-    rotate();
+    try {
+      _stream = fs.createWriteStream(
+        path.join(LOG_DIR, `app-${today}.log`),
+        { flags: 'a', encoding: 'utf8' }
+      );
+      rotate();
+    } catch {
+      _stream = null;
+      _fileLoggingEnabled = false;
+    }
   }
   return _stream;
 }
 
 function rotate() {
+  if (!_fileLoggingEnabled || !LOG_DIR) return;
   try {
     const files = fs.readdirSync(LOG_DIR)
       .filter(f => f.startsWith('app-') && f.endsWith('.log'))
@@ -44,7 +63,8 @@ function writeLine(parts) {
     const ts   = new Date().toISOString();
     const line = `[${ts}] ${parts.join(' ')}\n`;
     process.stdout.write(line);
-    getStream().write(line);
+    const stream = getStream();
+    if (stream) stream.write(line);
   } catch {}
 }
 

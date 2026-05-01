@@ -37,31 +37,36 @@ router.post('/kiwify/:wsId', checkKiwifyRateLimit, async (req, res) => {
     const wsSettingsRow = await db.get("SELECT value FROM workspace_settings WHERE workspace_id = $1 AND key = 'kiwify.webhook.secret'", [wsId]);
     const kiwifySecret = wsSettingsRow?.value;
 
-    // 2. Validação HMAC SHA-1 da Kiwify
-    if (kiwifySecret) {
-        const signature = req.headers['x-kiwify-signature'];
-        if (!signature) {
-            console.error(`[FRAUDE-KIWIFY] Assinatura ausente para wsId ${wsId}`);
-            return res.status(401).json({ error: 'Missing HMAC signature' });
+    // 2. Validação HMAC SHA-1 da Kiwify (OBRIGATÓRIA — sem secret, sem processamento)
+    if (!kiwifySecret) {
+        console.error(`[FRAUDE-KIWIFY] Workspace ${wsId} sem secret configurado.`);
+        return res.status(401).json({ error: 'Webhook secret not configured for workspace' });
+    }
+
+    const signature = (req.query.signature || req.headers['x-kiwify-signature'] || '').toString();
+    if (!signature) {
+        console.error(`[FRAUDE-KIWIFY] Assinatura ausente para wsId ${wsId}`);
+        return res.status(401).json({ error: 'Missing HMAC signature' });
+    }
+
+    // Kiwify assina o BODY BRUTO com SHA-1. Usar req.rawBody capturado em server.js.
+    if (!req.rawBody) {
+        console.error(`[FRAUDE-KIWIFY] rawBody não disponível para wsId ${wsId}.`);
+        return res.status(500).json({ error: 'Raw body unavailable' });
+    }
+
+    const expectedSignature = crypto.createHmac('sha1', kiwifySecret).update(req.rawBody).digest('hex');
+
+    try {
+        const sigBuf = Buffer.from(signature, 'hex');
+        const expBuf = Buffer.from(expectedSignature, 'hex');
+        if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+            console.error(`[FRAUDE-KIWIFY] Assinatura não confere para wsId ${wsId}.`);
+            return res.status(401).json({ error: 'Invalid HMAC signature' });
         }
-        
-        // Kiwify envia uma query string na assinatura que deve corresponder ou o próprio body bruto, verifique a doc exata da Kiwify. 
-        // O padrão deles: HMAC-SHA1 do body convertido pra urlencoded ou raw JSON
-        // Em um sistema real, nós manteríamos um req.rawBody para crypto
-        // Aqui simulamos a validação com o req.body encodado apenas para exemplo:
-        const expectedSignature = crypto.createHmac('sha1', kiwifySecret).update(JSON.stringify(req.body)).digest('hex');
-        
-        try {
-            // Em NodeJS 18+, o tamanho precisa ser exatamente igual.
-            const sigBuf = Buffer.from(signature);
-            const expBuf = Buffer.from(expectedSignature);
-            if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
-                console.warn(`[FRAUDE-KIWIFY] Assinatura não confere para wsId ${wsId}. Pode ser necessário req.rawBody na Kiwify.`);
-                // Return 401: return res.status(401).json({ error: 'Invalid HMAC signature' });
-            }
-        } catch (e) {
-             console.error(`[FRAUDE-KIWIFY] Erro ao comparar HMAC`, e.message);
-        }
+    } catch (e) {
+        console.error(`[FRAUDE-KIWIFY] Erro ao comparar HMAC para wsId ${wsId}:`, e.message);
+        return res.status(401).json({ error: 'Signature check failed' });
     }
 
     // 3. Idempotência

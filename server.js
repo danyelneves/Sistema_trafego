@@ -18,15 +18,20 @@ const PORT = Number(process.env.PORT) || 3000;
 
 // ------------------------------------------------------------
 // Aviso de segurança: JWT_SECRET padrão em produção
+// Distingue produção REAL (VERCEL_ENV=production) de preview (NODE_ENV=production
+// mas VERCEL_ENV=preview). Só dispara em produção real.
 // ------------------------------------------------------------
 const DEFAULT_SECRET = 'dev-secret-change-me';
+const IS_REAL_PROD =
+  process.env.VERCEL_ENV === 'production' ||
+  (!process.env.VERCEL_ENV && !process.env.AWS_LAMBDA_FUNCTION_NAME && process.env.NODE_ENV === 'production');
+
 if (process.env.JWT_SECRET === DEFAULT_SECRET || !process.env.JWT_SECRET) {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const msg = isProduction
+  const msg = IS_REAL_PROD
     ? '⛔  ERRO CRÍTICO: JWT_SECRET está com o valor padrão em produção! Altere nas env vars da Vercel imediatamente.'
-    : '⚠   JWT_SECRET não definido — usando valor padrão (apenas dev).';
+    : '⚠   JWT_SECRET não definido — usando valor padrão (preview/dev).';
   console.warn('\x1b[33m' + msg + '\x1b[0m');
-  if (isProduction) throw new Error(msg);
+  if (IS_REAL_PROD) throw new Error(msg);
 }
 
 app.disable('x-powered-by');
@@ -35,8 +40,25 @@ app.use(cookieParser());
 app.use(requestLogger);
 
 // Limit global de 1mb para mitigar DoS
-app.use(express.json({ limit: '1mb' }));
+// Captura rawBody nos webhooks da Kiwify para validação HMAC SHA-1
+app.use(express.json({
+  limit: '1mb',
+  verify: (req, _res, buf) => {
+    if (req.originalUrl && req.originalUrl.startsWith('/api/webhooks/kiwify')) {
+      req.rawBody = buf.toString('utf8');
+    }
+  },
+}));
 app.use(express.urlencoded({ limit: '1mb', extended: true }));
+
+// Headers globais de segurança (mínimo viável sem helmet)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  next();
+});
 
 // Rota de importação com limite maior
 app.use('/api/import', express.json({ limit: '50mb' }), express.urlencoded({ limit: '50mb', extended: true }), require('./routes/import'));
@@ -65,6 +87,8 @@ app.use('/api/reports',    require('./routes/reports'));
 app.use('/api/ai',         require('./routes/ai'));
 app.use('/api/financial',  require('./routes/financial'));
 app.use('/api/webhooks',   require('./routes/webhooks'));
+app.use('/api/billing',    require('./routes/billing'));
+app.use('/api/alerts',     require('./routes/alerts'));
 app.use('/api/empire',     require('./routes/empire'));
 app.use('/api/launcher',   require('./routes/launcher'));
 app.use('/api/vending',    require('./routes/vending')); // Vending Machine
