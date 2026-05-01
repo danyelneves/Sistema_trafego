@@ -116,14 +116,14 @@ router.post('/whatsapp/:token', checkWaRateLimit, async (req, res) => {
     let incomingText = data.message.conversation || data.message.extendedTextMessage?.text || '';
     if (!incomingText) return res.status(200).json({ ok: true });
 
-    // Idempotência
-    const isDuplicate = await checkIdempotency('whatsapp', data.key.id, req.body);
-    if (isDuplicate) return res.status(200).json({ ok: true, duplicate: true });
-
-    // Buscar workspace pelo token
+    // Validar token PRIMEIRO (rápido + seguro: bloqueia atacantes antes de qualquer side-effect)
     const wsRow = await db.get("SELECT workspace_id FROM workspace_settings WHERE key = 'whatsapp.webhook.token' AND value = $1", [token]);
     if (!wsRow) return res.status(401).json({ error: 'Unauthorized. Invalid WhatsApp token.' });
     const workspace_id = wsRow.workspace_id;
+
+    // Idempotência só DEPOIS do token validado (evita poluir webhook_events com requests não autorizadas)
+    const isDuplicate = await checkIdempotency('whatsapp', data.key.id, req.body);
+    if (isDuplicate) return res.status(200).json({ ok: true, duplicate: true });
 
     const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [workspace_id]);
     const getSetting = (k) => settings.find(s => s.key === k)?.value;
