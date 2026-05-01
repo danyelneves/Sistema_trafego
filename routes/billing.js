@@ -62,11 +62,35 @@ router.post('/upgrade', requireAuth, async (req, res) => {
         const { plan_name } = req.body;
         // Na vida real, redirecionaria pro Checkout da Stripe
         // Aqui simulamos o limite sendo aumentado
-        const newLimit = plan_name === 'ELITE' ? 200.00 : 50.00;
+        const newLimit = plan_name === 'ELITE' ? 200.00 : (plan_name === 'GROWTH' ? 50.00 : 0.00);
         
         await db.run("UPDATE workspace_billing SET plan_type = $1, credits_limit = $2 WHERE workspace_id = $3", [plan_name, newLimit, req.user.workspace_id]);
         
-        res.json({ ok: true, message: `Plano atualizado para ${plan_name}. Limite aumentado para R$${newLimit}.` });
+        res.json({ ok: true, message: `Plano atualizado para ${plan_name}. Limite de Inteligência Artificial aumentado para R$${newLimit}.` });
+    } catch(e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ----------------------------------------------------------------
+// GET /api/billing/me
+// O próprio cliente vê o seu consumo de IA e o limite de degustação
+// ----------------------------------------------------------------
+router.get('/me', requireAuth, async (req, res) => {
+    try {
+        let billing = await db.get("SELECT * FROM workspace_billing WHERE workspace_id = $1", [req.user.workspace_id]);
+        
+        if (!billing) {
+            // Cria trial se não existir
+            await db.run("INSERT INTO workspace_billing (workspace_id, plan_type, credits_limit, credits_used) VALUES ($1, 'TRIAL', 5.00, 0.00)", [req.user.workspace_id]);
+            billing = { plan_type: 'TRIAL', credits_limit: 5.00, credits_used: 0.00 };
+        }
+
+        res.json({
+            plan_type: billing.plan_type,
+            credits_limit: parseFloat(billing.credits_limit),
+            credits_used: parseFloat(billing.credits_used)
+        });
     } catch(e) {
         res.status(500).json({ error: e.message });
     }
