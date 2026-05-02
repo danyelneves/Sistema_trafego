@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sentinel · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+</head>
+<body>
+<aside id="sidebar" data-active="sentinel"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>🛡 Sentinel — Robô Trader de Campanhas</h2>
+      <p>Monitora campanhas Meta a cada 15 minutos. Pausa as ruins, escala as boas. Toma decisão sozinho via IA (Gemini) baseado em CPA, CTR, CPM e gastos.</p>
+    </div>
+    <div class="page-actions">
+      <span class="badge up">CRON ATIVO · 15min</span>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head">
+      <span class="section-title">Disparo manual</span>
+    </div>
+    <div class="card">
+      <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
+        Força o Sentinel a rodar agora pro seu workspace. Útil pra testar ou pra forçar uma análise sem esperar o cron.
+      </p>
+      <button class="btn btn-primary" id="btn-force-run">⚡ Rodar Sentinel agora</button>
+      <div id="output" class="output" style="display:none; margin-top:16px;"></div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head">
+      <span class="section-title">Endpoints disponíveis</span>
+    </div>
+    <div class="api-doc">
+      <span class="api-method post">POST</span><span class="api-path">/api/sentinel/force</span>
+      <div class="api-desc">Força execução imediata do robô pro workspace logado. Retorna lista de ações tomadas (PAUSAR, ESCALAR, MANTER).</div>
+    </div>
+    <div class="api-doc">
+      <span class="api-method get">GET</span><span class="api-path">/api/sentinel/cron</span>
+      <div class="api-desc">Endpoint cron protegido por CRON_SECRET. Disparado pela Vercel a cada 15min.</div>
+    </div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+document.getElementById('btn-force-run').addEventListener('click', async (e) => {
+  NEXUS.showSpinner(e.target);
+  try {
+    const data = await NEXUS.apiCall('POST', '/api/sentinel/force', {});
+    NEXUS.showOutput('output', data, 'success');
+  } catch (err) {
+    NEXUS.showError('output', err.message);
+  } finally {
+    NEXUS.hideSpinner(e.target);
+  }
+});
+</script>
+</body>
+</html>

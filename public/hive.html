@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hive · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+<style>
+  .pulse-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px;}
+  .pulse-box{
+    background:var(--bg-3); border:1px solid var(--border);
+    border-radius:8px; padding:16px;
+  }
+  .pulse-num{
+    font-size:28px; font-weight:800;
+    font-family:'JetBrains Mono',monospace;
+    background:var(--gradient);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .pulse-lbl{font-size:11px; color:var(--muted); margin-top:4px; letter-spacing:1px; text-transform:uppercase; font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+<aside id="sidebar" data-active="hive"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>🐝 Hive — Mente de Colmeia</h2>
+      <p>Monitora anomalias agregadas em todos os workspaces da rede, identifica padrões sistêmicos e alerta sobre oportunidades. Inteligência coletiva que cresce conforme mais clientes usam o sistema.</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn" id="btn-pulse">⚡ Pulsar agora</button>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Pulso da rede</span></div>
+    <div id="pulse-container" class="pulse-grid">
+      <div class="empty" style="grid-column:1/-1;">Carregando pulso...</div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Output bruto</span></div>
+    <div id="output" class="output" style="display:none;"></div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc"><span class="api-method get">GET</span><span class="api-path">/api/hive/pulse</span><div class="api-desc">Retorna métricas agregadas da rede e anomalias detectadas.</div></div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+async function loadPulse() {
+  try {
+    const data = await NEXUS.apiCall('GET', '/api/hive/pulse');
+    const container = document.getElementById('pulse-container');
+    const stats = data.stats || data.metrics || data || {};
+    const entries = Object.entries(stats).filter(([k, v]) => typeof v === 'number' || typeof v === 'string');
+    if (!entries.length) {
+      container.innerHTML = '<div class="empty" style="grid-column:1/-1;">Sem dados de pulso ainda.</div>';
+    } else {
+      container.innerHTML = entries.slice(0, 12).map(([k, v]) => `
+        <div class="pulse-box">
+          <div class="pulse-num">${typeof v === 'number' ? v.toLocaleString('pt-BR') : NEXUS.escapeHtml(String(v))}</div>
+          <div class="pulse-lbl">${NEXUS.escapeHtml(k.replace(/_/g, ' '))}</div>
+        </div>
+      `).join('');
+    }
+    NEXUS.showOutput('output', data, 'success');
+  } catch (err) {
+    document.getElementById('pulse-container').innerHTML = `<div class="empty" style="grid-column:1/-1; color:var(--down);">${NEXUS.escapeHtml(err.message)}</div>`;
+  }
+}
+document.getElementById('btn-pulse').addEventListener('click', loadPulse);
+loadPulse();
+</script>
+</body>
+</html>

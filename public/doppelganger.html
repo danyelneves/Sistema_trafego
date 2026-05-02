@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Doppelgänger · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+<style>
+  .chat{
+    background:var(--bg-3); border:1px solid var(--border);
+    border-radius:8px; padding:16px; height:400px; overflow-y:auto;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .msg{padding:8px 12px; border-radius:8px; max-width:75%; font-size:14px;}
+  .msg.user{background:var(--gradient); color:#000; align-self:flex-end;}
+  .msg.bot{background:var(--bg-4); color:var(--text); align-self:flex-start;}
+  .msg.sys{background:transparent; color:var(--muted); font-size:11px; align-self:center; font-style:italic;}
+  .chat-input{display:flex; gap:8px; margin-top:12px;}
+  .chat-input input{flex:1;}
+</style>
+</head>
+<body>
+<aside id="sidebar" data-active="doppelganger"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>🤖 Doppelgänger — Vendedor IA Clone</h2>
+      <p>Vendedor IA que imita seu jeito de falar (gírias, ritmo, erros sutis). Detecta intenção de compra e gera PIX automaticamente. Use o chat abaixo pra testar como o sistema responde.</p>
+    </div>
+    <div class="page-actions">
+      <span class="badge up">CLAUDE 4.6 + GEMINI</span>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Chat de teste</span></div>
+    <div class="card">
+      <div class="chat" id="chat"></div>
+      <div class="chat-input">
+        <input class="field-input" id="msg" placeholder="Digite uma mensagem como se fosse um cliente..." style="background:var(--bg-3); border:1px solid var(--border-2); border-radius:6px; padding:10px 12px; color:var(--text); outline:none;">
+        <button class="btn btn-primary" id="btn-send">Enviar</button>
+      </div>
+      <div style="margin-top:8px; color:var(--muted); font-size:11px;">
+        Dica: tente "quanto custa o plano elite?" ou "quero comprar agora" — se a IA detectar intenção, ela retorna [GERAR_PIX].
+      </div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc">
+      <span class="api-method post">POST</span><span class="api-path">/api/doppelganger/chat</span>
+      <div class="api-desc">Body: { message, history? }. Retorna resposta da IA (com tag [GERAR_PIX] se detectou intenção de compra).</div>
+    </div>
+    <div class="api-doc">
+      <span class="api-method post">POST</span><span class="api-path">/api/webhook/whatsapp/:token</span>
+      <div class="api-desc">Webhook chamado pela Evolution/Z-API com mensagens reais do WhatsApp. Doppelgänger processa e responde.</div>
+    </div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+const history = [];
+const chatEl = document.getElementById('chat');
+chatEl.innerHTML = '<div class="msg sys">Inicie uma conversa abaixo. As mensagens não são enviadas pra clientes reais — é só pra testar a personalidade da IA.</div>';
+
+async function send() {
+  const inp = document.getElementById('msg');
+  const text = inp.value.trim();
+  if (!text) return;
+  chatEl.innerHTML += `<div class="msg user">${NEXUS.escapeHtml(text)}</div>`;
+  history.push({ role: 'user', content: text });
+  inp.value = '';
+  chatEl.scrollTop = chatEl.scrollHeight;
+
+  const btn = document.getElementById('btn-send');
+  NEXUS.showSpinner(btn);
+  try {
+    const data = await NEXUS.apiCall('POST', '/api/doppelganger/chat', { message: text, history });
+    const reply = data.reply || data.message || JSON.stringify(data);
+    chatEl.innerHTML += `<div class="msg bot">${NEXUS.escapeHtml(reply)}</div>`;
+    history.push({ role: 'assistant', content: reply });
+    chatEl.scrollTop = chatEl.scrollHeight;
+  } catch (err) {
+    chatEl.innerHTML += `<div class="msg sys" style="color:var(--down)">Erro: ${NEXUS.escapeHtml(err.message)}</div>`;
+  } finally {
+    NEXUS.hideSpinner(btn);
+  }
+}
+document.getElementById('btn-send').addEventListener('click', send);
+document.getElementById('msg').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+</script>
+</body>
+</html>

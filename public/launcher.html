@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Launcher · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+</head>
+<body>
+<aside id="sidebar" data-active="launcher"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>🚀 Launcher — Subir Campanhas Meta via API</h2>
+      <p>Cria campanhas Meta novas com estrutura pré-validada por nicho. Sem precisar abrir o Business Manager. Você define o objetivo e a IA configura o resto.</p>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Nova campanha Meta</span></div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nome da campanha</label>
+          <input id="name" type="text" placeholder="Ex: Promo Outubro - Estética SP">
+        </div>
+        <div class="field">
+          <label>Objetivo</label>
+          <select id="objective">
+            <option value="LEAD_GENERATION">Geração de leads</option>
+            <option value="CONVERSIONS">Conversões (com pixel)</option>
+            <option value="MESSAGES">Mensagens (WhatsApp)</option>
+            <option value="LINK_CLICKS">Cliques no site</option>
+            <option value="REACH">Alcance</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Orçamento diário (R$)</label>
+          <input id="budget" type="number" min="5" step="5" value="50">
+        </div>
+        <div class="field">
+          <label>Nicho / segmentação principal</label>
+          <input id="nicho" type="text" placeholder="Ex: estética facial">
+        </div>
+        <div class="field">
+          <label>Cidade alvo</label>
+          <input id="cidade" type="text" placeholder="São Paulo">
+        </div>
+        <div class="field">
+          <label>Idade mínima — máxima</label>
+          <input id="age_range" type="text" placeholder="25-55">
+        </div>
+        <div class="field" style="grid-column:1/-1;">
+          <label>Copy do anúncio (opcional)</label>
+          <textarea id="copy" placeholder="Se vazio, IA gera automaticamente baseado no nicho..."></textarea>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" id="btn-launch">⚡ Subir campanha agora</button>
+      </div>
+      <div id="output" class="output" style="display:none; margin-top:16px;"></div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc"><span class="api-method post">POST</span><span class="api-path">/api/launcher/meta</span><div class="api-desc">Body: { name, objective, budget, nicho, cidade, age_range, copy }. Cria campanha via Meta Marketing API.</div></div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+document.getElementById('btn-launch').addEventListener('click', async (e) => {
+  const body = {
+    name: document.getElementById('name').value.trim(),
+    objective: document.getElementById('objective').value,
+    budget: Number(document.getElementById('budget').value) || 50,
+    nicho: document.getElementById('nicho').value.trim(),
+    cidade: document.getElementById('cidade').value.trim(),
+    age_range: document.getElementById('age_range').value.trim(),
+    copy: document.getElementById('copy').value.trim() || undefined,
+  };
+  if (!body.name || !body.nicho) { NEXUS.showError('output', 'Preencha nome e nicho.'); return; }
+  NEXUS.showSpinner(e.target);
+  try {
+    const data = await NEXUS.apiCall('POST', '/api/launcher/meta', body);
+    NEXUS.showOutput('output', data, 'success');
+  } catch (err) { NEXUS.showError('output', err.message); }
+  finally { NEXUS.hideSpinner(e.target); }
+});
+</script>
+</body>
+</html>

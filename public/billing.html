@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Billing · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+<style>
+  .stat-row{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:16px;}
+  .stat-card{
+    background:var(--bg-2); border:1px solid var(--border);
+    border-radius:8px; padding:18px;
+  }
+  .stat-num{font-size:24px; font-weight:800; font-family:'JetBrains Mono',monospace;}
+  .stat-num.green{color:var(--accent);}
+  .stat-num.red{color:var(--down);}
+  .stat-lbl{font-size:11px; color:var(--muted); margin-top:4px; letter-spacing:1px; text-transform:uppercase; font-family:'JetBrains Mono',monospace;}
+  .plan-badge{
+    display:inline-block; padding:3px 8px; border-radius:4px;
+    font-size:10px; font-weight:700; letter-spacing:.5px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .plan-TRIAL{background:rgba(85,85,85,.3); color:var(--muted);}
+  .plan-STARTER{background:rgba(0,153,255,.15); color:var(--accent);}
+  .plan-GROWTH{background:rgba(255,176,0,.15); color:var(--warn);}
+  .plan-ELITE{background:rgba(0,212,255,.2); color:var(--accent-2);}
+</style>
+</head>
+<body>
+<aside id="sidebar" data-active="billing"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>💳 Billing — Painel Mestre de Faturamento</h2>
+      <p>Visão administrativa do faturamento da plataforma. Lista de tenants ativos, consumo de IA por workspace, receita projetada e mark-up.</p>
+    </div>
+    <div class="page-actions">
+      <span class="badge up">ADMIN ONLY</span>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head">
+      <span class="section-title">Visão geral</span>
+      <button class="btn" id="btn-refresh">⟳ Atualizar</button>
+    </div>
+    <div class="stat-row" id="stats">
+      <div class="stat-card"><div class="stat-num">--</div><div class="stat-lbl">Carregando</div></div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Tenants & Faturamento</span></div>
+    <div class="card">
+      <table id="tenants-table">
+        <thead>
+          <tr>
+            <th>Workspace</th>
+            <th>Plano</th>
+            <th style="text-align:right">Limite (R$)</th>
+            <th style="text-align:right">Usado (R$)</th>
+            <th style="text-align:right">% Quota</th>
+          </tr>
+        </thead>
+        <tbody id="tenants-body">
+          <tr><td colspan="5" class="empty">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc"><span class="api-method get">GET</span><span class="api-path">/api/billing/master</span><div class="api-desc">Retorna visão administrativa completa (apenas admin do workspace 1).</div></div>
+    <div class="api-doc"><span class="api-method get">GET</span><span class="api-path">/api/billing/me</span><div class="api-desc">Retorna o consumo do próprio workspace logado.</div></div>
+    <div class="api-doc"><span class="api-method post">POST</span><span class="api-path">/api/billing/upgrade</span><div class="api-desc">Body: { plan_name: STARTER|GROWTH|ELITE }. Gera link de checkout MP.</div></div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+async function load() {
+  try {
+    const data = await NEXUS.apiCall('GET', '/api/billing/master');
+    document.getElementById('stats').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-num">${data.total_customers || 0}</div>
+        <div class="stat-lbl">Total clientes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num red">${data.your_api_cost || 'R$ 0'}</div>
+        <div class="stat-lbl">Custo de API</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num green">${data.your_revenue_billed || 'R$ 0'}</div>
+        <div class="stat-lbl">Receita projetada</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num green">${data.profit || 'R$ 0'}</div>
+        <div class="stat-lbl">Lucro estimado</div>
+      </div>
+    `;
+    const tenants = data.tenants || [];
+    const tbody = document.getElementById('tenants-body');
+    if (!tenants.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">Nenhum tenant ainda.</td></tr>'; return; }
+    tbody.innerHTML = tenants.map(t => {
+      const limit = Number(t.credits_limit || 0);
+      const used = Number(t.credits_used || 0);
+      const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
+      return `
+        <tr>
+          <td>${NEXUS.escapeHtml(t.workspace_name || 'Workspace ' + t.workspace_id)}</td>
+          <td><span class="plan-badge plan-${t.plan_type}">${t.plan_type || 'TRIAL'}</span></td>
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace;">${NEXUS.formatBRL(limit)}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace;">${NEXUS.formatBRL(used)}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace; color:${pct > 80 ? 'var(--warn)' : 'var(--text)'}">${pct}%</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    document.getElementById('stats').innerHTML = `<div class="stat-card" style="grid-column:1/-1; color:var(--down)">${NEXUS.escapeHtml(err.message)}</div>`;
+    document.getElementById('tenants-body').innerHTML = `<tr><td colspan="5" class="empty">Erro ao carregar</td></tr>`;
+  }
+}
+document.getElementById('btn-refresh').addEventListener('click', load);
+load();
+</script>
+</body>
+</html>

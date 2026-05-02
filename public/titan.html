@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Titan · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+</head>
+<body>
+<aside id="sidebar" data-active="titan"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>🧿 Titan — CEO Autônomo & Serial Empreendedor</h2>
+      <p>O módulo mais visionário: audita seu saldo no Mercado Pago, identifica nicho mais lucrativo do momento via OmniRouter (GPT-4o + Claude + Gemini), e gera blueprint completo de novo spin-off.</p>
+    </div>
+    <div class="page-actions">
+      <span class="badge up">OMNI-ROUTER · GOD MODE</span>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="card" style="text-align:center; padding:32px;">
+      <div style="font-size:48px; margin-bottom:16px; opacity:.6;">🧿</div>
+      <h3 style="font-size:18px; margin-bottom:8px;">Pronto pra fundar uma nova empresa?</h3>
+      <p style="color:var(--muted); font-size:13px; margin-bottom:24px; max-width:480px; margin-left:auto; margin-right:auto;">
+        Titan vai analisar seu capital disponível, identificar oportunidades de mercado e te entregar um plano executável de novo negócio digital com produto + copy + meta de ROAS.
+      </p>
+      <button class="btn btn-primary" id="btn-audit" style="font-size:14px; padding:12px 24px;">⚡ Iniciar auditoria</button>
+      <div id="output" class="output" style="display:none; margin-top:24px; text-align:left;"></div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">O que o Titan faz</span></div>
+    <div class="card">
+      <ol style="padding-left:20px; line-height:1.8; color:var(--text-2);">
+        <li><strong>Audita o saldo MP</strong> via API Mercado Pago</li>
+        <li>Se tiver capital acima do threshold, libera orçamento pra investimento</li>
+        <li>Usa <strong>OmniRouter</strong> pra escolher melhor IA pra tarefa (GPT-4o pra estratégia, Claude pra copy, Gemini pra dados)</li>
+        <li>Identifica <strong>nicho mais lucrativo</strong> do momento</li>
+        <li>Gera <strong>blueprint completo</strong>: nome da marca, produto digital, copy do anúncio, meta de ROAS</li>
+        <li>Retorna plano executável pronto pra implementação</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc"><span class="api-method post">POST</span><span class="api-path">/api/titan/audit</span><div class="api-desc">Inicia auditoria autônoma. Retorna blueprint da próxima empresa a fundar.</div></div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+document.getElementById('btn-audit').addEventListener('click', async (e) => {
+  NEXUS.showSpinner(e.target);
+  try {
+    const data = await NEXUS.apiCall('POST', '/api/titan/audit', {});
+    NEXUS.showOutput('output', data, 'success');
+  } catch (err) { NEXUS.showError('output', err.message); }
+  finally { NEXUS.hideSpinner(e.target); }
+});
+</script>
+</body>
+</html>
