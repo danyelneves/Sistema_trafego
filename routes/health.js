@@ -84,10 +84,15 @@ router.get('/mp', async (_req, res) => {
 /**
  * GET /api/health/test-sentry?token=XXX
  * Dispara erro controlado pra validar que Sentry está capturando.
- * Protegido por SENTRY_TEST_TOKEN pra ninguém ficar disparando eventos sem motivo.
+ * Disponível APENAS se SENTRY_TEST_TOKEN env var estiver setada (sem default).
+ * Sem env var → endpoint não existe (404).
  */
 router.get('/test-sentry', (req, res, next) => {
-  const expectedToken = process.env.SENTRY_TEST_TOKEN || 'nexus-test-2026';
+  const expectedToken = process.env.SENTRY_TEST_TOKEN;
+  if (!expectedToken) {
+    // Sem env var configurada, endpoint não está disponível
+    return res.status(404).json({ error: 'rota não encontrada' });
+  }
   if (req.query.token !== expectedToken) {
     return res.status(403).json({ error: 'token inválido' });
   }
