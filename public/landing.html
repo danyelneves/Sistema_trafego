@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nexus Agência · Sistema Inteligente de IA</title>
+  <meta name="description" content="A agência operada por software, 24/7. Sistema autônomo de IA que prospecta clientes, conversa pelo WhatsApp, fecha vendas e despacha pedidos sem humano.">
+  <meta name="theme-color" content="#0099ff">
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:title" content="Nexus Agência · Sistema Inteligente de IA">
+  <meta property="og:description" content="A agência operada por software, 24/7.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nexusagencia.app">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#0a0a0e;
+      --bg-2:#13131a;
+      --bg-3:#1a1a23;
+      --bg-card:#15151d;
+      --text:#f0f0f5;
+      --text-2:#b8b8c5;
+      --muted:#7a7a88;
+      --dim:#4a4a55;
+      --accent:#0099ff;
+      --accent-2:#00d4ff;
+      --accent-glow:rgba(0,153,255,.25);
+      --border:#222230;
+      --border-2:#2a2a38;
+      --gradient:linear-gradient(135deg, #0099ff 0%, #00d4ff 100%);
+      --gradient-soft:linear-gradient(135deg, rgba(0,153,255,.12) 0%, rgba(0,212,255,.04) 100%);
+    }
+    html{scroll-behavior:smooth;}
+    body{
+      background:var(--bg); color:var(--text);
+      font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+      line-height:1.6; min-height:100vh;
+      overflow-x:hidden;
+    }
+    .container{max-width:1200px; margin:0 auto; padding:0 24px;}
+
+    /* ─── Nav ──────────────────────────────────────── */
+    nav{
+      position:fixed; top:0; left:0; right:0; z-index:100;
+      background:rgba(10,10,14,.85);
+      backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);
+      padding:14px 0;
+    }
+    .nav-inner{
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .logo{
+      font-family:'JetBrains Mono',monospace;
+      font-weight:800; font-size:18px; letter-spacing:-.5px;
+      text-decoration:none; color:var(--text);
+    }
+    .logo span{color:var(--accent);}
+    .nav-links{display:flex; gap:8px; align-items:center;}
+    .nav-link{
+      color:var(--text-2); text-decoration:none;
+      padding:8px 14px; border-radius:6px;
+      font-size:14px; font-weight:500;
+      transition:all .15s;
+    }
+    .nav-link:hover{color:var(--text); background:var(--bg-3);}
+    .btn-primary{
+      background:var(--gradient);
+      color:#000; font-weight:700;
+      padding:10px 20px; border-radius:6px;
+      text-decoration:none; font-size:14px;
+      transition:all .2s; display:inline-flex; align-items:center; gap:6px;
+      border:none; cursor:pointer;
+      box-shadow:0 0 0 0 var(--accent-glow);
+    }
+    .btn-primary:hover{transform:translateY(-1px); box-shadow:0 0 24px var(--accent-glow);}
+    .btn-secondary{
+      background:transparent; color:var(--text-2);
+      padding:10px 18px; border-radius:6px;
+      text-decoration:none; font-size:14px; font-weight:600;
+      border:1px solid var(--border-2);
+      transition:all .15s;
+    }
+    .btn-secondary:hover{color:var(--text); border-color:var(--accent);}
+
+    /* ─── Hero ─────────────────────────────────────── */
+    .hero{
+      padding:160px 0 80px;
+      position:relative;
+      overflow:hidden;
+    }
+    .hero::before{
+      content:'';
+      position:absolute; top:-200px; left:50%; transform:translateX(-50%);
+      width:1000px; height:1000px;
+      background:radial-gradient(circle, rgba(0,153,255,.18) 0%, transparent 60%);
+      filter:blur(40px); pointer-events:none; z-index:0;
+    }
+    .hero-inner{position:relative; z-index:1; text-align:center;}
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 14px;
+      background:var(--gradient-soft);
+      border:1px solid var(--border-2);
+      border-radius:100px;
+      font-size:12px; color:var(--accent-2);
+      font-family:'JetBrains Mono',monospace;
+      letter-spacing:1px; text-transform:uppercase;
+      margin-bottom:24px;
+    }
+    .badge .dot{width:6px; height:6px; background:var(--accent); border-radius:50%; box-shadow:0 0 8px var(--accent);}
+    h1{
+      font-size:clamp(36px, 6vw, 72px);
+      font-weight:900; letter-spacing:-2px; line-height:1.05;
+      margin-bottom:24px;
+    }
+    h1 .grad{
+      background:var(--gradient);
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .hero-sub{
+      font-size:clamp(16px, 2vw, 20px);
+      color:var(--text-2);
+      max-width:680px; margin:0 auto 40px;
+      font-weight:400;
+    }
+    .hero-cta{display:flex; gap:12px; justify-content:center; flex-wrap:wrap;}
+
+    /* ─── Stats Bar ────────────────────────────────── */
+    .stats{
+      padding:60px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+      background:var(--bg-2);
+    }
+    .stats-grid{
+      display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+      gap:32px; text-align:center;
+    }
+    .stat-num{
+      font-family:'JetBrains Mono',monospace;
+      font-size:42px; font-weight:800;
+      background:var(--gradient);
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent;
+      line-height:1;
+    }
+    .stat-label{color:var(--muted); font-size:13px; margin-top:8px; letter-spacing:1px; text-transform:uppercase; font-family:'JetBrains Mono',monospace;}
+
+    /* ─── Section ──────────────────────────────────── */
+    section.s{padding:100px 0;}
+    .section-tag{
+      display:inline-block; padding:4px 10px; border-radius:4px;
+      background:var(--gradient-soft); color:var(--accent-2);
+      font-size:11px; font-family:'JetBrains Mono',monospace;
+      letter-spacing:1.5px; text-transform:uppercase;
+      margin-bottom:16px;
+    }
+    .section-title{
+      font-size:clamp(28px, 4vw, 48px);
+      font-weight:800; letter-spacing:-1px; line-height:1.1;
+      margin-bottom:16px;
+    }
+    .section-sub{color:var(--text-2); font-size:17px; max-width:680px; margin-bottom:48px;}
+
+    /* ─── How it works ─────────────────────────────── */
+    .how{
+      display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+      gap:24px;
+    }
+    .step{
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:12px; padding:32px;
+      position:relative; transition:all .2s;
+    }
+    .step:hover{transform:translateY(-4px); border-color:var(--border-2);}
+    .step-num{
+      position:absolute; top:-14px; left:32px;
+      background:var(--gradient); color:#000;
+      width:32px; height:32px; border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:14px;
+      font-family:'JetBrains Mono',monospace;
+    }
+    .step-icon{font-size:32px; margin-bottom:16px; opacity:.9;}
+    .step-title{font-size:18px; font-weight:700; margin-bottom:8px;}
+    .step-desc{color:var(--text-2); font-size:14px;}
+
+    /* ─── Modules categories ──────────────────────── */
+    .category{margin-bottom:64px;}
+    .cat-head{
+      display:flex; align-items:center; gap:12px;
+      margin-bottom:24px;
+    }
+    .cat-num{
+      font-family:'JetBrains Mono',monospace;
+      color:var(--accent); font-size:13px; letter-spacing:1px;
+    }
+    .cat-title{font-size:24px; font-weight:700;}
+    .cat-line{flex:1; height:1px; background:var(--border);}
+
+    .modules-grid{
+      display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+      gap:16px;
+    }
+    .module{
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:10px; padding:24px;
+      transition:all .2s; position:relative; overflow:hidden;
+    }
+    .module:hover{
+      transform:translateY(-2px);
+      border-color:var(--accent);
+      box-shadow:0 0 30px rgba(0,153,255,.08);
+    }
+    .module-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;}
+    .module-icon{
+      font-size:28px; width:44px; height:44px;
+      display:flex; align-items:center; justify-content:center;
+      background:var(--bg-3); border-radius:8px;
+    }
+    .module-tag{
+      font-size:9px; font-family:'JetBrains Mono',monospace;
+      color:var(--accent-2); padding:3px 8px;
+      background:var(--gradient-soft); border-radius:4px;
+      letter-spacing:1px;
+    }
+    .module-name{font-size:17px; font-weight:700; margin-bottom:6px;}
+    .module-desc{color:var(--text-2); font-size:13px; line-height:1.5;}
+
+    /* ─── Big quote ──────────────────────────────── */
+    .quote-section{
+      padding:120px 0; text-align:center;
+      background:radial-gradient(ellipse at center, rgba(0,153,255,.08) 0%, transparent 60%);
+    }
+    .big-quote{
+      font-size:clamp(22px, 3.5vw, 36px);
+      font-weight:600; letter-spacing:-.5px;
+      max-width:900px; margin:0 auto 32px;
+      line-height:1.4;
+    }
+    .big-quote .grad{
+      background:var(--gradient);
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .quote-author{color:var(--muted); font-size:13px; font-family:'JetBrains Mono',monospace; letter-spacing:1px;}
+
+    /* ─── Final CTA ──────────────────────────────── */
+    .cta-section{
+      padding:120px 0; text-align:center;
+      border-top:1px solid var(--border);
+    }
+    .cta-title{
+      font-size:clamp(32px, 5vw, 56px);
+      font-weight:800; letter-spacing:-1px;
+      margin-bottom:20px;
+    }
+    .cta-sub{color:var(--text-2); font-size:18px; margin-bottom:36px;}
+
+    /* ─── Footer ─────────────────────────────────── */
+    footer{
+      padding:48px 0 32px;
+      border-top:1px solid var(--border);
+      background:var(--bg-2);
+    }
+    .footer-inner{
+      display:flex; justify-content:space-between; align-items:center;
+      flex-wrap:wrap; gap:16px;
+    }
+    .footer-left{font-size:13px; color:var(--muted);}
+    .footer-links{display:flex; gap:20px;}
+    .footer-link{
+      color:var(--text-2); text-decoration:none; font-size:13px;
+      transition:color .15s;
+    }
+    .footer-link:hover{color:var(--accent);}
+
+    /* ─── Animations ─────────────────────────────── */
+    @keyframes fadeUp{
+      from{opacity:0; transform:translateY(20px);}
+      to{opacity:1; transform:translateY(0);}
+    }
+    .reveal{opacity:0;}
+    .reveal.in{animation:fadeUp .8s ease forwards;}
+
+    /* ─── Mobile ─────────────────────────────────── */
+    @media (max-width:700px){
+      .hero{padding:120px 0 60px;}
+      section.s{padding:60px 0;}
+      .nav-link:not(.btn-primary):not(.btn-secondary){display:none;}
+      h1{font-size:36px;}
+      .stat-num{font-size:32px;}
+      .footer-inner{flex-direction:column; text-align:center;}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav-inner">
+    <a href="/" class="logo">NEXUS<span>·</span>AGÊNCIA</a>
+    <div class="nav-links">
+      <a href="#como-funciona" class="nav-link">Como funciona</a>
+      <a href="#modulos" class="nav-link">Módulos</a>
+      <a href="/login" class="btn-primary">Entrar no sistema →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════ HERO ═══════════════════════════ -->
+<section class="hero">
+  <div class="container hero-inner">
+    <div class="badge">
+      <span class="dot"></span>
+      SISTEMA INTELIGENTE DE IA
+    </div>
+    <h1>
+      A agência operada<br>
+      por <span class="grad">software</span>, 24/7
+    </h1>
+    <p class="hero-sub">
+      Nexus Agência é o sistema inteligente que prospecta clientes via Google Maps, conversa pelo WhatsApp, fecha vendas, gera cobrança e despacha o pedido. Sem humano no meio. Você só vê o dinheiro entrar.
+    </p>
+    <div class="hero-cta">
+      <a href="/login" class="btn-primary">Entrar no sistema →</a>
+      <a href="#como-funciona" class="btn-secondary">Como funciona</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ STATS ═══════════════════════════ -->
+<section class="stats">
+  <div class="container">
+    <div class="stats-grid">
+      <div>
+        <div class="stat-num">16</div>
+        <div class="stat-label">Módulos integrados</div>
+      </div>
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">Modelos de receita</div>
+      </div>
+      <div>
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">Operação autônoma</div>
+      </div>
+      <div>
+        <div class="stat-num">3</div>
+        <div class="stat-label">IAs em paralelo</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ HOW IT WORKS ═══════════════════════════ -->
+<section class="s" id="como-funciona">
+  <div class="container">
+    <div class="section-tag">Como funciona</div>
+    <h2 class="section-title">3 passos. Zero esforço humano.</h2>
+    <p class="section-sub">O sistema cuida de cada etapa do funil — do primeiro contato até a entrega.</p>
+
+    <div class="how">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-icon">🎯</div>
+        <h3 class="step-title">IA Prospecta</h3>
+        <p class="step-desc">Skynet busca empresas via Google Maps por nicho e cidade, audita o site/Instagram com IA, e dispara mensagem ultra-personalizada via WhatsApp.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-icon">🤖</div>
+        <h3 class="step-title">IA Vende</h3>
+        <p class="step-desc">Doppelgänger conversa imitando seu jeito de falar. Quebra objeções, gera PIX dentro do WhatsApp e fecha a venda. Você nem precisa estar online.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-icon">📦</div>
+        <h3 class="step-title">IA Entrega</h3>
+        <p class="step-desc">Sistema dispara comanda na impressora, chama motoboy via Uber Direct, ou libera produto digital. Você só recebe o relatório no fim do dia.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ MODULES ═══════════════════════════ -->
+<section class="s" id="modulos" style="background:var(--bg-2);">
+  <div class="container">
+    <div class="section-tag">Módulos</div>
+    <h2 class="section-title">16 sistemas autônomos integrados</h2>
+    <p class="section-sub">Cada módulo é uma IA especializada que substitui um cargo da agência tradicional.</p>
+
+    <!-- Categoria 1: Tráfego -->
+    <div class="category">
+      <div class="cat-head">
+        <span class="cat-num">01</span>
+        <h3 class="cat-title">Tráfego pago autônomo</h3>
+        <div class="cat-line"></div>
+      </div>
+      <div class="modules-grid">
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">📊</div>
+            <span class="module-tag">CORE</span>
+          </div>
+          <h4 class="module-name">Painel de Tráfego</h4>
+          <p class="module-desc">Dashboard com KPIs Google Ads + Meta Ads em tempo real. Comparativos MoM/YoY, ranking de campanhas, semáforo de metas, exportação PDF.</p>
+        </div>
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">🛡️</div>
+            <span class="module-tag">IA</span>
+          </div>
+          <h4 class="module-name">Sentinel</h4>
+          <p class="module-desc">Robô que monitora todas as campanhas Meta a cada 15 minutos. Pausa as ruins, escala as boas. Toma decisão sozinho via Gemini.</p>
+        </div>
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">🚀</div>
+            <span class="module-tag">IA</span>
+          </div>
+          <h4 class="module-name">Launcher</h4>
+          <p class="module-desc">Sobe campanhas Meta novas via API com estrutura pré-validada por nicho. Sem precisar abrir o Business Manager.</p>
+        </div>
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">🧟</div>
+            <span class="module-tag">IA</span>
+          </div>
+          <h4 class="module-name">Lázaro</h4>
+          <p class="module-desc">Detecta carrinhos abandonados e leads frios. IA escreve mensagem empática personalizada e dispara via WhatsApp pra reativar.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Categoria 2: IA de Vendas -->
+    <div class="category">
+      <div class="cat-head">
+        <span class="cat-num">02</span>
+        <h3 class="cat-title">IA de vendas</h3>
+        <div class="cat-line"></div>
+      </div>
+      <div class="modules-grid">
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">🎯</div>
+            <span class="module-tag">IA</span>
+          </div>
+          <h4 class="module-name">Skynet</h4>
+          <p class="module-desc">Caça clientes B2B via Google Maps API. Ativa todo dia às 8h, manda WhatsApp com diagnóstico personalizado. Substitui SDR humano.</p>
+        </div>
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">🤖</div>
+            <span class="module-tag">IA</span>
+          </div>
+          <h4 class="module-name">Doppelgänger</h4>
+          <p class="module-desc">Vendedor IA que imita exatamente seu jeito de falar. Gírias, ritmo, erros de pontuação propositais. Indistinguível de você no WhatsApp.</p>
+        </div>
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">🔮</div>
+            <span class="module-tag">IA</span>
+          </div>
+          <h4 class="module-name">Forge</h4>
+          <p class="module-desc">Gera landing pages completas via IA com headline mutante: a página adapta o título ao termo de busca do anúncio em tempo real.</p>
+        </div>
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">🎙️</div>
+            <span class="module-tag">IA</span>
+          </div>
+          <h4 class="module-name">Studio</h4>
+          <p class="module-desc">Clonagem de voz via ElevenLabs. Áudios de WhatsApp gerados na sua voz para fechar mais — voz humana converte 3x mais que texto.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Categoria 3: Modelos de Receita -->
+    <div class="category">
+      <div class="cat-head">
+        <span class="cat-num">03</span>
+        <h3 class="cat-title">Modelos de receita autônomos</h3>
+        <div class="cat-line"></div>
+      </div>
+      <div class="modules-grid">
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">🏧</div>
+            <span class="module-tag">RECEITA</span>
+          </div>
+          <h4 class="module-name">Vending Machine</h4>
+          <p class="module-desc">Cliente paga R$ 297 via PIX, sistema usa 40% pra subir uma campanha real no Facebook. Os outros 60% são lucro líquido sem operação humana.</p>
+        </div>
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">💱</div>
+            <span class="module-tag">RECEITA</span>
+          </div>
+          <h4 class="module-name">Market</h4>
+          <p class="module-desc">Bolsa de leads em leilão. Captura lead → notifica empresas compradoras → quem responder primeiro paga R$ 35 e fica com o contato.</p>
+        </div>
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">🏢</div>
+            <span class="module-tag">RECEITA</span>
+          </div>
+          <h4 class="module-name">Franchise</h4>
+          <p class="module-desc">Sistema white-label pra agências revenderem o NEXUS como produto delas. Você fica com 5% do faturamento de cada franquia.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Categoria 4: Operacional -->
+    <div class="category">
+      <div class="cat-head">
+        <span class="cat-num">04</span>
+        <h3 class="cat-title">Operacional & inteligência</h3>
+        <div class="cat-line"></div>
+      </div>
+      <div class="modules-grid">
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">📋</div>
+            <span class="module-tag">OPS</span>
+          </div>
+          <h4 class="module-name">Empire</h4>
+          <p class="module-desc">Kanban interno por workspace. Backlog, em progresso, concluído. Sem precisar de Trello/Notion separado pra gestão.</p>
+        </div>
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">👻</div>
+            <span class="module-tag">IoT</span>
+          </div>
+          <h4 class="module-name">Poltergeist</h4>
+          <p class="module-desc">Quando venda fecha: sistema dispara comanda na impressora térmica e chama motoboy via Uber Direct. Loja sem humano.</p>
+        </div>
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">🧿</div>
+            <span class="module-tag">IA</span>
+          </div>
+          <h4 class="module-name">Titan</h4>
+          <p class="module-desc">"CEO Autônomo": audita seu saldo Mercado Pago, identifica nicho mais lucrativo, e gera blueprint de novo spin-off com produto + copy + meta.</p>
+        </div>
+        <div class="module">
+          <div class="module-head">
+            <div class="module-icon">🐝</div>
+            <span class="module-tag">IA</span>
+          </div>
+          <h4 class="module-name">Hive</h4>
+          <p class="module-desc">Mente de Colmeia: monitora anomalias agregadas em todos os workspaces, identifica padrões e alerta sobre oportunidades sistêmicas.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ BIG QUOTE ═══════════════════════════ -->
+<section class="quote-section">
+  <div class="container">
+    <p class="big-quote">
+      "Nexus Agência <span class="grad">não é um SaaS</span>. É um sócio que nunca dorme, nunca pede aumento, e gera dinheiro em múltiplas frentes ao mesmo tempo."
+    </p>
+    <div class="quote-author">— DANIEL NEVES · FOUNDER</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ FINAL CTA ═══════════════════════════ -->
+<section class="cta-section">
+  <div class="container">
+    <h2 class="cta-title">Pronto pra ver o sistema operando?</h2>
+    <p class="cta-sub">Acesso restrito. Plataforma em fase de uso interno + parceiros estratégicos.</p>
+    <a href="/login" class="btn-primary" style="font-size:16px; padding:14px 28px;">Entrar no sistema →</a>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+<footer>
+  <div class="container footer-inner">
+    <div class="footer-left">© 2026 Nexus Agência · NVia Holding · Todos os direitos reservados</div>
+    <div class="footer-links">
+      <a href="/api/health" class="footer-link">Status</a>
+      <a href="/login" class="footer-link">Login</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Reveal on scroll
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: .15 });
+  document.querySelectorAll('.step, .module, .category, .stat-num').forEach(el => {
+    el.classList.add('reveal');
+    obs.observe(el);
+  });
+</script>
+
+</body>
+</html>

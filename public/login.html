@@ -1,319 +1,303 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<!doctype html>
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXUS · SYSTEM AUTH</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexus Agência · Acesso ao sistema</title>
+<meta name="theme-color" content="#0099ff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --bg: #06080A;
-    --surface: #0A0D10;
-    --border: rgba(255, 255, 255, 0.12);
-    --border-focus: #00F0FF;
-    --text: #FFFFFF;
-    --muted: #8A949C;
-    --accent: #00F0FF;
-    --bad: #FF2E4C;
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0e;
+    --bg-2:#13131a;
+    --bg-3:#1a1a23;
+    --bg-card:#15151d;
+    --text:#f0f0f5;
+    --text-2:#b8b8c5;
+    --muted:#7a7a88;
+    --dim:#4a4a55;
+    --accent:#0099ff;
+    --accent-2:#00d4ff;
+    --accent-glow:rgba(0,153,255,.25);
+    --border:#222230;
+    --border-2:#2a2a38;
+    --bad:#ff3838;
+    --gradient:linear-gradient(135deg, #0099ff 0%, #00d4ff 100%);
+    --gradient-soft:linear-gradient(135deg, rgba(0,153,255,.12) 0%, rgba(0,212,255,.04) 100%);
+  }
+  html,body{height:100%;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    overflow:hidden;
   }
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    font-family: 'Inter', sans-serif;
-    color: var(--text);
-    overflow: hidden;
+  .layout{
+    display:grid;
+    grid-template-columns:1.2fr 1fr;
+    height:100vh;
   }
 
-  /* ── BRUTALIST LAYOUT ─────────────────────────────── */
-  .login-layout {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    height: 100vh;
-    position: relative;
+  /* ─── Esquerda: identidade visual ─── */
+  .left{
+    position:relative;
+    background:var(--bg-2);
+    border-right:1px solid var(--border);
+    padding:64px 56px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    overflow:hidden;
   }
-  @media (max-width: 900px) {
-    .login-layout { grid-template-columns: 1fr; }
-    .login-left { display: none !important; }
+  .left::before{
+    content:'';
+    position:absolute; top:-30%; left:-20%;
+    width:80%; height:80%;
+    background:radial-gradient(circle, var(--accent-glow) 0%, transparent 60%);
+    filter:blur(60px);
+    pointer-events:none;
+  }
+  .left::after{
+    content:'';
+    position:absolute; bottom:-30%; right:-20%;
+    width:60%; height:60%;
+    background:radial-gradient(circle, rgba(0,212,255,.15) 0%, transparent 60%);
+    filter:blur(60px);
+    pointer-events:none;
+  }
+  .left-content{position:relative; z-index:1;}
+
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand-mark{
+    width:42px; height:42px;
+    background:var(--gradient);
+    border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:900; font-size:20px; color:#000;
+  }
+  .brand-text{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:800; font-size:18px; letter-spacing:-.5px;
+  }
+  .brand-text span{color:var(--accent);}
+
+  .hero-area{position:relative; z-index:1;}
+  .hero-badge{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:6px 14px;
+    background:var(--gradient-soft);
+    border:1px solid var(--border-2);
+    border-radius:100px;
+    font-size:11px; color:var(--accent-2);
+    font-family:'JetBrains Mono',monospace;
+    letter-spacing:1.5px; text-transform:uppercase;
+    margin-bottom:24px;
+  }
+  .hero-badge .dot{width:6px; height:6px; background:var(--accent); border-radius:50%; box-shadow:0 0 8px var(--accent);}
+
+  .hero-title{
+    font-size:clamp(36px, 4vw, 56px);
+    font-weight:900; letter-spacing:-1.5px; line-height:1.05;
+    margin-bottom:20px;
+  }
+  .hero-title .grad{
+    background:var(--gradient);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .hero-desc{
+    color:var(--text-2); font-size:15px; line-height:1.6;
+    max-width:480px;
   }
 
-  /* Grid overlay for raw technical feel */
-  .grid-overlay {
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 64px 64px;
-    pointer-events: none;
-    z-index: 0;
+  .pillars{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:32px;
+    position:relative; z-index:1;
+  }
+  .pillar{display:flex; flex-direction:column; gap:4px;}
+  .pillar-icon{font-size:20px; margin-bottom:6px;}
+  .pillar-title{font-size:13px; font-weight:700;}
+  .pillar-sub{font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; letter-spacing:.5px;}
+
+  /* ─── Direita: form ─── */
+  .right{
+    display:flex; align-items:center; justify-content:center;
+    padding:40px;
+  }
+  .form-wrap{
+    width:100%; max-width:380px;
+    animation:fadeUp .6s ease both;
+  }
+  @keyframes fadeUp{
+    from{opacity:0; transform:translateY(20px);}
+    to{opacity:1; transform:translateY(0);}
   }
 
-  /* ── LADO ESQUERDO ─────────────────────── */
-  .login-left {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 64px;
-    border-right: 1px solid var(--border);
+  .form-head{margin-bottom:36px;}
+  .form-eyebrow{
+    display:inline-block; padding:4px 10px;
+    background:var(--gradient-soft); color:var(--accent-2);
+    font-size:10px; font-family:'JetBrains Mono',monospace;
+    letter-spacing:1.5px; text-transform:uppercase;
+    border-radius:4px;
+    margin-bottom:14px;
+  }
+  .form-title{
+    font-size:28px; font-weight:800; letter-spacing:-.5px;
+    margin-bottom:8px;
+  }
+  .form-sub{color:var(--text-2); font-size:14px;}
+
+  .field{margin-bottom:18px;}
+  .field-label{
+    display:block; font-size:11px; font-weight:600;
+    color:var(--text); margin-bottom:8px;
+    letter-spacing:.5px;
+  }
+  .field-input{
+    width:100%; padding:13px 16px;
+    background:var(--bg-2);
+    border:1px solid var(--border-2);
+    border-radius:8px;
+    color:var(--text);
+    font-family:inherit; font-size:14px;
+    transition:all .15s; outline:none;
+  }
+  .field-input::placeholder{color:var(--dim);}
+  .field-input:focus{
+    border-color:var(--accent);
+    background:var(--bg-3);
+    box-shadow:0 0 0 3px rgba(0,153,255,.15);
   }
 
-  .brand-logo {
-    display: flex; align-items: center; gap: 16px;
+  .btn-submit{
+    width:100%; padding:14px;
+    background:var(--gradient);
+    color:#000; font-weight:700; font-size:14px;
+    border:none; border-radius:8px;
+    cursor:pointer; transition:all .2s;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    margin-top:8px;
+    font-family:inherit;
+    letter-spacing:.3px;
   }
-  .logo-icon {
-    width: 48px; height: 48px; border-radius: 2px;
-    background: var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 900; font-size: 24px; color: var(--bg);
-    border: 1px solid var(--accent);
+  .btn-submit:hover{
+    transform:translateY(-1px);
+    box-shadow:0 8px 24px rgba(0,153,255,.3);
   }
-  .brand-name { font-size: 24px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 2px; }
-  .brand-sub { font-size: 10px; color: var(--accent); letter-spacing: 4px; text-transform: uppercase; margin-top: 4px; }
+  .btn-submit:active{transform:translateY(0);}
+  .btn-submit.loading{opacity:.7; cursor:not-allowed;}
 
-  .left-headline {
-    font-size: clamp(64px, 8vw, 120px);
-    font-weight: 900;
-    line-height: 0.9;
-    color: transparent;
-    -webkit-text-stroke: 1px rgba(255,255,255,0.1);
-    text-transform: uppercase;
-    position: absolute;
-    bottom: -20px;
-    left: -20px;
-    white-space: nowrap;
-    pointer-events: none;
-    user-select: none;
-    z-index: -1;
+  .err{
+    display:flex; align-items:center; gap:10px;
+    padding:12px 14px; margin-top:16px;
+    background:rgba(255,56,56,.08);
+    border:1px solid rgba(255,56,56,.3);
+    border-radius:8px;
+    color:var(--bad); font-size:13px;
   }
-  
-  .title-wrapper {
-    position: relative;
-    z-index: 2;
-  }
+  .err:empty{display:none;}
 
-  .left-title {
-    font-size: clamp(32px, 4vw, 56px);
-    font-weight: 900;
-    line-height: 1.1;
-    color: var(--text);
-    text-transform: uppercase;
-    margin-bottom: 24px;
-    letter-spacing: -1px;
+  .form-foot{
+    margin-top:36px; padding-top:24px;
+    border-top:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12px; color:var(--muted);
   }
-  .left-title span {
-    color: var(--accent);
+  .back-link{
+    color:var(--text-2); text-decoration:none; font-size:12px;
+    transition:color .15s;
   }
+  .back-link:hover{color:var(--accent);}
 
-  .left-desc {
-    font-size: 14px; color: var(--muted); line-height: 1.6;
-    max-width: 420px; margin-bottom: 48px;
-    padding-left: 16px;
-    border-left: 2px solid var(--accent);
-  }
-
-  .left-stats {
-    display: flex; gap: 48px;
-  }
-  .stat-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .stat-num { font-size: 32px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
-  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
-
-  /* ── LADO DIREITO ──────────────────────── */
-  .login-right {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--surface);
-    padding: 40px;
-  }
-
-  .login-form-wrap {
-    width: 100%;
-    max-width: 400px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 0;
-    padding: 48px;
-    box-shadow: 16px 16px 0px 0px rgba(0,0,0,0.5);
-    animation: sharpReveal 0.6s cubic-bezier(0.0, 0.5, 0.0, 1) both;
-  }
-
-  @keyframes sharpReveal {
-    from { opacity: 0; transform: translateY(40px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  .form-header { margin-bottom: 48px; }
-  .form-eyebrow {
-    font-size: 10px; font-weight: 700; letter-spacing: 4px;
-    text-transform: uppercase; color: var(--accent);
-    margin-bottom: 16px; display: inline-block;
-    border: 1px solid var(--accent);
-    padding: 4px 10px;
-    background: rgba(0, 240, 255, 0.05);
-  }
-  .form-title {
-    font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 8px; text-transform: uppercase;
-  }
-  .form-subtitle { font-size: 13px; color: var(--muted); }
-
-  /* Fields */
-  .field-group { margin-bottom: 24px; }
-  .field-label {
-    display: block; font-size: 10px; font-weight: 700;
-    color: var(--text); margin-bottom: 8px; letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-  .field-input-wrap { position: relative; }
-  .field-input {
-    width: 100%; padding: 14px 16px;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 0; color: var(--text);
-    font-family: 'Inter', sans-serif; font-size: 15px;
-    outline: none; transition: all 0.2s;
-  }
-  .field-input::placeholder { color: rgba(255,255,255,0.2); }
-  .field-input:focus {
-    border-color: var(--border-focus);
-    background: rgba(0, 240, 255, 0.02);
-  }
-
-  /* Botão */
-  .btn-login {
-    width: 100%; padding: 18px;
-    background: var(--accent);
-    border: none; border-radius: 0; color: var(--bg);
-    font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 800;
-    cursor: pointer; letter-spacing: 2px; text-transform: uppercase;
-    transition: all 0.2s; margin-top: 16px;
-    position: relative;
-    border: 1px solid var(--accent);
-  }
-  .btn-login:hover { 
-    background: var(--bg);
-    color: var(--accent);
-  }
-  .btn-login:active { transform: translateY(2px); }
-  .btn-login.loading { opacity: 0.7; cursor: not-allowed; }
-
-  /* Erro */
-  .err-msg {
-    display: flex; align-items: center; gap: 10px;
-    padding: 14px; border-radius: 0;
-    background: rgba(255, 46, 76, 0.1); border: 1px solid var(--bad);
-    color: var(--bad); font-size: 13px; font-weight: 500; margin-top: 24px;
-    transition: all 0.2s;
-  }
-  .err-msg:empty { display: none; }
-
-  /* Footer */
-  .form-footer {
-    margin-top: 48px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .secure-badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-  }
-  .secure-badge::before {
-    content: '';
-    width: 6px; height: 6px; background: var(--accent);
-    display: block;
+  /* Mobile */
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;}
+    .left{display:none;}
+    .right{padding:24px;}
   }
 </style>
-<script>
-  (function() {
-    const savedTheme = localStorage.getItem('maranet_theme') || 'dark-glass';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  })();
-</script>
 </head>
 <body>
-  <div class="grid-overlay"></div>
-  <div class="login-layout">
+  <div class="layout">
 
-    <!-- ESQUERDA -->
-    <div class="login-left">
-      <div class="left-headline">AUTH SYSTEM</div>
-      
-      <div class="brand-logo">
-        <div class="logo-icon">N</div>
-        <div>
-          <div class="brand-name">NEXUS</div>
-          <div class="brand-sub">Operating System</div>
-        </div>
+    <!-- ESQUERDA: identidade visual -->
+    <div class="left">
+      <div class="left-content">
+        <a href="/" style="text-decoration:none; color:inherit; display:inline-block;">
+          <div class="brand">
+            <div class="brand-mark">N</div>
+            <div class="brand-text">NEXUS<span>·</span>AGÊNCIA</div>
+          </div>
+        </a>
       </div>
 
-      <div class="title-wrapper">
-        <h1 class="left-title">
-          Sistema de<br>Monitoramento<br><span>Tático</span>
+      <div class="hero-area">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          SISTEMA INTELIGENTE DE IA
+        </div>
+        <h1 class="hero-title">
+          A agência operada<br>por <span class="grad">software</span>, 24/7
         </h1>
-        <p class="left-desc">
-          Plataforma consolidada de alta performance para gestão de fluxo de tráfego, Google Ads e Meta Ads em tempo real. Acesso restrito a operadores autorizados.
+        <p class="hero-desc">
+          Plataforma autônoma com 16 módulos de IA que prospectam, vendem e operam negócios sem intervenção humana. Acesso restrito.
         </p>
+      </div>
 
-        <div class="left-stats">
-          <div class="stat-item">
-            <div class="stat-num">02</div>
-            <div class="stat-label">Canais Ativos</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-num">99.9%</div>
-            <div class="stat-label">Uptime</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-num">24/7</div>
-            <div class="stat-label">Sincronização</div>
-          </div>
+      <div class="pillars">
+        <div class="pillar">
+          <div class="pillar-icon">🤖</div>
+          <div class="pillar-title">16 módulos</div>
+          <div class="pillar-sub">de IA integrados</div>
+        </div>
+        <div class="pillar">
+          <div class="pillar-icon">⚡</div>
+          <div class="pillar-title">24/7</div>
+          <div class="pillar-sub">operação autônoma</div>
+        </div>
+        <div class="pillar">
+          <div class="pillar-icon">💰</div>
+          <div class="pillar-title">5 receitas</div>
+          <div class="pillar-sub">paralelas</div>
         </div>
       </div>
     </div>
 
-    <!-- DIREITA -->
-    <div class="login-right">
-      <form class="login-form-wrap" id="login-form" autocomplete="on">
-        <div class="form-header">
-          <div class="form-eyebrow">Secure Gateway</div>
-          <h2 class="form-title">Operator Login</h2>
-          <p class="form-subtitle">Informe suas credenciais de acesso tático</p>
+    <!-- DIREITA: form -->
+    <div class="right">
+      <form class="form-wrap" id="login-form" autocomplete="on">
+        <div class="form-head">
+          <div class="form-eyebrow">Acesso ao sistema</div>
+          <h2 class="form-title">Bem-vindo de volta</h2>
+          <p class="form-sub">Entre com suas credenciais pra acessar o painel.</p>
         </div>
 
-        <div class="field-group">
-          <label class="field-label" for="u">Operator ID</label>
-          <div class="field-input-wrap">
-            <input class="field-input" id="u" name="username"
-              autocomplete="username" required autofocus placeholder="seu usuário">
-          </div>
+        <div class="field">
+          <label class="field-label" for="u">Usuário</label>
+          <input class="field-input" id="u" name="username"
+            autocomplete="username" required autofocus
+            placeholder="seu usuário">
         </div>
 
-        <div class="field-group">
-          <label class="field-label" for="p">Access Key</label>
-          <div class="field-input-wrap">
-            <input class="field-input" id="p" name="password" type="password"
-              autocomplete="current-password" required placeholder="••••••••">
-          </div>
+        <div class="field">
+          <label class="field-label" for="p">Senha</label>
+          <input class="field-input" id="p" name="password" type="password"
+            autocomplete="current-password" required
+            placeholder="••••••••">
         </div>
 
-        <button class="btn-login" id="btn-login" type="submit">Authenticate</button>
+        <button class="btn-submit" id="btn-login" type="submit">
+          Entrar no sistema →
+        </button>
 
-        <div class="err-msg" id="err" role="alert"></div>
+        <div class="err" id="err" role="alert"></div>
 
-        <div class="form-footer">
-          <span class="secure-badge">NEXUS Core © 2026</span>
+        <div class="form-foot">
+          <a href="/" class="back-link">← Voltar pro site</a>
+          <span>NEXUS · 2026</span>
         </div>
       </form>
     </div>
@@ -322,14 +306,14 @@
 
 <script>
 const form = document.getElementById('login-form');
-const err  = document.getElementById('err');
-const btn  = document.getElementById('btn-login');
+const err = document.getElementById('err');
+const btn = document.getElementById('btn-login');
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   err.innerHTML = '';
   btn.classList.add('loading');
-  btn.textContent = 'AUTHENTICATING...';
+  btn.textContent = 'Entrando...';
 
   const body = {
     username: document.getElementById('u').value.trim(),
@@ -337,7 +321,7 @@ form.addEventListener('submit', async (e) => {
   };
 
   try {
-    const res  = await fetch('/api/auth/login', {
+    const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -345,16 +329,14 @@ form.addEventListener('submit', async (e) => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'erro desconhecido');
-    location.href = '/';
+    location.href = '/app';
   } catch (e) {
     const msg = e.message === 'credenciais inválidas'
-      ? 'CREDENCIAIS INVÁLIDAS.'
-      : e.message.startsWith('Unexpected')
-        ? 'ERRO DE SERVIDOR.'
-        : 'ERRO: ' + e.message;
+      ? 'Usuário ou senha incorretos.'
+      : (e.message.startsWith('Unexpected') ? 'Erro de servidor.' : e.message);
     err.textContent = msg;
     btn.classList.remove('loading');
-    btn.textContent = 'AUTHENTICATE';
+    btn.textContent = 'Entrar no sistema →';
   }
 });
 </script>

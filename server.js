@@ -200,9 +200,14 @@ function guardHTML(req, res) {
   res.sendFile(path.join(PUBLIC, 'index.html'));
 }
 
-// Command Center (novo painel inicial)
-app.get('/',           guardHTML);
-app.get('/index.html', guardHTML);
+// Landing pública (Nexus Agência)
+app.get('/', (req, res) => res.sendFile(path.join(PUBLIC, 'landing.html')));
+
+// Command Center (sistema interno, exige auth)
+app.get('/app', guardHTML);
+app.get('/app/index.html', guardHTML);
+// Bloqueia acesso direto ao index.html (Command Center) — força passar pelo /app
+app.get('/index.html', (req, res) => res.redirect('/app'));
 
 // Painel de tráfego pago (módulo dedicado, antigo painel principal)
 app.get('/traffic', (req, res) => {
