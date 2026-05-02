@@ -16,7 +16,7 @@ router.get('/pulse', requireAuth, async (req, res) => {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const db = require('../db');
-    const anomaliesRows = await db.all(`SELECT value FROM workspace_settings WHERE key LIKE 'hive.anomaly.%' ORDER BY id DESC LIMIT 5`);
+    const anomaliesRows = await db.all(`SELECT value FROM workspace_settings WHERE key LIKE 'hive.anomaly.%' ORDER BY key DESC LIMIT 5`);
     const anomaliesStr = anomaliesRows.map(r => r.value).join('\n') || "Nenhuma anomalia de alta conversão registrada recentemente.";
 
     const prompt = `Você é a "Mente de Colmeia NEXUS", um supercomputador que rastreia trilhões de dados.
