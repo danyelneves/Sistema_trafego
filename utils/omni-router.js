@@ -91,13 +91,13 @@ async function generateWithOmniRouter(prompt, complexity = 'MEDIUM', keys = {}) 
     if (complexity === 'LOW') {
       if (GEMINI_API_KEY) {
         log.debug('omni-router: LOW → Gemini Flash');
-        return await callGemini(GEMINI_API_KEY, 'gemini-1.5-flash', prompt);
+        return await callGemini(GEMINI_API_KEY, 'gemini-2.5-flash', prompt);
       }
     }
 
     // Fallback geral: usa qualquer modelo disponível
     log.warn('omni-router: nenhum modelo do nível solicitado disponível, usando fallback');
-    if (GEMINI_API_KEY) return await callGemini(GEMINI_API_KEY, 'gemini-1.5-pro', prompt);
+    if (GEMINI_API_KEY) return await callGemini(GEMINI_API_KEY, 'gemini-2.5-pro', prompt);
     if (ANTHROPIC_API_KEY) return await callAnthropic(ANTHROPIC_API_KEY, 'claude-sonnet-4-6', prompt, 800);
     if (OPENAI_API_KEY) return await callOpenAI(OPENAI_API_KEY, 'gpt-4o', prompt, 800);
 

@@ -16,7 +16,7 @@ router.post('/revive', requireAuth, async (req, res) => {
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY não configurada.");
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     let revived = [];
 
@@ -95,7 +95,7 @@ router.all('/cron', async (req, res) => {
       if (!GEMINI_API_KEY || !waSettings?.api_url) continue;
 
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
       const prompt = `Você é um agente de atendimento humano e empático. O cliente '${order.customer_name}' tentou comprar o produto '${order.product_name}' de R$${order.amount}, mas não pagou (carrinho abandonado há 15 minutos). Escreva 1 mensagem curta, amigável e MUITO informal, como se fosse um áudio de WhatsApp rápido oferecendo ajuda.`;
 

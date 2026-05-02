@@ -65,7 +65,7 @@ Regras Obrigatórias:
     if (!htmlContent && GEMINI_API_KEY) {
         const { GoogleGenerativeAI } = require('@google/generative-ai');
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
         const result = await model.generateContent(prompt);
         htmlContent = await result.response.text();
         console.log("[FORGE ROUTER] Usando Gemini 1.5 Flash");
