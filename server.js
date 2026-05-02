@@ -186,6 +186,9 @@ app.use('/api/health', require('./routes/health'));
 // Dashboard de serviços externos agregado (Vercel, Sentry, UR, MP, etc)
 app.use('/api/services', require('./routes/services'));
 
+// Command Center: agregadores que alimentam o painel inicial /
+app.use('/api/dashboard', require('./routes/dashboard'));
+
 // ------------------------------------------------------------
 // Frontend estático (protegido)
 // ------------------------------------------------------------
@@ -197,8 +200,16 @@ function guardHTML(req, res) {
   res.sendFile(path.join(PUBLIC, 'index.html'));
 }
 
+// Command Center (novo painel inicial)
 app.get('/',           guardHTML);
 app.get('/index.html', guardHTML);
+
+// Painel de tráfego pago (módulo dedicado, antigo painel principal)
+app.get('/traffic', (req, res) => {
+  const user = req.cookies?.auth && verifyToken(req.cookies.auth);
+  if (!user) return res.redirect('/login');
+  res.sendFile(path.join(PUBLIC, 'traffic.html'));
+});
 
 // Painel de serviços externos: requer auth (igual painel principal)
 app.get('/services', (req, res) => {
