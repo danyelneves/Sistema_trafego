@@ -183,6 +183,9 @@ function renderHtmlError(status, title, message) {
 // Health checks granulares (liveness, readiness, db, redis, mp)
 app.use('/api/health', require('./routes/health'));
 
+// Dashboard de serviços externos agregado (Vercel, Sentry, UR, MP, etc)
+app.use('/api/services', require('./routes/services'));
+
 // ------------------------------------------------------------
 // Frontend estático (protegido)
 // ------------------------------------------------------------
@@ -196,6 +199,13 @@ function guardHTML(req, res) {
 
 app.get('/',           guardHTML);
 app.get('/index.html', guardHTML);
+
+// Painel de serviços externos: requer auth (igual painel principal)
+app.get('/services', (req, res) => {
+  const user = req.cookies?.auth && verifyToken(req.cookies.auth);
+  if (!user) return res.redirect('/login');
+  res.sendFile(path.join(PUBLIC, 'services.html'));
+});
 
 app.use(express.static(PUBLIC, { extensions: ['html'] }));
 
