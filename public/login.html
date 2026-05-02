@@ -117,7 +117,14 @@
     position:relative; z-index:1;
   }
   .pillar{display:flex; flex-direction:column; gap:4px;}
-  .pillar-icon{font-size:20px; margin-bottom:6px;}
+  .pillar-icon{
+    width:32px; height:32px; margin-bottom:8px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--gradient-soft);
+    border-radius:8px;
+    color:var(--accent-2);
+  }
+  .pillar-icon svg{width:18px; height:18px; stroke-width:1.75;}
   .pillar-title{font-size:13px; font-weight:700;}
   .pillar-sub{font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; letter-spacing:.5px;}
 
@@ -249,17 +256,17 @@
 
       <div class="pillars">
         <div class="pillar">
-          <div class="pillar-icon">🤖</div>
+          <div class="pillar-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></div>
           <div class="pillar-title">16 módulos</div>
           <div class="pillar-sub">de IA integrados</div>
         </div>
         <div class="pillar">
-          <div class="pillar-icon">⚡</div>
+          <div class="pillar-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></div>
           <div class="pillar-title">24/7</div>
           <div class="pillar-sub">operação autônoma</div>
         </div>
         <div class="pillar">
-          <div class="pillar-icon">💰</div>
+          <div class="pillar-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
           <div class="pillar-title">5 receitas</div>
           <div class="pillar-sub">paralelas</div>
         </div>
