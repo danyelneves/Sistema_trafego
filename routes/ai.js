@@ -37,7 +37,7 @@ router.post('/chat', async (req, res) => {
 
     // Format context for the LLM
     const contextPrompt = `
-Você é o "Maranet Copilot", um consultor de tráfego pago especialista e analista de dados avançado para uma agência de performance (modo Brutalista/Hacker).
+Você é o "Nexus Copilot", um consultor de tráfego pago especialista e analista de dados avançado para uma agência de performance (modo Brutalista/Hacker).
 Aqui está o contexto de dados do cliente logado no painel atual:
 - Impressões totais: ${contextData.impressions || 0}
 - Cliques totais: ${contextData.clicks || 0}

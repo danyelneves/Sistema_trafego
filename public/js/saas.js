@@ -1,6 +1,6 @@
 async function loadSaasAdmin() {
     try {
-        const token = localStorage.getItem('maranet_token');
+        const token = localStorage.getItem('nx_token');
         const res = await fetch('/api/billing/master', {
             headers: { 'Authorization': `Bearer ${token}` }
         });

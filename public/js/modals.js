@@ -849,12 +849,12 @@ export function mountPixelModal() {
       const host = window.location.origin;
       
       const snippet = `<script>
-  window.maranetQueue = window.maranetQueue || [];
-  function maranet(){ maranetQueue.push(arguments); }
-  maranet('init', '${workspaceId}');
-  maranet('track', 'pageview');
+  window.nexusQueue = window.nexusQueue || [];
+  function nexus(){ nexusQueue.push(arguments); }
+  nexus('init', '${workspaceId}');
+  nexus('track', 'pageview');
 </script>
-<script async src="${host}/js/maranet-pixel.js"></script>`;
+<script async src="${host}/js/nexus-pixel.js"></script>`;
       
       txtBase.value = snippet;
     } catch(e) {}

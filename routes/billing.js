@@ -12,7 +12,7 @@ const audit = require('../utils/audit');
 // ----------------------------------------------------------------
 router.get('/master', requireAuth, async (req, res) => {
     try {
-        // Apenas o dono do sistema (Daniel) tem acesso a esse painel
+        // Apenas o workspace administrador (id=1) tem acesso a esse painel
         if (req.user.workspace_id !== 1) {
             return res.status(403).json({ error: "Acesso Negado. Apenas o Administrator (Workspace 1) pode ver o faturamento geral." });
         }

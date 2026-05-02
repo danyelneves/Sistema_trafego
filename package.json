@@ -1,7 +1,7 @@
 {
   "name": "nexus-os",
   "version": "1.0.0",
-  "description": "Maranet Telecom · Central de Tráfego — Dashboard profissional Google Ads + Meta Ads",
+  "description": "Nexus OS — Sistema operacional de IA para vendas, tráfego e automação multi-tenant",
   "main": "server.js",
   "scripts": {
     "start": "node --no-warnings server.js",
@@ -15,13 +15,13 @@
     "vercel-build": "echo Build OK"
   },
   "keywords": [
-    "dashboard",
-    "google-ads",
-    "meta-ads",
-    "traffic",
-    "isp"
+    "nexus-os",
+    "ai-saas",
+    "marketing-automation",
+    "multi-tenant",
+    "vendas-ia"
   ],
-  "author": "Maranet Telecom",
+  "author": "Nexus",
   "license": "UNLICENSED",
   "private": true,
   "engines": {

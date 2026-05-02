@@ -19,7 +19,7 @@ document.getElementById('btn-extract').addEventListener('click', async () => {
     }
 
     if (response.success && response.ad) {
-      statusEl.textContent = "Enviando para Maranet...";
+      statusEl.textContent = "Enviando para o Nexus...";
       
       try {
         const payload = {
@@ -37,7 +37,7 @@ document.getElementById('btn-extract').addEventListener('click', async () => {
         });
 
         if (res.ok) {
-          statusEl.textContent = "Salvo com sucesso no Maranet Raio-X! ✅";
+          statusEl.textContent = "Salvo com sucesso no Nexus Raio-X! ✅";
           statusEl.style.color = "#00ffcc";
         } else {
           statusEl.textContent = "Falha na API: " + await res.text();

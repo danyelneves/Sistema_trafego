@@ -1,9 +1,18 @@
 /**
- * Maranet Pixel - Server-Side Tracking
+ * Nexus Pixel — Server-Side Tracking
+ *
+ * Snippet:
+ *   <script async src="https://nexusagencia.app/js/nexus-pixel.js"></script>
+ *   <script>
+ *     window.nexusQueue = window.nexusQueue || [];
+ *     function nexus(){ nexusQueue.push(arguments); }
+ *     nexus('init', '<WORKSPACE_ID>');
+ *     nexus('track', 'pageview');
+ *   </script>
  */
 (function(window, document) {
-  if (window.maranetInit) return;
-  window.maranetInit = true;
+  if (window.nexusInit) return;
+  window.nexusInit = true;
 
   const CONFIG = {
     workspaceId: null,
@@ -28,34 +37,33 @@
   function getCookie(name) {
     let nameEQ = name + "=";
     let ca = document.cookie.split(';');
-    for(let i=0; i < ca.length; i++) {
+    for (let i = 0; i < ca.length; i++) {
       let c = ca[i];
-      while (c.charAt(0)==' ') c = c.substring(1,c.length);
-      if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
     }
     return null;
   }
 
-  // Persist UTMs and click IDs
+  // Persist UTMs and click IDs (cookie prefix: nx_)
   const utms = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid'];
   let currentUtms = {};
   utms.forEach(u => {
     let val = getQueryParam(u);
     if (val) {
-      setCookie('maranet_' + u, val, 30); // 30 days
+      setCookie('nx_' + u, val, 30);
       currentUtms[u] = val;
     } else {
-      currentUtms[u] = getCookie('maranet_' + u);
+      currentUtms[u] = getCookie('nx_' + u);
     }
   });
 
-  window.maranet = function(action, eventType, data = {}) {
+  window.nexus = function(action, eventType, data = {}) {
     if (action === 'init') {
-      CONFIG.workspaceId = eventType; // maranet('init', '1')
-      // Auto-detect the API URL based on where this script is loaded from
+      CONFIG.workspaceId = eventType;
       const scripts = document.getElementsByTagName('script');
       for (let s of scripts) {
-        if (s.src && s.src.includes('maranet-pixel.js')) {
+        if (s.src && s.src.includes('nexus-pixel.js')) {
           const url = new URL(s.src);
           CONFIG.apiUrl = url.origin + '/api/pixel';
         }
@@ -63,8 +71,8 @@
       return;
     }
     if (action === 'track') {
-      if (!CONFIG.workspaceId) return console.error('Maranet Pixel: workspace não inicializado.');
-      
+      if (!CONFIG.workspaceId) return console.error('Nexus Pixel: workspace não inicializado.');
+
       const payload = {
         workspace_id: CONFIG.workspaceId,
         event_type: eventType,
@@ -78,14 +86,13 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         mode: 'cors'
-      }).catch(e => console.error('Maranet Pixel Error:', e));
+      }).catch(e => console.error('Nexus Pixel Error:', e));
     }
   };
 
-  // Process queue if any (e.g., snippet added before script loaded)
-  if (window.maranetQueue && window.maranetQueue.length) {
-    window.maranetQueue.forEach(args => window.maranet.apply(null, args));
-    window.maranetQueue = [];
+  if (window.nexusQueue && window.nexusQueue.length) {
+    window.nexusQueue.forEach(args => window.nexus.apply(null, args));
+    window.nexusQueue = [];
   }
 
 })(window, document);

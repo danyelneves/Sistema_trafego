@@ -116,7 +116,7 @@ async function runChecks() {
       }
 
       if (alert.whatsapp) {
-        const msg = `🚨 *Maranet Alerta: ${alert.channel.toUpperCase()}* 🚨\nA métrica *${METRICS_MAP[alert.metric]}* atingiu ${fmtValue(alert.metric, value)}.\nMeta configurada: ${alert.direction === 'min' ? 'Mínimo' : 'Máximo'} de ${fmtValue(alert.metric, alert.threshold)}.`;
+        const msg = `🚨 *Nexus Alerta: ${alert.channel.toUpperCase()}* 🚨\nA métrica *${METRICS_MAP[alert.metric]}* atingiu ${fmtValue(alert.metric, value)}.\nMeta configurada: ${alert.direction === 'min' ? 'Mínimo' : 'Máximo'} de ${fmtValue(alert.metric, alert.threshold)}.`;
         await sendWhatsApp(alert.whatsapp, msg);
       }
 
@@ -126,7 +126,7 @@ async function runChecks() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              text: `🚨 *Maranet Alerta: ${alert.channel.toUpperCase()}* 🚨\nA métrica *${METRICS_MAP[alert.metric]}* atingiu ${fmtValue(alert.metric, value)}.\nMeta configurada: ${alert.direction === 'min' ? 'Mínimo' : 'Máximo'} de ${fmtValue(alert.metric, alert.threshold)}.`
+              text: `🚨 *Nexus Alerta: ${alert.channel.toUpperCase()}* 🚨\nA métrica *${METRICS_MAP[alert.metric]}* atingiu ${fmtValue(alert.metric, value)}.\nMeta configurada: ${alert.direction === 'min' ? 'Mínimo' : 'Máximo'} de ${fmtValue(alert.metric, alert.threshold)}.`
             })
           });
         } catch (e) { console.error('[WEBHOOK] Erro ao enviar:', e.message); }

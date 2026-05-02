@@ -428,7 +428,7 @@ async function loadGreeting() {
     const data = await r.json();
     const h = new Date().getHours();
     const greet = h < 12 ? 'Bom dia' : (h < 18 ? 'Boa tarde' : 'Boa noite');
-    document.getElementById('greeting-text').textContent = `${greet}, ${data.user?.name?.split(' ')[0] || 'Daniel'}`;
+    document.getElementById('greeting-text').textContent = `${greet}, ${data.user?.name?.split(' ')[0] || 'operador'}`;
     document.getElementById('greeting-sub').textContent = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
   } catch {}
 }

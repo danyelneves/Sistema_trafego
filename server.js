@@ -1,5 +1,5 @@
 /**
- * server.js — ponto de entrada do Maranet · Central de Tráfego
+ * server.js — ponto de entrada do Nexus OS
  *
  * Em produção (Vercel): exporta o app Express via module.exports.
  * Em desenvolvimento local: app.listen() quando executado diretamente.
@@ -270,8 +270,8 @@ if (require.main === module) {
     log('info', `Servidor iniciado na porta ${PORT}`);
     console.log('');
     console.log('╔════════════════════════════════════════════╗');
-    console.log('║  Maranet · Central de Tráfego              ║');
-    console.log('║  Maranet Telecom                           ║');
+    console.log('║  Nexus OS                                  ║');
+    console.log('║  Sistema operacional de IA para vendas     ║');
     console.log('╚════════════════════════════════════════════╝');
     console.log(`→ servidor: http://localhost:${PORT}`);
     console.log(`→ node:     ${process.version}`);

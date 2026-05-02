@@ -76,7 +76,9 @@ async function getVercel() {
   const token = process.env.VERCEL_API_TOKEN;
   const teamId = process.env.VERCEL_TEAM_ID;
   const projectId = process.env.VERCEL_PROJECT_ID;
-  const dashboard_url = `https://vercel.com/maranet/nexus-os`;
+  const teamSlug = process.env.VERCEL_TEAM_SLUG || 'maranet';
+  const projectSlug = process.env.VERCEL_PROJECT_SLUG || 'nexus-os';
+  const dashboard_url = `https://vercel.com/${teamSlug}/${projectSlug}`;
 
   if (!token || !projectId) {
     return setCached('vercel', { ok: false, status: 'not-configured', dashboard_url, error: 'VERCEL_API_TOKEN ou VERCEL_PROJECT_ID não setado' });

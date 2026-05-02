@@ -4,8 +4,8 @@
 > e operações comerciais autônomas. Construída para **rodar negócios — não só medi-los**.
 
 **Produção:** https://nexusagencia.app
-**Empresa:** NVia Holding · Maranet Telecom
-**Founder & CTO:** Daniel Neves
+**Empresa:** Nexus
+**Time fundador:** Nexus
 **Data deste documento:** 2026-05-01
 
 ---
@@ -348,7 +348,7 @@ Kiwify.
 
 ## 👥 Equipe & Operação
 
-**Equipe atual:** 1 (Daniel Neves — fundador, CTO, primeiro vendedor)
+**Equipe atual:** time enxuto fundador (engenharia + vendas)
 
 **Modelo de operação:** Solo founder com sistemas autônomos cobrindo:
 - Tráfego (Sentinel)

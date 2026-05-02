@@ -71,8 +71,8 @@ router.post('/test', requireAdmin, async (req, res) => {
   try {
     await mailer.send({
       to:      email,
-      subject: '[Teste] Maranet · Central de Tráfego — Alertas configurados',
-      html:    `<p>Este é um e-mail de teste do sistema de alertas da <strong>Central de Tráfego · Maranet</strong>.</p>
+      subject: '[Teste] Nexus OS — Alertas configurados',
+      html:    `<p>Este é um e-mail de teste do sistema de alertas da <strong>Nexus OS</strong>.</p>
                 <p>Os alertas de KPI estão configurados corretamente. ✓</p>`,
     });
     res.json({ ok: true, message: `E-mail de teste enviado para ${email}` });

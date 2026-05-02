@@ -9,6 +9,18 @@
  *   showSpinner(button)  / hideSpinner(button)
  */
 (function() {
+  // Migração transparente de chaves antigas → novo prefixo nx_
+  // (one-shot, evita deslogar usuários que já tinham sessão)
+  try {
+    ['token', 'theme'].forEach(k => {
+      const oldVal = localStorage.getItem('maranet_' + k);
+      if (oldVal && !localStorage.getItem('nx_' + k)) {
+        localStorage.setItem('nx_' + k, oldVal);
+      }
+      localStorage.removeItem('maranet_' + k);
+    });
+  } catch { /* ignore */ }
+
   async function apiCall(method, path, body) {
     const opts = {
       method,

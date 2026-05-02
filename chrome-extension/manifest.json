@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Maranet Spy",
+  "name": "Nexus Spy",
   "version": "1.0.0",
-  "description": "Salve anúncios da Biblioteca de Anúncios do Facebook direto no Raio-X do Maranet.",
+  "description": "Salve anúncios da Biblioteca de Anúncios do Facebook direto no Raio-X do Nexus OS.",
   "permissions": ["activeTab", "scripting"],
   "host_permissions": [
     "https://www.facebook.com/ads/library/*",
@@ -11,7 +11,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Maranet Spy"
+    "default_title": "Nexus Spy"
   },
   "content_scripts": [
     {

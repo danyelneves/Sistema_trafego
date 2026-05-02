@@ -4,7 +4,7 @@
  * Configuração no .env:
  *   SMTP_USER=seu@gmail.com
  *   SMTP_PASS=xxxx xxxx xxxx xxxx   (App Password do Gmail — 16 chars)
- *   SMTP_FROM="Maranet Tráfego <seu@gmail.com>"
+ *   SMTP_FROM="Nexus OS <seu@gmail.com>"
  */
 const nodemailer = require('nodemailer');
 
@@ -77,7 +77,7 @@ async function sendKpiAlert({ to, metric, value, target, direction, channel, per
     <body>
       <div class="container">
         <div class="header">
-          <h1>Maranet · Central de Tráfego</h1>
+          <h1>Nexus OS</h1>
           <p>Alerta automático de KPI · ${period}</p>
         </div>
         <div class="body">
@@ -95,7 +95,7 @@ async function sendKpiAlert({ to, metric, value, target, direction, channel, per
             </table>
           </div>
         </div>
-        <div class="footer">Enviado automaticamente pela Central de Tráfego · Maranet Telecom</div>
+        <div class="footer">Enviado automaticamente pelo Nexus OS</div>
       </div>
     </body>
     </html>
