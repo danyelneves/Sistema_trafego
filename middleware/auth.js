@@ -31,14 +31,14 @@ async function requireAuth(req, res, next) {
 
   try {
     const row = await db.get(`
-      SELECT u.current_workspace_id, w.name as workspace_name, w.logo_url, w.theme_color
-      FROM users u 
-      LEFT JOIN workspaces w ON w.id = u.current_workspace_id 
+      SELECT u.workspace_id, w.name as workspace_name, w.logo_url, w.theme_color
+      FROM users u
+      LEFT JOIN workspaces w ON w.id = u.workspace_id
       WHERE u.id = $1
     `, user.id);
     if (!row) return res.status(401).json({ error: 'user not found' });
-    user.workspace_id = row.current_workspace_id || 1;
-    user.workspace_name = row.workspace_name || 'Maranet Telecom';
+    user.workspace_id = row.workspace_id || 1;
+    user.workspace_name = row.workspace_name || 'Nexus Agência';
     user.logo_url = row.logo_url || null;
     user.theme_color = row.theme_color || null;
     req.user = user;
