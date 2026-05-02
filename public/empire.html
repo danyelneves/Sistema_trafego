@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Empire · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+<style>
+  .kanban{display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;}
+  .kb-col{
+    background:var(--bg-2); border:1px solid var(--border);
+    border-radius:8px; padding:12px; min-height:300px;
+  }
+  .kb-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding-bottom:8px; margin-bottom:10px;
+    border-bottom:1px solid var(--border);
+    font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:1px;
+    color:var(--muted); font-family:'JetBrains Mono',monospace;
+  }
+  .kb-count{
+    background:var(--bg-3); padding:2px 8px; border-radius:10px;
+    font-size:10px; color:var(--text);
+  }
+  .kb-card{
+    background:var(--bg-3); border:1px solid var(--border);
+    border-radius:6px; padding:10px 12px; margin-bottom:8px;
+    font-size:13px; cursor:grab;
+    transition:all .15s;
+  }
+  .kb-card:hover{border-color:var(--accent);}
+  .add-task{
+    width:100%; padding:8px;
+    background:transparent; border:1px dashed var(--border-2);
+    border-radius:6px; color:var(--muted);
+    font-size:12px; cursor:pointer;
+    transition:all .15s;
+  }
+  .add-task:hover{border-color:var(--accent); color:var(--accent);}
+  .creative-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:12px;}
+  .creative-card{
+    background:var(--bg-3); border:1px solid var(--border);
+    border-radius:8px; overflow:hidden;
+  }
+  .creative-card img{width:100%; aspect-ratio:1; object-fit:cover; background:var(--bg-4);}
+  .creative-info{padding:10px 12px;}
+  .creative-title{font-size:11px; font-weight:600; margin-bottom:4px;}
+  .creative-source{font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+<aside id="sidebar" data-active="empire"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>📋 Empire — Kanban + Espião de Criativos</h2>
+      <p>Gestão interna de tarefas e biblioteca de criativos espiados dos concorrentes (capturados via Chrome Extension no Facebook Ad Library).</p>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head">
+      <span class="section-title">Kanban</span>
+      <button class="btn" id="btn-refresh-kanban">⟳ Atualizar</button>
+    </div>
+    <div class="kanban">
+      <div class="kb-col">
+        <div class="kb-head"><span>📝 Backlog</span><span class="kb-count" id="cnt-backlog">0</span></div>
+        <div id="col-backlog"></div>
+        <button class="add-task" data-status="backlog">+ Adicionar</button>
+      </div>
+      <div class="kb-col">
+        <div class="kb-head"><span>⚙ Em progresso</span><span class="kb-count" id="cnt-doing">0</span></div>
+        <div id="col-doing"></div>
+        <button class="add-task" data-status="doing">+ Adicionar</button>
+      </div>
+      <div class="kb-col">
+        <div class="kb-head"><span>✓ Concluído</span><span class="kb-count" id="cnt-done">0</span></div>
+        <div id="col-done"></div>
+        <button class="add-task" data-status="done">+ Adicionar</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head">
+      <span class="section-title">Criativos espiados (concorrentes)</span>
+      <button class="btn" id="btn-refresh-spy">⟳ Atualizar</button>
+    </div>
+    <div class="card">
+      <div id="spy-list"><div class="empty">Carregando...</div></div>
+      <div style="margin-top:12px; padding:12px; background:var(--bg-3); border-radius:6px; font-size:11px; color:var(--muted);">
+        💡 Pra capturar criativos, instale a Chrome Extension localizada em <code>chrome-extension/</code> e abra o Facebook Ad Library.
+      </div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc"><span class="api-method get">GET</span><span class="api-path">/api/empire/kanban/:wsId</span><div class="api-desc">Lista tasks do kanban do workspace.</div></div>
+    <div class="api-doc"><span class="api-method post">POST</span><span class="api-path">/api/empire/kanban/:wsId</span><div class="api-desc">Body: { title, status }. Cria task.</div></div>
+    <div class="api-doc"><span class="api-method delete">DELETE</span><span class="api-path">/api/empire/kanban/task/:id</span><div class="api-desc">Remove task.</div></div>
+    <div class="api-doc"><span class="api-method get">GET</span><span class="api-path">/api/empire/spy/:wsId</span><div class="api-desc">Lista criativos espiados.</div></div>
+    <div class="api-doc"><span class="api-method post">POST</span><span class="api-path">/api/empire/spy</span><div class="api-desc">Adiciona criativo (chamado pela Chrome Extension).</div></div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+let WS_ID = null;
+async function getWorkspaceId() {
+  if (WS_ID) return WS_ID;
+  const me = await NEXUS.apiCall('GET', '/api/auth/me');
+  WS_ID = me.user?.workspace_id || 1;
+  return WS_ID;
+}
+
+async function loadKanban() {
+  const wsId = await getWorkspaceId();
+  try {
+    const data = await NEXUS.apiCall('GET', `/api/empire/kanban/${wsId}`);
+    const tasks = data.tasks || data || [];
+    const cols = { backlog: [], doing: [], done: [] };
+    tasks.forEach(t => {
+      const s = t.status || 'backlog';
+      if (cols[s]) cols[s].push(t);
+    });
+    Object.keys(cols).forEach(s => {
+      const el = document.getElementById('col-' + s);
+      const cnt = document.getElementById('cnt-' + s);
+      cnt.textContent = cols[s].length;
+      if (!cols[s].length) { el.innerHTML = '<div style="color:var(--dim); font-size:11px; padding:8px; text-align:center;">vazio</div>'; return; }
+      el.innerHTML = cols[s].map(t => `<div class="kb-card" data-id="${t.id}">${NEXUS.escapeHtml(t.title)}</div>`).join('');
+    });
+  } catch (err) {
+    document.getElementById('col-backlog').innerHTML = `<div style="color:var(--down); font-size:12px;">${NEXUS.escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadSpy() {
+  const wsId = await getWorkspaceId();
+  try {
+    const data = await NEXUS.apiCall('GET', `/api/empire/spy/${wsId}`);
+    const items = data.creatives || data || [];
+    const list = document.getElementById('spy-list');
+    if (!items.length) { list.innerHTML = '<div class="empty">Nenhum criativo capturado ainda. Use a Chrome Extension!</div>'; return; }
+    list.innerHTML = `<div class="creative-grid">${items.map(c => `
+      <div class="creative-card">
+        ${c.image_url ? `<img src="${NEXUS.escapeHtml(c.image_url)}" alt="">` : '<div style="aspect-ratio:1; background:var(--bg-4);"></div>'}
+        <div class="creative-info">
+          <div class="creative-title">${NEXUS.escapeHtml((c.copy || c.title || 'Sem texto').slice(0, 50))}</div>
+          <div class="creative-source">@${NEXUS.escapeHtml(c.competitor || '?')}</div>
+        </div>
+      </div>
+    `).join('')}</div>`;
+  } catch (err) {
+    document.getElementById('spy-list').innerHTML = `<div class="empty">${NEXUS.escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.querySelectorAll('.add-task').forEach(btn => btn.addEventListener('click', async () => {
+  const title = prompt('Título da task:');
+  if (!title) return;
+  const wsId = await getWorkspaceId();
+  try {
+    await NEXUS.apiCall('POST', `/api/empire/kanban/${wsId}`, { title, status: btn.dataset.status });
+    loadKanban();
+  } catch (err) { alert('Erro: ' + err.message); }
+}));
+
+document.getElementById('btn-refresh-kanban').addEventListener('click', loadKanban);
+document.getElementById('btn-refresh-spy').addEventListener('click', loadSpy);
+
+loadKanban();
+loadSpy();
+</script>
+</body>
+</html>

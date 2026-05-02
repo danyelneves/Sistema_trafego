@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Market · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+<style>
+  .lead-row{
+    background:var(--bg-3); border:1px solid var(--border);
+    border-radius:6px; padding:12px 14px;
+    display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:12px; align-items:center;
+    margin-bottom:8px;
+  }
+  .lead-name{font-weight:600; font-size:13px;}
+  .lead-meta{font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace;}
+  .lead-price{
+    font-family:'JetBrains Mono',monospace; font-weight:700;
+    color:var(--accent); font-size:14px;
+  }
+</style>
+</head>
+<body>
+<aside id="sidebar" data-active="market"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>💱 Market — Bolsa de Leads em Leilão</h2>
+      <p>Sistema captura leads via Forge ou Skynet → notifica empresas compradoras cadastradas → quem responder primeiro paga R$ 35 e recebe contato exclusivo. Arbitragem pura.</p>
+    </div>
+    <div class="page-actions">
+      <span class="badge up">R$ 35/LEAD</span>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head">
+      <span class="section-title">Dashboard de leads disponíveis</span>
+      <button class="btn" id="btn-refresh">⟳ Atualizar</button>
+    </div>
+    <div class="card">
+      <div id="leads-list"><div class="empty">Carregando...</div></div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Capturar lead manualmente</span></div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nome do lead</label>
+          <input id="lead_name" type="text" placeholder="Maria Silva">
+        </div>
+        <div class="field">
+          <label>Telefone</label>
+          <input id="lead_phone" type="tel" placeholder="11999998888">
+        </div>
+        <div class="field">
+          <label>Nicho</label>
+          <input id="lead_nicho" type="text" placeholder="estética">
+        </div>
+        <div class="field">
+          <label>Cidade</label>
+          <input id="lead_cidade" type="text" placeholder="São Paulo">
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" id="btn-capture">⚡ Capturar e leiloar</button>
+      </div>
+      <div id="output" class="output" style="display:none; margin-top:16px;"></div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Cadastrar comprador</span></div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nome da empresa</label>
+          <input id="buyer_name" type="text" placeholder="Clínica X">
+        </div>
+        <div class="field">
+          <label>WhatsApp pra notificações</label>
+          <input id="buyer_phone" type="tel" placeholder="11999998888">
+        </div>
+        <div class="field">
+          <label>Nichos de interesse (separar por vírgula)</label>
+          <input id="buyer_nichos" type="text" placeholder="estética, saúde">
+        </div>
+        <div class="field">
+          <label>Cidades de interesse</label>
+          <input id="buyer_cidades" type="text" placeholder="São Paulo, ABC">
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn" id="btn-buyer">➕ Cadastrar comprador</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc"><span class="api-method post">POST</span><span class="api-path">/api/market/capture</span><div class="api-desc">Body: { name, phone, nicho, cidade }. Captura lead e notifica compradores.</div></div>
+    <div class="api-doc"><span class="api-method get">GET</span><span class="api-path">/api/market/dashboard</span><div class="api-desc">Lista leads disponíveis no marketplace.</div></div>
+    <div class="api-doc"><span class="api-method get">GET</span><span class="api-path">/api/market/buy/:lead_id/:buyer_id</span><div class="api-desc">Comprador clica neste link via WhatsApp pra fechar a compra do lead.</div></div>
+    <div class="api-doc"><span class="api-method post">POST</span><span class="api-path">/api/market/buyers</span><div class="api-desc">Body: { name, phone, nichos[], cidades[] }. Cadastra novo comprador.</div></div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+async function loadDashboard() {
+  try {
+    const data = await NEXUS.apiCall('GET', '/api/market/dashboard');
+    const list = document.getElementById('leads-list');
+    const items = data.leads || data || [];
+    if (!items.length) { list.innerHTML = '<div class="empty">Nenhum lead disponível no momento.</div>'; return; }
+    list.innerHTML = items.map(l => `
+      <div class="lead-row">
+        <div>
+          <div class="lead-name">${NEXUS.escapeHtml(l.lead_name || l.name || 'Anônimo')}</div>
+          <div class="lead-meta">nicho: ${NEXUS.escapeHtml(l.nicho || '?')} · ${NEXUS.escapeHtml(l.cidade || '?')}</div>
+        </div>
+        <div class="lead-meta">${NEXUS.formatRelative(l.created_at)}</div>
+        <div class="lead-price">R$ ${l.price || '35,00'}</div>
+        <span class="badge ${l.status === 'sold' ? 'muted' : 'up'}">${l.status || 'available'}</span>
+      </div>
+    `).join('');
+  } catch (err) {
+    document.getElementById('leads-list').innerHTML = `<div class="empty">Erro: ${NEXUS.escapeHtml(err.message)}</div>`;
+  }
+}
+document.getElementById('btn-refresh').addEventListener('click', loadDashboard);
+
+document.getElementById('btn-capture').addEventListener('click', async (e) => {
+  const body = {
+    name: document.getElementById('lead_name').value.trim(),
+    phone: document.getElementById('lead_phone').value.trim(),
+    nicho: document.getElementById('lead_nicho').value.trim(),
+    cidade: document.getElementById('lead_cidade').value.trim(),
+  };
+  if (!body.name || !body.phone) { NEXUS.showError('output', 'Preencha pelo menos nome e telefone.'); return; }
+  NEXUS.showSpinner(e.target);
+  try {
+    const data = await NEXUS.apiCall('POST', '/api/market/capture', body);
+    NEXUS.showOutput('output', data, 'success');
+    loadDashboard();
+  } catch (err) {
+    NEXUS.showError('output', err.message);
+  } finally {
+    NEXUS.hideSpinner(e.target);
+  }
+});
+
+document.getElementById('btn-buyer').addEventListener('click', async (e) => {
+  const body = {
+    name: document.getElementById('buyer_name').value.trim(),
+    phone: document.getElementById('buyer_phone').value.trim(),
+    nichos: document.getElementById('buyer_nichos').value.split(',').map(s => s.trim()).filter(Boolean),
+    cidades: document.getElementById('buyer_cidades').value.split(',').map(s => s.trim()).filter(Boolean),
+  };
+  if (!body.name) { NEXUS.showError('output', 'Preencha nome.'); return; }
+  NEXUS.showSpinner(e.target);
+  try {
+    const data = await NEXUS.apiCall('POST', '/api/market/buyers', body);
+    NEXUS.showOutput('output', data, 'success');
+  } catch (err) {
+    NEXUS.showError('output', err.message);
+  } finally {
+    NEXUS.hideSpinner(e.target);
+  }
+});
+
+loadDashboard();
+</script>
+</body>
+</html>

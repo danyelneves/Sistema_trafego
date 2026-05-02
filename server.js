@@ -223,6 +223,23 @@ app.get('/services', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'services.html'));
 });
 
+// Páginas de cada módulo (todas exigem auth)
+const MODULE_PAGES = [
+  'sentinel', 'launcher', 'lazarus', 'skynet', 'doppelganger',
+  'forge', 'studio', 'vending', 'market', 'franchise',
+  'empire', 'poltergeist', 'titan', 'hive', 'billing',
+];
+MODULE_PAGES.forEach(page => {
+  app.get(`/${page}`, (req, res) => {
+    const user = req.cookies?.auth && verifyToken(req.cookies.auth);
+    if (!user) return res.redirect('/login');
+    res.sendFile(path.join(PUBLIC, `${page}.html`));
+  });
+});
+
+// /billing/master continua funcionando como atalho pra /billing
+app.get('/billing/master', (req, res) => res.redirect('/billing'));
+
 app.use(express.static(PUBLIC, { extensions: ['html'] }));
 
 app.get('/report/:uuid', (req, res) => {

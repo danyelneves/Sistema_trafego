@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Forge · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+<style>
+  .preview-frame{
+    width:100%; height:600px; border:1px solid var(--border-2);
+    border-radius:8px; background:#fff;
+  }
+  .funnels-list{display:grid; gap:8px;}
+  .funnel-row{
+    background:var(--bg-3); border:1px solid var(--border);
+    border-radius:6px; padding:12px 14px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .funnel-info{display:flex; flex-direction:column; gap:2px;}
+  .funnel-name{font-weight:600; font-size:13px;}
+  .funnel-meta{font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+<aside id="sidebar" data-active="forge"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>🔮 Forge — Fábrica de Landing Pages por IA</h2>
+      <p>Gera landing pages completas via IA com headline mutante: a página adapta o título dinamicamente ao termo de busca do anúncio (utm_term).</p>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Gerar nova landing</span></div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nicho / produto</label>
+          <input id="nicho" type="text" placeholder="Ex: clínica de estética facial">
+        </div>
+        <div class="field">
+          <label>Nome da página</label>
+          <input id="nome" type="text" placeholder="Ex: Promo Botox SP Outubro">
+        </div>
+        <div class="field">
+          <label>Slug (URL)</label>
+          <input id="slug" type="text" placeholder="ex: botox-sp-out">
+          <div class="field-help">Vai estar em nexusagencia.app/f/seu-slug</div>
+        </div>
+        <div class="field">
+          <label>Modelo IA</label>
+          <select id="modelo">
+            <option value="gpt-4o">GPT-4o (mais criativo)</option>
+            <option value="gemini">Gemini Pro</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column:1/-1;">
+          <label>Briefing extra (opcional)</label>
+          <textarea id="briefing" placeholder="Tom de voz, oferta principal, CTA específico, etc..."></textarea>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" id="btn-generate">⚡ Gerar landing</button>
+      </div>
+      <div id="output" class="output" style="display:none; margin-top:16px;"></div>
+      <div id="preview-wrap" style="margin-top:16px; display:none;">
+        <div style="margin-bottom:8px; color:var(--muted); font-size:12px;">Preview:</div>
+        <iframe id="preview" class="preview-frame"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head">
+      <span class="section-title">Landings existentes</span>
+      <button class="btn" id="btn-refresh-list">⟳ Atualizar</button>
+    </div>
+    <div class="card">
+      <div id="funnels-list" class="funnels-list"><div class="empty">Carregando...</div></div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc"><span class="api-method post">POST</span><span class="api-path">/api/forge/generate</span><div class="api-desc">Body: { nicho, nome, slug, modelo, briefing }. Gera HTML completo via IA e salva no banco.</div></div>
+    <div class="api-doc"><span class="api-method get">GET</span><span class="api-path">/api/forge/list</span><div class="api-desc">Lista todas as landings do workspace logado.</div></div>
+    <div class="api-doc"><span class="api-method get">GET</span><span class="api-path">/f/:slug</span><div class="api-desc">Rota pública que serve a landing gerada (acessível sem login).</div></div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+async function loadFunnels() {
+  try {
+    const data = await NEXUS.apiCall('GET', '/api/forge/list');
+    const list = document.getElementById('funnels-list');
+    const items = data.funnels || data || [];
+    if (!items.length) { list.innerHTML = '<div class="empty">Nenhuma landing criada ainda.</div>'; return; }
+    list.innerHTML = items.map(f => `
+      <div class="funnel-row">
+        <div class="funnel-info">
+          <div class="funnel-name">${NEXUS.escapeHtml(f.name || f.title || 'Sem nome')}</div>
+          <div class="funnel-meta">slug: ${NEXUS.escapeHtml(f.slug)} · ${f.visits||0} visitas</div>
+        </div>
+        <a href="/f/${NEXUS.escapeHtml(f.slug)}" target="_blank" class="btn">Ver →</a>
+      </div>
+    `).join('');
+  } catch (err) {
+    document.getElementById('funnels-list').innerHTML = `<div class="empty">Erro: ${NEXUS.escapeHtml(err.message)}</div>`;
+  }
+}
+document.getElementById('btn-refresh-list').addEventListener('click', loadFunnels);
+
+document.getElementById('btn-generate').addEventListener('click', async (e) => {
+  const body = {
+    nicho: document.getElementById('nicho').value.trim(),
+    nome: document.getElementById('nome').value.trim(),
+    slug: document.getElementById('slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+    modelo: document.getElementById('modelo').value,
+    briefing: document.getElementById('briefing').value.trim(),
+  };
+  if (!body.nicho || !body.nome || !body.slug) { NEXUS.showError('output', 'Preencha nicho, nome e slug.'); return; }
+  NEXUS.showSpinner(e.target);
+  try {
+    const data = await NEXUS.apiCall('POST', '/api/forge/generate', body);
+    NEXUS.showOutput('output', `✅ Landing gerada!\n\nslug: ${body.slug}\nURL pública: ${location.origin}/f/${body.slug}\n\n${JSON.stringify(data, null, 2)}`, 'success');
+    document.getElementById('preview-wrap').style.display = 'block';
+    document.getElementById('preview').src = `/f/${body.slug}`;
+    loadFunnels();
+  } catch (err) {
+    NEXUS.showError('output', err.message);
+  } finally {
+    NEXUS.hideSpinner(e.target);
+  }
+});
+
+loadFunnels();
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lázaro · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+</head>
+<body>
+<aside id="sidebar" data-active="lazarus"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>🧟 Lázaro — Recuperador de Carrinhos & Leads Frios</h2>
+      <p>Detecta carrinhos abandonados (status WAITING_PAYMENT/PENDING) e dispara mensagem empática personalizada por IA via WhatsApp. Também pode reativar lista de leads frios.</p>
+    </div>
+    <div class="page-actions">
+      <span class="badge up">CRON 15min</span>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Reativação manual de lista de leads</span></div>
+    <div class="card">
+      <div class="form-grid full">
+        <div class="field">
+          <label>Contatos (1 por linha — formato: nome | telefone | motivo)</label>
+          <textarea id="contatos" placeholder="Maria Silva | 11999998888 | preço alto&#10;João Souza | 21988887777 | sem tempo&#10;Carla Lima | 31977776666 | já compra de outro"></textarea>
+          <div class="field-help">A IA vai escrever uma mensagem única pra cada um considerando o motivo da desistência</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" id="btn-revive">⚡ Reanimar leads</button>
+      </div>
+      <div id="output" class="output" style="display:none; margin-top:16px;"></div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc">
+      <span class="api-method post">POST</span><span class="api-path">/api/lazarus/revive</span>
+      <div class="api-desc">Body: { contacts: [{ name, phone, reason }] }. IA gera mensagem personalizada e dispara via WhatsApp.</div>
+    </div>
+    <div class="api-doc">
+      <span class="api-method get">GET</span><span class="api-path">/api/lazarus/cron</span>
+      <div class="api-desc">Cron que roda a cada 15min. Detecta carrinhos abandonados há 10min-2dias e dispara reativação automática.</div>
+    </div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+document.getElementById('btn-revive').addEventListener('click', async (e) => {
+  const text = document.getElementById('contatos').value.trim();
+  if (!text) { NEXUS.showError('output', 'Cole pelo menos um contato.'); return; }
+  const contacts = text.split('\n').map(line => {
+    const [name, phone, reason] = line.split('|').map(s => (s || '').trim());
+    return { name, phone, reason };
+  }).filter(c => c.name && c.phone);
+  if (!contacts.length) { NEXUS.showError('output', 'Formato inválido. Use: nome | telefone | motivo'); return; }
+  NEXUS.showSpinner(e.target);
+  try {
+    const data = await NEXUS.apiCall('POST', '/api/lazarus/revive', { contacts });
+    NEXUS.showOutput('output', data, 'success');
+  } catch (err) {
+    NEXUS.showError('output', err.message);
+  } finally {
+    NEXUS.hideSpinner(e.target);
+  }
+});
+</script>
+</body>
+</html>

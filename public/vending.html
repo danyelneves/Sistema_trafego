@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vending Machine · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+<style>
+  .pix-display{
+    background:var(--bg-3); border:2px dashed var(--accent);
+    border-radius:8px; padding:24px; text-align:center;
+  }
+  .pix-code{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; color:var(--text);
+    background:var(--bg); padding:12px; border-radius:6px;
+    word-break:break-all; max-height:120px; overflow:auto;
+    margin-top:12px;
+  }
+  .stat-row{display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:16px;}
+  .stat-box{
+    background:var(--bg-3); border:1px solid var(--border);
+    border-radius:6px; padding:14px;
+  }
+  .stat-num{font-size:24px; font-weight:800; font-family:'JetBrains Mono',monospace;}
+  .stat-lbl{font-size:11px; color:var(--muted); margin-top:4px;}
+</style>
+</head>
+<body>
+<aside id="sidebar" data-active="vending"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>🏧 Vending Machine — Campanhas Pagas via PIX</h2>
+      <p>Cliente paga R$ 297 via PIX → sistema usa 40% (R$ 119) pra subir campanha real no Facebook → R$ 178 é lucro líquido. Modelo transacional puro, sem retenção exigida.</p>
+    </div>
+    <div class="page-actions">
+      <span class="badge up">RECEITA TRANSACIONAL</span>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-num">R$ 297</div>
+        <div class="stat-lbl">PREÇO POR CAMPANHA</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--accent);">R$ 178</div>
+        <div class="stat-lbl">LUCRO LÍQUIDO (60%)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num">R$ 119</div>
+        <div class="stat-lbl">REINVESTIDO EM ADS (40%)</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Simular checkout</span></div>
+    <div class="card">
+      <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
+        Esse fluxo é o que o cliente final usa: paga R$ 297, em 5 minutos a campanha está rodando.
+      </p>
+      <div class="form-grid">
+        <div class="field">
+          <label>Email do cliente</label>
+          <input id="email" type="email" placeholder="cliente@empresa.com">
+        </div>
+        <div class="field">
+          <label>Telefone</label>
+          <input id="phone" type="tel" placeholder="(11) 99999-8888">
+        </div>
+        <div class="field">
+          <label>Nicho da campanha</label>
+          <input id="nicho" type="text" placeholder="Ex: clínica odontológica">
+        </div>
+        <div class="field">
+          <label>Cidade alvo</label>
+          <input id="cidade" type="text" placeholder="Ex: São Paulo">
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" id="btn-checkout">⚡ Gerar PIX de R$ 297</button>
+      </div>
+      <div id="output" class="output" style="display:none; margin-top:16px;"></div>
+      <div id="pix-wrap" style="display:none; margin-top:16px;">
+        <div class="pix-display">
+          <div style="font-weight:600;">PIX gerado · expira em 30min</div>
+          <div class="pix-code" id="pix-code"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc"><span class="api-method post">POST</span><span class="api-path">/api/vending/checkout</span><div class="api-desc">Body: { email, phone, nicho, cidade }. Retorna PIX code + external_reference rastreável.</div></div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+document.getElementById('btn-checkout').addEventListener('click', async (e) => {
+  const body = {
+    email: document.getElementById('email').value.trim(),
+    phone: document.getElementById('phone').value.trim(),
+    nicho: document.getElementById('nicho').value.trim(),
+    cidade: document.getElementById('cidade').value.trim(),
+  };
+  if (!body.email || !body.phone || !body.nicho || !body.cidade) {
+    NEXUS.showError('output', 'Preencha todos os campos.'); return;
+  }
+  NEXUS.showSpinner(e.target);
+  try {
+    const data = await NEXUS.apiCall('POST', '/api/vending/checkout', body);
+    if (data.pix_code || data.qr_code) {
+      document.getElementById('pix-code').textContent = data.pix_code || data.qr_code;
+      document.getElementById('pix-wrap').style.display = 'block';
+    }
+    NEXUS.showOutput('output', data, 'success');
+  } catch (err) {
+    NEXUS.showError('output', err.message);
+  } finally {
+    NEXUS.hideSpinner(e.target);
+  }
+});
+</script>
+</body>
+</html>

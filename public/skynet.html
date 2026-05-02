@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Skynet · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+</head>
+<body>
+<aside id="sidebar" data-active="skynet"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>🎯 Skynet — Prospecção Autônoma</h2>
+      <p>Caça empresas via Google Maps API por nicho + cidade, IA escreve mensagem personalizada (Modo Oráculo aponta falha real do site/Instagram), dispara via WhatsApp com áudio sintetizado.</p>
+    </div>
+    <div class="page-actions">
+      <span class="badge muted">Cron diário 8h</span>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Disparar caçada manual</span></div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nicho</label>
+          <input id="nicho" type="text" placeholder="Ex: dentistas, advogados, contadores">
+          <div class="field-help">Tipo de empresa a buscar</div>
+        </div>
+        <div class="field">
+          <label>Cidade</label>
+          <input id="cidade" type="text" placeholder="Ex: São Paulo, Belo Horizonte">
+          <div class="field-help">Cidade pra filtrar resultados</div>
+        </div>
+        <div class="field">
+          <label>Quantidade máxima</label>
+          <input id="max" type="number" value="20" min="1" max="100">
+          <div class="field-help">Quantos contatos disparar (default 20)</div>
+        </div>
+        <div class="field">
+          <label>Modo Oráculo</label>
+          <select id="oraculo">
+            <option value="true">Ativado (recomendado)</option>
+            <option value="false">Desativado</option>
+          </select>
+          <div class="field-help">IA aponta uma falha real do site/Instagram do alvo</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" id="btn-hunt">⚡ Iniciar caçada</button>
+      </div>
+      <div id="output" class="output" style="display:none; margin-top:16px;"></div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc">
+      <span class="api-method post">POST</span><span class="api-path">/api/skynet/hunt</span>
+      <div class="api-desc">Inicia uma caçada. Body: { nicho, cidade, max, oraculo }</div>
+    </div>
+    <div class="api-doc">
+      <span class="api-method get">GET</span><span class="api-path">/api/skynet/cron</span>
+      <div class="api-desc">Cron diário às 8h disparado pela Vercel. Lê preferências do workspace_settings.</div>
+    </div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+document.getElementById('btn-hunt').addEventListener('click', async (e) => {
+  const nicho = document.getElementById('nicho').value.trim();
+  const cidade = document.getElementById('cidade').value.trim();
+  const max = Number(document.getElementById('max').value) || 20;
+  const oraculo = document.getElementById('oraculo').value === 'true';
+  if (!nicho || !cidade) { NEXUS.showError('output', 'Preencha nicho e cidade.'); return; }
+  NEXUS.showSpinner(e.target);
+  try {
+    const data = await NEXUS.apiCall('POST', '/api/skynet/hunt', { nicho, cidade, max, oraculo });
+    NEXUS.showOutput('output', data, 'success');
+  } catch (err) {
+    NEXUS.showError('output', err.message);
+  } finally {
+    NEXUS.hideSpinner(e.target);
+  }
+});
+</script>
+</body>
+</html>

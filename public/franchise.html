@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Franchise · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+</head>
+<body>
+<aside id="sidebar" data-active="franchise"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>🏢 Franchise — White-label para Agências</h2>
+      <p>Crie franquias do sistema pra outras agências revenderem como produto delas. Você define a taxa NEXUS (default 5%) e fica com receita passiva sobre o faturamento de cada franqueado.</p>
+    </div>
+    <div class="page-actions">
+      <span class="badge up">5% RECEITA PASSIVA</span>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Criar nova franquia</span></div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nome da agência franqueada</label>
+          <input id="name" type="text" placeholder="Ex: Agência X Marketing">
+        </div>
+        <div class="field">
+          <label>Email do dono</label>
+          <input id="owner_email" type="email" placeholder="dono@agenciax.com">
+        </div>
+        <div class="field">
+          <label>Domínio customizado (opcional)</label>
+          <input id="custom_domain" type="text" placeholder="painel.agenciax.com">
+          <div class="field-help">Se vazio, usa subdomínio nexusagencia.app/f/agencia-x</div>
+        </div>
+        <div class="field">
+          <label>Taxa NEXUS (%)</label>
+          <input id="nexus_fee" type="number" value="5" min="0" max="50" step="0.5">
+          <div class="field-help">Percentual do faturamento da franquia que vai pra você</div>
+        </div>
+        <div class="field" style="grid-column:1/-1;">
+          <label>Logo URL (opcional)</label>
+          <input id="logo_url" type="url" placeholder="https://...">
+          <div class="field-help">Logo que aparece na franquia (substitui o NEXUS)</div>
+        </div>
+        <div class="field">
+          <label>Cor primária (hex)</label>
+          <input id="theme_color" type="text" placeholder="#0099ff">
+          <div class="field-help">Cor de destaque do tema da franquia</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" id="btn-create">⚡ Criar franquia</button>
+      </div>
+      <div id="output" class="output" style="display:none; margin-top:16px;"></div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Como funciona</span></div>
+    <div class="card">
+      <ol style="padding-left:20px; line-height:1.8; color:var(--text-2);">
+        <li>Você cria a franquia pelo form acima → sistema gera workspace isolado</li>
+        <li>Dono da franquia recebe email com credenciais</li>
+        <li>Franquia configura próprias APIs (Mercado Pago, Meta, Z-API) no workspace deles</li>
+        <li>Cada venda processada pelos webhooks deduz automaticamente a taxa NEXUS pra você</li>
+        <li>Você acompanha tudo pelo dashboard master de billing</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Endpoints disponíveis</span></div>
+    <div class="api-doc"><span class="api-method post">POST</span><span class="api-path">/api/franchise/create</span><div class="api-desc">Body: { name, owner_email, custom_domain?, nexus_fee, logo_url?, theme_color? }. Cria workspace isolado com configurações white-label.</div></div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+document.getElementById('btn-create').addEventListener('click', async (e) => {
+  const body = {
+    name: document.getElementById('name').value.trim(),
+    owner_email: document.getElementById('owner_email').value.trim(),
+    custom_domain: document.getElementById('custom_domain').value.trim() || undefined,
+    nexus_fee: Number(document.getElementById('nexus_fee').value) || 5,
+    logo_url: document.getElementById('logo_url').value.trim() || undefined,
+    theme_color: document.getElementById('theme_color').value.trim() || undefined,
+  };
+  if (!body.name || !body.owner_email) { NEXUS.showError('output', 'Preencha nome e email.'); return; }
+  NEXUS.showSpinner(e.target);
+  try {
+    const data = await NEXUS.apiCall('POST', '/api/franchise/create', body);
+    NEXUS.showOutput('output', data, 'success');
+  } catch (err) {
+    NEXUS.showError('output', err.message);
+  } finally {
+    NEXUS.hideSpinner(e.target);
+  }
+});
+</script>
+</body>
+</html>
