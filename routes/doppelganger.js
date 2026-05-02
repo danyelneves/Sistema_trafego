@@ -9,7 +9,7 @@ const { generateWithOmniRouter } = require('../utils/omni-router');
 // ----------------------------------------------------------------
 router.post('/chat', async (req, res) => {
     try {
-        const { incoming_message } = req.body;
+        const incoming_message = req.body?.incoming_message || req.body?.message || '';
         const workspace_id = req.user ? req.user.workspace_id : 1;
 
         const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [workspace_id]);
