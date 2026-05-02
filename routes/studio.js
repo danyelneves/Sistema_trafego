@@ -16,7 +16,7 @@ router.post('/audio', requireAuth, async (req, res) => {
         const getSetting = (k) => settings.find(s => s.key === k)?.value;
         
         const ELEVEN_API_KEY = getSetting('elevenlabs.apiKey') || process.env.ELEVENLABS_API_KEY;
-        const VOICE_ID = getSetting('elevenlabs.voiceId') || process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJcg'; // Fallback
+        const VOICE_ID = getSetting('elevenlabs.voiceId') || process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Sarah (validada)
         
         if (!ELEVEN_API_KEY) {
             return res.status(400).json({error: "ElevenLabs API Key não configurada no workspace."});
@@ -47,8 +47,15 @@ router.post('/audio', requireAuth, async (req, res) => {
 
         res.json({ ok: true, audio_base64: audioDataUri });
     } catch(e) {
-        console.error("[STUDIO ERROR] Falha no ElevenLabs:", e.message);
-        res.status(500).json({ error: e.message });
+        let detail = e.message;
+        if (e.response?.data) {
+            try {
+                const buf = Buffer.isBuffer(e.response.data) ? e.response.data : Buffer.from(e.response.data);
+                detail = buf.toString('utf8');
+            } catch { /* mantém e.message */ }
+        }
+        console.error("[STUDIO ERROR] Falha no ElevenLabs:", detail);
+        res.status(500).json({ error: detail });
     }
 });
 
