@@ -33,6 +33,34 @@
   </div>
 
   <section class="s">
+    <div class="section-head">
+      <span class="section-title">Persona do clone</span>
+      <span style="color:var(--muted); font-size:11px;">As respostas do Doppelgänger seguem essa persona. Deixe vazio pra usar o padrão Nexus.</span>
+    </div>
+    <div class="card">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+        <div>
+          <label style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Nome do clone</label>
+          <input class="field-input" id="persona-name" placeholder="Ex.: Carlos da Acme" style="width:100%; background:var(--bg-3); border:1px solid var(--border-2); border-radius:6px; padding:10px 12px; color:var(--text); outline:none; margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Bio curta</label>
+          <input class="field-input" id="persona-bio" placeholder="Ex.: Sócio da Acme, 10 anos de mercado" style="width:100%; background:var(--bg-3); border:1px solid var(--border-2); border-radius:6px; padding:10px 12px; color:var(--text); outline:none; margin-top:4px;">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Traços (tom, gírias, estilo)</label>
+        <textarea class="field-input" id="persona-traits" rows="4" placeholder="Tom direto, mensagens curtas, gírias usadas, padrão de pontuação..." style="width:100%; background:var(--bg-3); border:1px solid var(--border-2); border-radius:6px; padding:10px 12px; color:var(--text); outline:none; margin-top:4px; font-family:inherit;"></textarea>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:12px;">
+        <button class="btn btn-primary" id="btn-save-persona">Salvar persona</button>
+        <button class="btn" id="btn-reset-persona" style="background:var(--bg-3); color:var(--text); border:1px solid var(--border-2);">Resetar para o padrão</button>
+        <span id="persona-status" style="color:var(--muted); font-size:12px;"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="s">
     <div class="section-head"><span class="section-title">Chat de teste</span></div>
     <div class="card">
       <div class="chat" id="chat"></div>
@@ -90,6 +118,55 @@ async function send() {
 }
 document.getElementById('btn-send').addEventListener('click', send);
 document.getElementById('msg').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+
+const personaName   = document.getElementById('persona-name');
+const personaBio    = document.getElementById('persona-bio');
+const personaTraits = document.getElementById('persona-traits');
+const personaStatus = document.getElementById('persona-status');
+
+async function loadPersona() {
+  try {
+    const data = await NEXUS.apiCall('GET', '/api/doppelganger/persona');
+    personaName.value   = data.persona?.name   || '';
+    personaBio.value    = data.persona?.bio    || '';
+    personaTraits.value = data.persona?.traits || '';
+    personaName.placeholder   = 'Padrão: ' + (data.defaults?.name   || '');
+    personaBio.placeholder    = 'Padrão: ' + (data.defaults?.bio    || '');
+    personaTraits.placeholder = 'Padrão:\n' + (data.defaults?.traits || '');
+  } catch (err) {
+    personaStatus.textContent = 'Não foi possível carregar a persona: ' + err.message;
+    personaStatus.style.color = 'var(--down)';
+  }
+}
+
+async function savePersona() {
+  personaStatus.textContent = 'Salvando...';
+  personaStatus.style.color = 'var(--muted)';
+  try {
+    await NEXUS.apiCall('PUT', '/api/doppelganger/persona', {
+      name:   personaName.value,
+      bio:    personaBio.value,
+      traits: personaTraits.value,
+    });
+    personaStatus.textContent = '✓ Persona salva';
+    personaStatus.style.color = 'var(--up)';
+    setTimeout(() => { personaStatus.textContent = ''; }, 3000);
+  } catch (err) {
+    personaStatus.textContent = 'Erro: ' + err.message;
+    personaStatus.style.color = 'var(--down)';
+  }
+}
+
+async function resetPersona() {
+  personaName.value = '';
+  personaBio.value = '';
+  personaTraits.value = '';
+  await savePersona();
+}
+
+document.getElementById('btn-save-persona').addEventListener('click', savePersona);
+document.getElementById('btn-reset-persona').addEventListener('click', resetPersona);
+loadPersona();
 </script>
 </body>
 </html>
