@@ -6,7 +6,7 @@ require('dotenv').config();
 const db = require('./index');
 
 async function main() {
-  console.log('--- RESET Maranet Dashboard (PostgreSQL) ---');
+  console.log('--- RESET Nexus OS (PostgreSQL) ---');
   const tables = ['alert_log', 'alert_configs', 'notes', 'goals', 'metrics_daily', 'campaigns'];
 
   const tx = db.transaction(async (client) => {

@@ -12,11 +12,11 @@ export function exportPDF() {
   // prepara título temporário da aba para que o arquivo PDF saia com nome decente
   const orig = document.title;
   const period = document.querySelector('[data-print-period]')?.textContent?.trim() || '';
-  document.title = `Maranet Central de Trafego ${period}`.replace(/\s+/g,'-');
+  document.title = `Nexus OS Trafego ${period}`.replace(/\s+/g,'-');
   setTimeout(() => { window.print(); document.title = orig; }, 50);
 }
 
-export function exportCSV(rows, filename = 'maranet-detalhamento.csv') {
+export function exportCSV(rows, filename = 'nexus-detalhamento.csv') {
   if (!rows || !rows.length) return;
   const cols = Object.keys(rows[0]);
   const esc = v => {
@@ -46,7 +46,7 @@ export async function exportBackupJSON(api) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `maranet-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `nexus-backup-${new Date().toISOString().slice(0,10)}.json`;
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
   return { counts: { campaigns: campaigns.length, goals: goals.length, notes: notes.length, daily: daily.length } };

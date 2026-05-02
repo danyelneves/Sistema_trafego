@@ -1,6 +1,6 @@
 async function openIntegrationsModal() {
     try {
-        const token = localStorage.getItem('maranet_token');
+        const token = localStorage.getItem('nx_token');
         const res = await fetch('/api/settings', { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            const token = localStorage.getItem('maranet_token');
+            const token = localStorage.getItem('nx_token');
             const res = await fetch('/api/settings', {
                 method: 'PUT',
                 headers: { 

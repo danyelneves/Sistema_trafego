@@ -8,7 +8,7 @@ async function forceSentinel() {
     btn.disabled = true;
 
     try {
-        const token = localStorage.getItem('maranet_token');
+        const token = localStorage.getItem('nx_token');
         if (!token) {
             alert('Você precisa estar logado para forçar o Sentinel.');
             return;

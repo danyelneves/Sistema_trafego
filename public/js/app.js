@@ -135,7 +135,7 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   
   window.loadForgeList = async function() {
     try {
-        const token = localStorage.getItem('maranet_token') || '';
+        const token = localStorage.getItem('nx_token') || '';
         const res = await fetch('/api/forge/list', { headers: { 'Authorization': 'Bearer ' + token }});
         const data = await res.json();
         const tbody = document.querySelector('#forge-list-table tbody');
@@ -164,7 +164,7 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
         btnCreateForge.disabled = true;
 
         try {
-            const token = localStorage.getItem('maranet_token') || '';
+            const token = localStorage.getItem('nx_token') || '';
             const res = await fetch('/api/forge/generate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -213,7 +213,7 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   // ---- Exportações ----
   $('#btn-report-magic')?.addEventListener('click', window.generateMagicReport);
   const btnExportCSV = $('#btn-export-csv');
-  if (btnExportCSV) btnExportCSV.addEventListener('click', () => exportCSV(state.lastTable, `maranet-${periodLabel(true)}.csv`));
+  if (btnExportCSV) btnExportCSV.addEventListener('click', () => exportCSV(state.lastTable, `nexus-${periodLabel(true)}.csv`));
   const btnExportJSON = $('#btn-export-json');
   if (btnExportJSON) btnExportJSON.addEventListener('click', async () => {
     try { const r = await exportBackupJSON(api); toast(`Backup gerado (${r.counts.daily} linhas)`); }
@@ -592,7 +592,7 @@ window.simulateSwarm = function() {
         { agent: 'NEXUS Studio', color: '#a855f7', text: 'Copy recebida. Acionando API HeyGen. Renderizando Avatar VSL para o público corporativo...' },
         { agent: 'NEXUS Forge', color: '#3b82f6', text: 'Forjando Landing Page mutante para NeuroBoost. Deploy na Vercel executado com sucesso.' },
         { agent: 'Fechador NLP', color: '#f59e0b', text: 'O cliente João acaba de perguntar o preço no WhatsApp da Clínica. Ativando Doppelgänger...' },
-        { agent: 'Doppelgänger', color: '#00ffff', text: 'Processando contexto histórico do Daniel... Gerada resposta com gírias corporativas. Injetando tag [GERAR_PIX] silenciosamente.' },
+        { agent: 'Doppelgänger', color: '#00ffff', text: 'Carregando persona configurada do workspace... Resposta gerada no tom da marca. Injetando tag [GERAR_PIX] silenciosamente.' },
         { agent: 'Ghost Checkout', color: '#00ff00', text: 'Pagamento PIX de R$ 97,00 interceptado com sucesso via Mercado Pago.' },
         { agent: 'Poltergeist', color: '#ff00ff', text: 'Pedido confirmado. Disparando Payload ZPL para impressora térmica física na cozinha. Nenhuma interação humana foi exigida.' },
         { agent: 'Poltergeist', color: '#ff00ff', text: 'Chamando motorista do Uber Flash via API. O entregador Carlos (ABC-1234) chega em 2 minutos.' },

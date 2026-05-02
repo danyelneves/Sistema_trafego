@@ -1,5 +1,5 @@
 /* ============================================================
-   Maranet · Central de Tráfego — estilo global
+   Nexus OS — estilo global
    ============================================================ */
 
 :root, [data-theme="dark-glass"] {
@@ -512,7 +512,7 @@ body.viewer-mode .drill-btn { display: none !important; }
   
   /* Rodapé do relatório impresso */
   body::after {
-    content: "Maranet Central de Tráfego • Relatório gerado automaticamente";
+    content: "Nexus OS • Relatório gerado automaticamente";
     display: block; position: fixed; bottom: 0; left: 0; width: 100%;
     text-align: center; font-size: 9px; color: #9CA3AF; padding: 10px 0;
     border-top: 1px solid #E5E7EB;

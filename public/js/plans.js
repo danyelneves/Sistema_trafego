@@ -1,6 +1,6 @@
 async function loadMyPlan() {
     try {
-        const token = localStorage.getItem('maranet_token');
+        const token = localStorage.getItem('nx_token');
         const res = await fetch('/api/billing/me', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     upgradeBtns.forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const planName = e.target.getAttribute('data-plan');
-            const token = localStorage.getItem('maranet_token');
+            const token = localStorage.getItem('nx_token');
             
             if(confirm(`Deseja migrar para o plano ${planName}? Isso gerará uma assinatura recorrente no cartão.`)) {
                 try {

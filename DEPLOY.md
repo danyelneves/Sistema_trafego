@@ -1,4 +1,4 @@
-# Deploy: Supabase + Vercel — Maranet Central de Tráfego
+# Deploy: Supabase + Vercel — Nexus OS
 
 > **Status do código:** ✅ 100% migrado para PostgreSQL/Vercel  
 > **Próximo passo:** Configurar Supabase e fazer deploy na Vercel
@@ -43,7 +43,7 @@ npm run db:migrate
 ```bash
 npm run seed
 
-# Cria usuário admin/maranet2026 e 20 meses de dados de demonstração
+# Cria usuário admin/nexus2026 e 20 meses de dados de demonstração
 ```
 
 ---
@@ -62,7 +62,7 @@ CRON_SECRET=<gere com: openssl rand -hex 16>
 # SMTP (Gmail) para alertas de e-mail
 SMTP_USER=seu@gmail.com
 SMTP_PASS=xxxx xxxx xxxx xxxx
-SMTP_FROM=Maranet Tráfego <seu@gmail.com>
+SMTP_FROM=Nexus OS <seu@gmail.com>
 
 # Google Ads (opcional)
 GOOGLE_ADS_DEVELOPER_TOKEN=
@@ -80,7 +80,7 @@ META_AD_ACCOUNT_ID=act_
 ```bash
 npm start
 # Abra: http://localhost:3000
-# Login: admin / maranet2026
+# Login: admin / nexus2026
 ```
 
 ---
@@ -140,7 +140,7 @@ curl https://[seu-projeto].vercel.app/api/health
 # Teste de login via API
 curl -X POST https://[seu-projeto].vercel.app/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"maranet2026"}'
+  -d '{"username":"admin","password":"nexus2026"}'
 # Esperado: {"ok":true,"user":{...}}
 ```
 

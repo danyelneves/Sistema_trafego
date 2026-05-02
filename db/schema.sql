@@ -1,5 +1,5 @@
 -- ============================================================
--- Maranet · Central de Tráfego — Schema PostgreSQL (Supabase)
+-- Nexus OS — Schema PostgreSQL (Supabase)
 -- ============================================================
 -- Execute via: psql $DATABASE_URL -f db/schema.sql
 -- Ou pelo painel SQL do Supabase (copie e cole).
@@ -193,9 +193,9 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 
 INSERT INTO settings(key, value) VALUES
-  ('brand.name',    'Maranet Telecom'),
-  ('brand.tagline', 'Central de Tráfego'),
-  ('theme.primary', '#00ADA7')
+  ('brand.name',    'Nexus'),
+  ('brand.tagline', 'Sistema operacional de IA para vendas'),
+  ('theme.primary', '#0099ff')
 ON CONFLICT (key) DO NOTHING;
 
 -- --------------------------------------------------------

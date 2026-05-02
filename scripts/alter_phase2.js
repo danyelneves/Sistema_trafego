@@ -25,10 +25,10 @@ async function migrate() {
       );
     `);
     
-    // 2. Inserir workspace padrão (Maranet Telecom) se não existir
+    // 2. Inserir workspace padrão (workspace padrão) se não existir
     const wsRes = await client.query(`
       INSERT INTO workspaces (name, slug) 
-      VALUES ('Maranet Telecom', 'maranet-telecom')
+      VALUES ('Nexus', 'nexus')
       ON CONFLICT (slug) DO NOTHING
       RETURNING id;
     `);
@@ -37,7 +37,7 @@ async function migrate() {
     if (wsRes.rows.length > 0) {
       defaultWsId = wsRes.rows[0].id;
     } else {
-      const existing = await client.query(`SELECT id FROM workspaces WHERE slug = 'maranet-telecom'`);
+      const existing = await client.query(`SELECT id FROM workspaces WHERE slug = 'nexus'`);
       if (existing.rows.length > 0) defaultWsId = existing.rows[0].id;
     }
     

@@ -145,9 +145,12 @@ router.post('/whatsapp/:token', checkWaRateLimit, async (req, res) => {
     const MP_TOKEN = getSetting('mercadopago.accessToken');
     const USE_DOPPELGANGER = getSetting('toggle.doppelganger') === 'true';
 
-    let basePersonality = "Você é um Closer (Fechador de Vendas) da empresa NEXUS. Sua missão: Responder o cliente, quebrar objeções usando persuasão.";
+    let basePersonality = "Você é um Closer (Fechador de Vendas) da empresa Nexus. Sua missão: responder o cliente e quebrar objeções usando persuasão.";
     if (USE_DOPPELGANGER) {
-        basePersonality = "Atue EXATAMENTE como Daniel Neves, CEO da agência NEXUS. Você é direto, usa gírias como 'Mano', 'Sacada genial', 'Bora pra cima'. Tem pressa, resolve o problema, e quer fechar o negócio rápido. Cometa erros sutis de pontuação para parecer muito humano no WhatsApp.";
+        const personaName   = getSetting('doppelganger.persona_name')   || 'o(a) CEO da empresa';
+        const personaBio    = getSetting('doppelganger.persona_bio')    || 'Vendedor consultivo, foco em fechar com naturalidade.';
+        const personaTraits = getSetting('doppelganger.persona_traits') || 'Tom direto, mensagens curtas de WhatsApp, soa humano e não robô.';
+        basePersonality = `Atue EXATAMENTE como ${personaName}. Bio: ${personaBio}. Traços: ${personaTraits}`;
     }
 
     const prompt = `${basePersonality}\nCliente falou: "${incomingText}"\nREGRA DE GHOST CHECKOUT: Se o cliente falar que quer comprar, fechar, ou perguntar como pagar, e você perceber que ele está pronto, adicione EXATAMENTE a tag [GERAR_PIX] no final da sua resposta. O sistema irá interceptar essa tag e enviar a cobrança direto no WhatsApp dele. Responda de forma natural, curta e agressiva em vendas. Não pareça um robô.`;

@@ -1,6 +1,6 @@
 # NEXUS OS — Runbook Operacional
 
-Guia para você (Daniel) ou qualquer pessoa que precise debugar, operar
+Guia para qualquer pessoa que precise debugar, operar
 ou recuperar o sistema. Não é documentação de código — é manual de bombeiro.
 
 ---
@@ -10,7 +10,7 @@ ou recuperar o sistema. Não é documentação de código — é manual de bombe
 ### O site está fora do ar / retornando 500
 
 1. **Veja Vercel Runtime Logs** primeiro:
-   https://vercel.com/maranet/nexus-os/logs
+   https://vercel.com/<team>/nexus-os/logs
 
 2. **Roda os health checks granulares** (vão te dizer onde está o gargalo):
    ```bash
@@ -140,7 +140,7 @@ Todos os logs em produção saem como JSON em uma linha. Filtros úteis:
 ### Rollback de produção
 
 A Vercel mantém histórico de todos os deploys:
-1. https://vercel.com/maranet/nexus-os/deployments
+1. https://vercel.com/<team>/nexus-os/deployments
 2. Acha o último deploy que estava funcionando
 3. ⋯ → Promote to Production
 
@@ -206,7 +206,7 @@ Recomendado = sem ele você não vê erros automaticamente.
 
 ## 📞 Contato em incidente fora do horário
 
-- Daniel Neves (CEO/Tech): suporte@nexusagencia.app (substitua pelo seu canal)
+- Suporte Nexus: suporte@nexusagencia.app (substitua pelo seu canal)
 - Vercel Status: https://www.vercel-status.com/
 - Supabase Status: https://status.supabase.com/
 - Mercado Pago Status: https://status.mercadopago.com/

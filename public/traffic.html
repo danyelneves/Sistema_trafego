@@ -9,17 +9,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
   (function() {
-    const savedTheme = localStorage.getItem('maranet_theme') || 'dark-glass';
+    const savedTheme = localStorage.getItem('nx_theme') || 'dark-glass';
     document.documentElement.setAttribute('data-theme', savedTheme);
   })();
   document.addEventListener('DOMContentLoaded', () => {
     const themeSelect = document.getElementById('theme-select');
     if (themeSelect) {
-      themeSelect.value = localStorage.getItem('maranet_theme') || 'dark-glass';
+      themeSelect.value = localStorage.getItem('nx_theme') || 'dark-glass';
       themeSelect.addEventListener('change', (e) => {
         const theme = e.target.value;
         document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('maranet_theme', theme);
+        localStorage.setItem('nx_theme', theme);
       });
     }
   });
@@ -794,7 +794,7 @@
       <p style="font-size:12px; color:var(--muted); margin-bottom:5px;">Dispare este evento apenas quando uma compra for confirmada.</p>
       <textarea id="pixel-code-conversion" readonly style="height: 60px; font-family: monospace; font-size: 12px; background: #111; color: #4ecb71;">
 <script>
-  maranet('track', 'purchase', { value: 97.00 });
+  nexus('track', 'purchase', { value: 97.00 });
 </script>
       </textarea>
       <button class="btn teal" id="pixel-copy-conversion" style="margin-top: 10px;">Copiar Código de Conversão</button>
@@ -1127,7 +1127,7 @@
     
     <div class="form-group" style="margin-top:20px;">
       <label>URL da API (Ex: Evolution API, Z-API)</label>
-      <input type="text" id="wa-api-url" placeholder="https://sua-api.com/message/sendText/Maranet">
+      <input type="text" id="wa-api-url" placeholder="https://sua-api.com/message/sendText/Nexus">
     </div>
     <div class="form-group">
       <label>Token da API (Bearer / Apikey)</label>

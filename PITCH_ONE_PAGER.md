@@ -100,10 +100,10 @@ ARR potencial: R$ 35M
 
 ## 👤 Founder
 
-**Daniel Neves** · CEO & CTO · NVia Holding
+**Time Nexus** · CEO & CTO
 - Construiu o sistema sozinho em ~3 meses
 - 14.500 linhas de código, 16 módulos, 5 modelos de receita
-- Ex-empreendedor em telecom (Maranet)
+- Time fundador com background em telecom e tráfego pago
 - Autodidata em IA + arquitetura de sistemas
 
 ---

@@ -9,7 +9,7 @@ const bcrypt = require('bcryptjs');
 const db = require('./index');
 
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'maranet2026';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'nexus2026';
 
 // ------------------------------------------------------------
 // Usuário admin
@@ -22,7 +22,7 @@ async function ensureAdmin() {
   await db.run(
     `INSERT INTO users (username, password_hash, display_name, role)
      VALUES ($1, $2, $3, 'admin')`,
-    ADMIN_USER, hash, 'Administrador Maranet'
+    ADMIN_USER, hash, 'Administrador Nexus'
   );
   console.log(`✓ criado usuário ${ADMIN_USER} / ${ADMIN_PASS}`);
 }
@@ -195,7 +195,7 @@ async function ensureNotes() {
     );
     await client.run(
       `INSERT INTO notes (year, month, day, channel, text, tag) VALUES ($1,$2,$3,$4,$5,$6)`,
-      2026, 4, null, 'all', 'Campanha de aniversário 10 anos Maranet — orçamento +25% no mês.', 'evento'
+      2026, 4, null, 'all', 'Campanha sazonal Nexus — orçamento +25% no mês.', 'evento'
     );
   });
   await tx();
@@ -204,7 +204,7 @@ async function ensureNotes() {
 
 // ------------------------------------------------------------
 async function main() {
-  console.log('--- SEED Maranet Dashboard (PostgreSQL) ---');
+  console.log('--- SEED Nexus OS (PostgreSQL) ---');
   await ensureAdmin();
   await ensureCampaigns();
   await ensureMetrics();
