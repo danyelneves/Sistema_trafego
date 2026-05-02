@@ -59,8 +59,8 @@ robôs de IA. A plataforma combina:
 Requer **Node.js 22+** e acesso ao Postgres do Supabase.
 
 ```bash
-git clone <repo>
-cd sistrafego
+git clone https://github.com/danyelneves/nexus-os.git
+cd nexus-os
 cp .env.example .env        # configure as env vars (ver tabela abaixo)
 npm install
 npm run db:migrate          # roda migrations
@@ -111,7 +111,7 @@ Tudo configurado em `.env.example`. Em produção, só configurar via Vercel UI.
 ## Estrutura de pastas
 
 ```
-sistrafego/
+nexus-os/
 ├── server.js                  # Express entrypoint, monta todas as 41 rotas
 ├── db/
 │   ├── index.js              # Pool Postgres + helpers (get/all/run/transaction)
