@@ -1,1679 +1,562 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<!doctype html>
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXUS OS</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/styles.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script>
-  (function() {
-    const savedTheme = localStorage.getItem('maranet_theme') || 'dark-glass';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  })();
-  document.addEventListener('DOMContentLoaded', () => {
-    const themeSelect = document.getElementById('theme-select');
-    if (themeSelect) {
-      themeSelect.value = localStorage.getItem('maranet_theme') || 'dark-glass';
-      themeSelect.addEventListener('change', (e) => {
-        const theme = e.target.value;
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('maranet_theme', theme);
-      });
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NEXUS OS · Command Center</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#0a0a0a; --bg-2:#141414; --bg-3:#1c1c1c; --bg-4:#262626;
+      --text:#e8e8e8; --muted:#888; --dim:#555;
+      --accent:#39ff14; --warn:#ffb000; --down:#ff3838; --info:#00bfff; --idle:#444;
+      --border:#222; --border-2:#333;
     }
-  });
-</script>
+    body{
+      background:var(--bg); color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+      min-height:100vh;
+      display:grid; grid-template-columns:240px 1fr;
+    }
 
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#000000">
-  <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Black_triangle.svg/512px-Black_triangle.svg.png">
+    /* ─── Sidebar ────────────────────────────────────────── */
+    aside{
+      background:var(--bg-2);
+      border-right:1px solid var(--border);
+      padding:24px 0;
+      position:sticky; top:0; height:100vh; overflow-y:auto;
+    }
+    .brand{
+      padding:0 20px 20px; border-bottom:1px solid var(--border); margin-bottom:16px;
+    }
+    .brand h1{
+      font-size:18px; font-weight:900; letter-spacing:-.5px;
+      font-family:'JetBrains Mono','Courier New',monospace;
+    }
+    .brand h1 span{color:var(--accent)}
+    .brand .v{font-size:10px; color:var(--dim); margin-top:2px; letter-spacing:1px;}
 
+    .nav-section{margin-bottom:20px;}
+    .nav-label{
+      padding:0 20px 8px; font-size:10px; color:var(--dim);
+      letter-spacing:1.5px; text-transform:uppercase;
+      font-family:'JetBrains Mono',monospace;
+    }
+    .nav-item{
+      display:flex; align-items:center; gap:10px;
+      padding:8px 20px; color:var(--muted); cursor:pointer;
+      text-decoration:none; font-size:13px;
+      border-left:3px solid transparent;
+      transition:all .15s;
+    }
+    .nav-item:hover{background:var(--bg-3); color:var(--text)}
+    .nav-item.active{
+      background:var(--bg-3); color:var(--accent);
+      border-left-color:var(--accent);
+    }
+    .nav-icon{width:18px; text-align:center; font-size:14px;}
+
+    /* ─── Main ────────────────────────────────────────────── */
+    main{padding:24px 32px; max-width:1400px;}
+
+    header{
+      display:flex; justify-content:space-between; align-items:flex-start;
+      margin-bottom:32px;
+    }
+    .greeting h2{
+      font-size:24px; font-weight:700; margin-bottom:4px;
+    }
+    .greeting p{color:var(--muted); font-size:13px;}
+    .header-right{
+      display:flex; gap:8px; align-items:center;
+      font-size:12px; color:var(--muted);
+      font-family:'JetBrains Mono',monospace;
+    }
+    .btn{
+      background:transparent; color:var(--muted);
+      border:1px solid var(--border); padding:6px 12px;
+      border-radius:4px; cursor:pointer; font-size:11px;
+      letter-spacing:.5px; text-decoration:none;
+      transition:all .15s;
+      font-family:inherit;
+    }
+    .btn:hover{color:var(--text); border-color:var(--accent)}
+
+    /* ─── Hero metrics ──────────────────────────────────── */
+    .metrics-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+      gap:16px;
+      margin-bottom:32px;
+    }
+    .metric-card{
+      background:var(--bg-2);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:20px;
+      transition:transform .15s;
+    }
+    .metric-card:hover{transform:translateY(-2px)}
+    .metric-label{
+      font-size:11px; color:var(--muted);
+      letter-spacing:1.5px; text-transform:uppercase;
+      font-family:'JetBrains Mono',monospace;
+      margin-bottom:8px;
+    }
+    .metric-value{
+      font-size:32px; font-weight:800;
+      font-family:'JetBrains Mono',monospace;
+      line-height:1;
+    }
+    .metric-change{
+      margin-top:8px; font-size:12px;
+      font-family:'JetBrains Mono',monospace;
+    }
+    .metric-change.up{color:var(--accent)}
+    .metric-change.down{color:var(--down)}
+    .metric-change.flat{color:var(--muted)}
+    .metric-sub{
+      margin-top:6px; font-size:11px; color:var(--dim);
+    }
+
+    /* ─── Section ───────────────────────────────────────── */
+    section{margin-bottom:32px;}
+    .section-head{
+      display:flex; justify-content:space-between; align-items:baseline;
+      margin-bottom:14px;
+    }
+    .section-title{
+      font-size:11px; color:var(--muted); letter-spacing:1.5px;
+      text-transform:uppercase; font-family:'JetBrains Mono',monospace;
+    }
+    .section-action{
+      font-size:11px; color:var(--accent); text-decoration:none;
+      font-family:'JetBrains Mono',monospace;
+    }
+    .section-action:hover{text-decoration:underline}
+
+    /* ─── Agentes IA ────────────────────────────────────── */
+    .agents-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+      gap:12px;
+    }
+    .agent-card{
+      background:var(--bg-2); border:1px solid var(--border);
+      border-radius:8px; padding:14px 16px;
+      display:flex; align-items:center; gap:12px;
+      cursor:pointer; transition:all .15s;
+      text-decoration:none; color:inherit;
+    }
+    .agent-card:hover{border-color:var(--border-2); transform:translateY(-1px)}
+    .agent-card.active{border-left:3px solid var(--accent)}
+    .agent-card.inactive{opacity:.5}
+    .agent-icon{
+      font-size:24px;
+      width:40px; height:40px;
+      display:flex; align-items:center; justify-content:center;
+      background:var(--bg-3); border-radius:6px;
+    }
+    .agent-info{flex:1; min-width:0;}
+    .agent-name{font-weight:700; font-size:14px;}
+    .agent-status{
+      font-size:11px; color:var(--muted);
+      font-family:'JetBrains Mono',monospace; margin-top:2px;
+    }
+    .agent-count{
+      font-size:20px; font-weight:800;
+      font-family:'JetBrains Mono',monospace;
+      color:var(--accent);
+      flex-shrink:0;
+    }
+    .agent-card.inactive .agent-count{color:var(--muted)}
+
+    /* ─── Pending Actions (notificações) ─────────────────── */
+    .actions-list{
+      background:var(--bg-2); border:1px solid var(--border);
+      border-radius:8px; overflow:hidden;
+    }
+    .action-item{
+      display:flex; align-items:center; gap:12px;
+      padding:14px 16px;
+      border-bottom:1px solid var(--border);
+    }
+    .action-item:last-child{border-bottom:none}
+    .action-icon{
+      width:36px; height:36px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:18px; background:var(--bg-3); border-radius:6px;
+    }
+    .action-text{flex:1; min-width:0;}
+    .action-title{font-size:13px; font-weight:600;}
+    .action-subtitle{font-size:11px; color:var(--muted); margin-top:2px;}
+    .action-btn{
+      padding:5px 10px; font-size:11px; border-radius:4px;
+      background:var(--bg-3); color:var(--accent);
+      text-decoration:none; font-weight:700;
+      letter-spacing:.5px;
+      font-family:'JetBrains Mono',monospace;
+      border:1px solid transparent; transition:all .15s;
+    }
+    .action-btn:hover{border-color:var(--accent)}
+    .action-item.severity-critical .action-icon{background:rgba(255,56,56,.15)}
+    .action-item.severity-warn .action-icon{background:rgba(255,176,0,.15)}
+
+    .empty-state{
+      padding:30px; text-align:center; color:var(--muted); font-size:13px;
+    }
+    .empty-state .em-icon{font-size:32px; margin-bottom:8px; opacity:.5;}
+
+    /* ─── Activity timeline ──────────────────────────────── */
+    .activity{
+      background:var(--bg-2); border:1px solid var(--border);
+      border-radius:8px; padding:8px 0;
+    }
+    .activity-item{
+      display:flex; align-items:flex-start; gap:12px;
+      padding:8px 16px;
+      font-size:12px;
+    }
+    .activity-time{
+      color:var(--dim); font-family:'JetBrains Mono',monospace;
+      font-size:10px; width:60px; flex-shrink:0;
+      padding-top:2px;
+    }
+    .activity-icon{flex-shrink:0; font-size:14px; width:20px; text-align:center;}
+    .activity-content{flex:1; min-width:0;}
+    .activity-title{color:var(--text); font-weight:500;}
+    .activity-detail{color:var(--muted); font-size:11px; margin-top:1px;}
+
+    /* ─── Modules grid ───────────────────────────────────── */
+    .modules-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));
+      gap:10px;
+    }
+    .module-card{
+      background:var(--bg-2); border:1px solid var(--border);
+      border-radius:6px; padding:14px 10px;
+      text-align:center; text-decoration:none; color:var(--text);
+      transition:all .15s;
+    }
+    .module-card:hover{
+      border-color:var(--accent); transform:translateY(-1px);
+    }
+    .module-card .em{font-size:22px; margin-bottom:6px;}
+    .module-card .nm{font-size:11px; color:var(--muted); font-weight:600;}
+
+    .skeleton{opacity:.4; animation:pulse 1.5s infinite;}
+    @keyframes pulse{50%{opacity:.7}}
+
+    /* ─── Mobile ─────────────────────────────────────────── */
+    @media (max-width:900px){
+      body{grid-template-columns:1fr}
+      aside{
+        position:relative; height:auto; width:100%;
+        border-right:none; border-bottom:1px solid var(--border);
+        padding:12px 0;
+      }
+      .brand{padding:0 16px 12px}
+      .brand h1{font-size:16px}
+      .nav-section{margin-bottom:8px;}
+      .nav-item{padding:8px 16px; font-size:14px;}
+      main{padding:16px;}
+      .metrics-grid{grid-template-columns:repeat(2, 1fr); gap:8px;}
+      .metric-card{padding:14px;}
+      .metric-value{font-size:24px;}
+      header{flex-direction:column; gap:12px; align-items:flex-start;}
+    }
+  </style>
 </head>
 <body>
-
-<div class="wrapper">
-
-  <!-- =================== HEADER =================== -->
-  <header class="app-header fade-in">
-    <div class="header-left">
-      <div class="badge">NEXUS OS</div>
-      <h1>Central de <span>Tráfego</span></h1>
-      <div class="subtitle" id="period-label"><span class="pulse"></span>Carregando…</div>
-    </div>
-    <div class="header-right">
-      <div class="user-chip" id="sync-time" title="Tempo desde a última atualização dos dados">Sync: <b>--</b></div>
-      <button class="btn teal" id="btn-refresh" title="Atualizar dados em tempo real">↻ Atualizar</button>
-      <select id="theme-select" style="margin-right:10px; background: transparent; color: var(--text); border: 1px solid var(--border); padding: 5px 10px; border-radius: var(--border-radius-btn);" title="Trocar Tema">
-        <option value="dark-glass">Premium Dark (Vidro)</option>
-        <option value="light">Light Mode (Clean)</option>
-        <option value="brutalist">Brutalista (Acid Green)</option>
-        <option value="cyberpunk">Cyberpunk (Red/Neon)</option>
-        <option value="ocean">Deep Ocean (Cyan)</option>
-        <option value="monochrome">Monochrome (P&B)</option>
-      </select>
-      <div style="display:flex; align-items:center;">
-        <select id="workspace-select" style="display:none; margin-right:5px; background: transparent; color: var(--text); border: 1px solid var(--border); padding: 5px 10px; border-radius: var(--border-radius-btn);" title="Trocar de Cliente (Workspace)"></select>
-        <button class="btn" id="btn-new-workspace" style="display:none; padding: 5px 8px; margin-right: 5px; min-height:unset; line-height:1;" title="Novo Cliente (Workspace)">+</button>
-        <button class="btn" id="btn-utm" style="padding: 5px 8px; margin-right: 5px; min-height:unset; line-height:1;" title="Gerador de UTM">🔗</button>
-        <button class="btn" id="btn-pixel" style="padding: 5px 8px; margin-right: 5px; min-height:unset; line-height:1;" title="Instalar Pixel (Tracking)">🎯</button>
-        <button class="btn" id="btn-leads" style="padding: 5px 8px; margin-right: 5px; min-height:unset; line-height:1;" title="CRM / Rastreador de Leads">🕵️‍♂️</button>
-        <button class="btn" id="btn-automations" style="display:none; padding: 5px 8px; margin-right: 5px; min-height:unset; line-height:1;" title="Automações (Stop-Loss)">⚡</button>
-        <button class="btn" id="btn-branding" style="display:none; padding: 5px 8px; margin-right: 10px; min-height:unset; line-height:1;" title="Personalizar White-Label (Cor/Logo)">🎨</button>
-      </div>
-      <div class="user-chip" id="user-chip"><b>●</b> …</div>
-      <a href="/services" class="btn" id="btn-services" title="Painel de status dos serviços externos" style="text-decoration:none;">⚙ Services</a>
-      <button class="btn" id="btn-present" title="Modo apresentação">▶</button>
-      <button class="btn" id="btn-logout" title="Sair">Sair</button>
-    </div>
-  </header>
-
-  <!-- =================== FILTER BAR =================== -->
-  <div class="filter-bar fade-in">
-    <div class="filter-group" id="period-group">
-      <button class="btn active" data-mode="year">Ano todo</button>
-      <button class="btn"        data-mode="s1">1º SEM</button>
-      <button class="btn"        data-mode="s2">2º SEM</button>
-      <button class="btn"        data-mode="month">Mês</button>
-    </div>
-
-    <div class="row">
-      <select id="month-select" title="Mês específico">
-        <option value="">— mês —</option>
-        <option value="1">Janeiro</option><option value="2">Fevereiro</option>
-        <option value="3">Março</option><option value="4">Abril</option>
-        <option value="5">Maio</option><option value="6">Junho</option>
-        <option value="7">Julho</option><option value="8">Agosto</option>
-        <option value="9">Setembro</option><option value="10">Outubro</option>
-        <option value="11">Novembro</option><option value="12">Dezembro</option>
-      </select>
-      <select id="year-select" title="Ano">
-        <option>2024</option><option>2025</option><option selected>2026</option><option>2027</option>
-      </select>
-    </div>
-
-    <div></div>
-
-    <div class="row right filter-actions" style="margin-top: 10px;">
-      <button class="btn" id="btn-creatives" title="Raio-X de Criativos">🖼️ Raio-X</button>
-      <button class="btn" id="btn-kanban"    title="Esteira de Criativos">🗂️ Kanban</button>
-      <button class="btn" id="btn-wa"        title="Automação WhatsApp">📱 Whats</button>
-      <button class="btn" id="btn-billing"   title="Faturamento / SaaS">💳 Planos</button>
-      <button class="btn" id="btn-dre"       title="DRE / Lucro Real">💸 DRE</button>
-      <button class="btn" id="btn-notes"     title="Anotações">✎ Notas</button>
-      <button class="btn" id="btn-goals"     title="Metas">◎ Metas</button>
-      <button class="btn" id="btn-campaigns" title="Gerenciar campanhas">⚙ Campanhas</button>
-      <button class="btn" id="btn-users"     title="Usuários">👥 Usuários</button>
-      <button class="btn" id="btn-alerts"    title="Alertas por e-mail">🔔 Alertas</button>
-      <button class="btn" id="btn-viewer-link" title="Gerar link de acesso para Diretoria">🔗 Link Diretoria</button>
-      <button class="btn" id="btn-sync"      title="Sincronizar Google Ads / Meta">⚡ Sincronizar</button>
-      <button class="btn" id="btn-franchise" title="Gestor de Franquias" onclick="openFranchiseModal()" style="color:#ff0055; border-color:#ff0055;">🏢 Franquias</button>
-      <button class="btn pulse" id="btn-saas" title="Gestão SaaS" style="color:#ff00ff; border-color:#ff00ff; font-weight:bold;">💎 SaaS Admin</button>
-      <button class="btn pulse" id="btn-plan" title="Seu Plano" onclick="document.getElementById('modal-plans').style.display='flex'" style="color:#00ffa3; border-color:#00ffa3; font-weight:bold;">🚀 Meu Plano</button>
-      <button class="btn pulse" id="btn-skynet" title="Operação Skynet" onclick="openSkynetModal()" style="color:#ff0000; border-color:#ff0000; font-weight:bold;">🤖 Skynet</button>
-      <button class="btn pulse" id="btn-forge" title="NEXUS Forge (Criação de LPs com IA)" onclick="document.getElementById('modal-forge').style.display='flex'; if(window.loadForgeList) window.loadForgeList();" style="color:#a855f7; border-color:#a855f7; font-weight:bold;">🧬 Forge</button>
-      <button class="btn pulse" id="btn-studio" title="NEXUS Studio (Clonagem de Vídeo VSL)" onclick="document.getElementById('modal-studio').style.display='flex';" style="color:#d946ef; border-color:#d946ef; font-weight:bold;">🎬 Studio</button>
-      <button class="btn pulse" id="btn-sentinel-force" title="Forçar Varredura Sentinel" onclick="forceSentinel()" style="color:#00ffa3; border-color:#00ffa3; font-weight:bold;">⚡ Sentinel</button>
-      <button class="btn pulse" id="btn-voice" title="Call Center Fantasma" onclick="document.getElementById('modal-call').style.display='flex';" style="color:#f59e0b; border-color:#f59e0b; font-weight:bold;">📞 Call Center</button>
-      <button class="btn pulse" id="btn-swarm" title="Enxame de Agentes IA (Terminal de Ações)" onclick="document.getElementById('modal-swarm').style.display='flex'; simulateSwarm();" style="color:#fff; border-color:#fff; font-weight:bold;">👾 Enxame</button>
-      <button class="btn" id="btn-integrations" title="Configurar Integrações e APIs" style="border-color:#3b82f6; color:#3b82f6;">🔌 Integrações</button>
-      <button class="btn primary" id="btn-report-magic" title="Gerar Link de Relatório com IA" style="background:var(--teal); color:#000;">
-        ✨ Gerar Relatório Mágico
-      </button>
-    </div>
-  </div>
-
-  <!-- =================== SOURCE TABS =================== -->
-  <div class="source-tabs fade-in">
-    <button class="tab active" data-source="all"><span class="dot"></span> Consolidado</button>
-    <button class="tab"        data-source="google"><span class="dot"></span> Google Ads</button>
-    <button class="tab"        data-source="meta"><span class="dot"></span> Meta Ads</button>
-  </div>
-
-  <!-- =================== AI CONSULTANT =================== -->
-  <div id="ai-insights-panel" class="fade-in" style="display: none; margin-bottom: 20px; background: rgba(0,255,163,0.05); border-left: 4px solid #00ffa3; border-radius: 8px; padding: 15px;">
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-      <i class="ph ph-robot" style="color: #00ffa3; font-size: 24px;"></i>
-      <h3 style="margin:0; font-size:16px; color:#e8f4f8;">NEXUS AI Consultant <span style="font-size:11px; padding:2px 6px; background:#00ffa3; color:#0c1d27; border-radius:4px; margin-left:8px; font-weight:bold;">BETA</span></h3>
-    </div>
-    <div id="ai-insights-content" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;"></div>
-  </div>
-
-  <!-- =================== PACING PANEL =================== -->
-  <div id="pacing-panel" class="fade-in"></div>
-
-  <!-- =================== HEALTH PANEL =================== -->
-  <div id="health-panel" class="fade-in"></div>
-
-  <!-- =================== KPIs =================== -->
-  <div class="kpi-grid fade-in" id="kpi-grid"></div>
-
-  <!-- =================== SOCIAL KPIs (META/IG) =================== -->
-  <div class="kpi-grid fade-in" id="social-grid" style="display:none; margin-top:20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;"></div>
-
-  <!-- =================== CHARTS =================== -->
-  <div class="charts-grid fade-in">
-    <div class="chart-card">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Impressões por Mês</div>
-          <div class="chart-subtitle" data-print-period id="period-print">ano</div>
-        </div>
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:var(--google)"></div>Google</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--meta)"></div>Meta</div>
-        </div>
-      </div>
-      <canvas id="chartImpressoes"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Distribuição de Verba</div>
-          <div class="chart-subtitle">Investimento por canal</div>
-        </div>
-      </div>
-      <canvas id="chartVerba"></canvas>
-    </div>
-  </div>
-
-  <div class="charts-row fade-in">
-    <div class="chart-card">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Funil de Vendas & Taxas de Queda</div>
-          <div class="chart-subtitle">Da impressão à venda concluída (CRM)</div>
-        </div>
-        <button class="btn" id="btn-export-pdf" title="Exportar Relatório em PDF">📥 Exportar Relatório PDF</button>
-      </div>
-      <div id="sales-funnel" class="funnel-container">
-        <!-- JS injeta os steps aqui -->
-      </div>
-    </div>
-  </div>
-
-  <div class="charts-row fade-in">
-    <div class="chart-card">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Evolução do Investimento</div>
-          <div class="chart-subtitle">Gasto mensal (R$)</div>
-        </div>
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:var(--google)"></div>Google</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--meta)"></div>Meta</div>
-        </div>
-      </div>
-      <canvas id="chartSpend"></canvas>
-    </div>
-  </div>
-
-  <div class="charts-row fade-in">
-    <div class="chart-card">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Cliques &amp; CTR</div>
-          <div class="chart-subtitle">Evolução mensal</div>
-        </div>
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>Cliques</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--laranja)"></div>CTR %</div>
-        </div>
-      </div>
-      <canvas id="chartCliques"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Conversões</div>
-          <div class="chart-subtitle">Leads mensais por canal</div>
-        </div>
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:#E8057E"></div>Google</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--meta)"></div>Meta</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#facc15;border-radius:0;width:14px;height:2px"></div>Meta</div>
-        </div>
-      </div>
-      <canvas id="chartConv"></canvas>
-    </div>
-  </div>
-
-  <div class="charts-row fade-in">
-    <div class="chart-card">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Custo por Lead (CPL)</div>
-          <div class="chart-subtitle">Evolução de custo mensal (R$)</div>
-        </div>
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:var(--google)"></div>Google</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--meta)"></div>Meta</div>
-        </div>
-      </div>
-      <canvas id="chartCpl"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Funil de Conversão</div>
-          <div class="chart-subtitle">Taxa de retenção (Total)</div>
-        </div>
-      </div>
-      <canvas id="chartFunnel"></canvas>
-    </div>
-  </div>
-
-  <div class="charts-row fade-in" id="row-chart-social">
-    <div class="chart-card" style="grid-column: 1 / -1;">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Engajamento Social</div>
-          <div class="chart-subtitle">Visualizações de Vídeo vs Stories (Meta Ads)</div>
-        </div>
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:#0866FF"></div>Reels/Vídeos</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#E8057E"></div>Stories</div>
-        </div>
-      </div>
-      <canvas id="chartSocial"></canvas>
-    </div>
-  </div>
-
-  <!-- =================== DADOS DEMOGRÁFICOS =================== -->
-  <div class="charts-row fade-in" id="row-demographics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-    <div class="table-card" style="margin-top:0">
-      <div class="table-header">
-        <div>
-          <div class="chart-title">Top Regiões / Cidades</div>
-          <div class="chart-subtitle">Onde o dinheiro rende mais</div>
-        </div>
-      </div>
-      <div style="padding: 15px 0;">
-        <canvas id="chartDemoRegion" height="220"></canvas>
-      </div>
-      <div style="overflow-x:auto; max-height: 250px; overflow-y: auto;">
-        <table>
-          <thead>
-            <tr><th>Região</th><th>Canal</th><th>Invest.</th><th>Leads</th><th>CPL</th></tr>
-          </thead>
-          <tbody id="demo-region-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="table-card" style="margin-top:0">
-      <div class="table-header">
-        <div>
-          <div class="chart-title">Demográfico (Idade/Gênero)</div>
-          <div class="chart-subtitle">Público de maior conversão</div>
-        </div>
-      </div>
-      <div style="padding: 15px 0;">
-        <canvas id="chartDemoAge" height="220"></canvas>
-      </div>
-      <div style="overflow-x:auto; max-height: 250px; overflow-y: auto;">
-        <table>
-          <thead>
-            <tr><th>Perfil</th><th>Canal</th><th>Invest.</th><th>Leads</th><th>CPL</th></tr>
-          </thead>
-          <tbody id="demo-age-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- =================== PLACEMENTS =================== -->
-  <div class="charts-row fade-in" id="row-placements" style="margin-top:20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-    <div class="table-card" style="margin-top:0">
-      <div class="table-header">
-        <div>
-          <div class="chart-title">Posicionamentos (Placements)</div>
-          <div class="chart-subtitle">Onde o público mais converte (Feed, Stories, Reels)</div>
-        </div>
-      </div>
-      <div style="padding: 15px 0;">
-        <canvas id="chartPlacements" height="250"></canvas>
-      </div>
-    </div>
-    <div class="table-card" style="margin-top:0">
-      <div class="table-header">
-        <div>
-          <div class="chart-title">Plataformas</div>
-          <div class="chart-subtitle">Instagram vs Facebook vs Audience Network</div>
-        </div>
-      </div>
-      <div style="padding: 15px 0; display:flex; justify-content:center;">
-        <canvas id="chartPlatforms" height="250" style="max-height: 250px;"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- =================== DADOS AD-LEVEL =================== -->
-  <div class="charts-row fade-in" id="row-ads" style="margin-top:20px;">
-    <div class="table-card" style="margin-top:0">
-      <div class="table-header">
-        <div>
-          <div class="chart-title">Galeria de Criativos / Anúncios</div>
-          <div class="chart-subtitle">Os ativos de mídia que estão trazendo mais conversões</div>
-        </div>
-      </div>
-      <div style="overflow-x:auto; max-height: 400px; overflow-y: auto;">
-        <table>
-          <thead>
-            <tr><th style="width:60px">Miniatura</th><th>Criativo (Ad)</th><th>Campanha</th><th>Canal</th><th>Invest.</th><th>Leads</th><th>Vendas (CRM)</th><th>CAC</th></tr>
-          </thead>
-          <tbody id="ads-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- =================== TABELA DETALHE =================== -->
-  <div class="table-card fade-in">
-    <div class="table-header">
-      <div>
-        <div class="chart-title">Detalhamento por Mês e Canal</div>
-        <div class="chart-subtitle">Todos os meses com dado · <span class="muted">• = há anotação</span></div>
-      </div>
-    </div>
-    <div style="overflow-x:auto">
-      <table>
-        <thead>
-          <tr>
-            <th>Mês</th><th>Canal</th><th>Impressões</th><th>Cliques</th><th>CTR</th>
-            <th>Leads</th><th>Vendas</th><th>Investimento</th><th>CPL</th><th>CAC</th><th>Desempenho</th>
-          </tr>
-        </thead>
-        <tbody id="detail-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- =================== TABELA CAMPANHAS =================== -->
-  <div class="table-card fade-in" id="campaign-table-container"></div>
-
-
-  <!-- =================== FOOTER =================== -->
-  <footer class="app-footer fade-in">
-    <div>Dashboard · <strong>NEXUS OS</strong></div>
-    <div id="last-update">—</div>
-  </footer>
-</div>
-
-<!-- =================================================================
-     MODAL · Entrada de Dados
-     ================================================================= -->
-<div class="modal-overlay" id="modal-entry">
-  <div class="modal">
-    <h2>Inserir Dados</h2>
-    <div class="modal-subtitle">Exportados do Looker Studio, Google Ads ou Meta Ads Manager.</div>
-
-    <div class="modal-tabs">
-      <button class="mt-btn active" data-mode="monthly">Por mês</button>
-      <button class="mt-btn"        data-mode="daily">Por dia</button>
-    </div>
-
-    <!-- Por mês (consolidado) -->
-    <div id="entry-monthly">
-      <div class="form-grid">
-        <div class="field">
-          <label>Ano</label>
-          <select id="entry-year">
-            <option>2024</option><option>2025</option><option selected>2026</option><option>2027</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Mês</label>
-          <select id="entry-month">
-            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
-            <option value="3">Março</option><option value="4">Abril</option>
-            <option value="5">Maio</option><option value="6">Junho</option>
-            <option value="7">Julho</option><option value="8">Agosto</option>
-            <option value="9">Setembro</option><option value="10">Outubro</option>
-            <option value="11">Novembro</option><option value="12">Dezembro</option>
-          </select>
-        </div>
-
-        <div class="form-section">Google Ads · campanha</div>
-        <div class="field full"><label>Campanha Google</label>
-          <select id="entry-g-campaign"></select>
-        </div>
-        <div class="field"><label>Impressões</label>   <input type="number" id="entry-g-imp"  placeholder="0"></div>
-        <div class="field"><label>Cliques</label>      <input type="number" id="entry-g-cli"  placeholder="0"></div>
-        <div class="field"><label>Conversões</label>   <input type="number" id="entry-g-conv" placeholder="0"></div>
-        <div class="field"><label>Investimento (R$)</label><input type="number" id="entry-g-inv" step="0.01" placeholder="0,00"></div>
-        <div class="field full"><label>Receita atribuída (R$, opcional)</label><input type="number" id="entry-g-rev" step="0.01" placeholder="0,00"></div>
-
-        <div class="form-section">Meta Ads · campanha</div>
-        <div class="field full"><label>Campanha Meta</label>
-          <select id="entry-m-campaign"></select>
-        </div>
-        <div class="field"><label>Impressões</label>   <input type="number" id="entry-m-imp"  placeholder="0"></div>
-        <div class="field"><label>Cliques</label>      <input type="number" id="entry-m-cli"  placeholder="0"></div>
-        <div class="field"><label>Leads / Conversões</label><input type="number" id="entry-m-conv" placeholder="0"></div>
-        <div class="field"><label>Investimento (R$)</label><input type="number" id="entry-m-inv" step="0.01" placeholder="0,00"></div>
-        <div class="field full"><label>Receita atribuída (R$, opcional)</label><input type="number" id="entry-m-rev" step="0.01" placeholder="0,00"></div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn" id="entry-close">Cancelar</button>
-        <button class="btn teal" id="entry-save-monthly">Salvar mês</button>
-      </div>
-    </div>
-
-    <!-- Por dia -->
-    <div id="entry-daily" class="hidden">
-      <div class="form-grid">
-        <div class="field full"><label>Data</label>
-          <input type="date" id="entry-daily-date">
-        </div>
-
-        <div class="form-section">Google Ads</div>
-        <div class="field"><label>Impressões</label>   <input type="number" id="entry-dg-imp"  placeholder="0"></div>
-        <div class="field"><label>Cliques</label>      <input type="number" id="entry-dg-cli"  placeholder="0"></div>
-        <div class="field"><label>Conversões</label>   <input type="number" id="entry-dg-conv" placeholder="0"></div>
-        <div class="field"><label>Investimento (R$)</label><input type="number" id="entry-dg-inv" step="0.01" placeholder="0,00"></div>
-
-        <div class="form-section">Meta Ads</div>
-        <div class="field"><label>Impressões</label>   <input type="number" id="entry-dm-imp"  placeholder="0"></div>
-        <div class="field"><label>Cliques</label>      <input type="number" id="entry-dm-cli"  placeholder="0"></div>
-        <div class="field"><label>Conversões</label>   <input type="number" id="entry-dm-conv" placeholder="0"></div>
-        <div class="field"><label>Investimento (R$)</label><input type="number" id="entry-dm-inv" step="0.01" placeholder="0,00"></div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn" id="entry-close-2" onclick="document.getElementById('modal-entry').classList.remove('open')">Cancelar</button>
-        <button class="btn teal" id="entry-save-daily">Salvar dia</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Campanhas ================================================================= -->
-<div class="modal-overlay" id="modal-campaigns">
-  <div class="modal">
-    <h2>Campanhas</h2>
-    <div class="modal-subtitle">Cadastre e gerencie as campanhas do Google Ads e Meta Ads.</div>
-    <div class="form-grid">
-      <div class="form-section">Nova campanha</div>
-      <div class="field">
-        <label>Canal</label>
-        <select id="camp-new-channel"><option value="google">Google Ads</option><option value="meta">Meta Ads</option></select>
-      </div>
-      <div class="field">
-        <label>Nome</label>
-        <input id="camp-new-name" placeholder="Ex: Fibra Residencial — Pesquisa">
-      </div>
-      <div class="field full"><label>Objetivo</label>
-        <input id="camp-new-obj" placeholder="Leads, Conversões, Tráfego…">
-      </div>
-    </div>
-    <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
-      <button class="btn teal" id="camp-create">+ Criar</button>
-    </div>
-    <div class="form-section" style="margin-top:24px">Campanhas cadastradas</div>
-    <table class="mini-table">
-      <thead><tr><th>Canal</th><th>Nome</th><th>Objetivo</th><th>Status</th><th></th></tr></thead>
-      <tbody id="camp-tbody"></tbody>
-    </table>
-    <div class="modal-actions"><button class="btn" id="camp-close">Fechar</button></div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Metas ================================================================= -->
-<div class="modal-overlay" id="modal-goals">
-  <div class="modal">
-    <h2>Metas</h2>
-    <div class="modal-subtitle">Defina alvos mensais. KPIs exibem semáforo automático com base nestas metas.</div>
-    <div class="form-grid">
-      <div class="form-section">Nova meta</div>
-      <div class="field"><label>Ano</label><select id="goal-new-year"><option>2025</option><option selected>2026</option><option>2027</option></select></div>
-      <div class="field"><label>Mês</label>
-        <select id="goal-new-month">
-          <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
-          <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
-          <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
-          <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
-        </select>
-      </div>
-      <div class="field"><label>Canal</label>
-        <select id="goal-new-channel"><option value="all">Total</option><option value="google">Google</option><option value="meta">Meta</option></select>
-      </div>
-      <div class="field"><label>Métrica</label>
-        <select id="goal-new-metric">
-          <option value="cpl">CPL</option><option value="conversions">Conversões</option>
-          <option value="spend">Investimento</option><option value="ctr">CTR</option>
-          <option value="roas">ROAS</option><option value="impressions">Impressões</option>
-          <option value="clicks">Cliques</option>
-        </select>
-      </div>
-      <div class="field"><label>Alvo</label><input type="number" step="0.01" id="goal-new-target" placeholder="Ex: 45"></div>
-      <div class="field"><label>Direção</label>
-        <select id="goal-new-direction">
-          <option value="min">Mínimo (alcançar)</option><option value="max">Máximo (não ultrapassar)</option>
-        </select>
-      </div>
-    </div>
-    <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
-      <button class="btn teal" id="goal-create">+ Salvar meta</button>
-    </div>
-    <div class="form-section" style="margin-top:24px">Metas cadastradas
-      <select id="goal-year" style="float:right;margin-top:-6px">
-        <option>2025</option><option selected>2026</option><option>2027</option>
-      </select>
-    </div>
-    <table class="mini-table">
-      <thead><tr><th>Período</th><th>Canal</th><th>Métrica</th><th>Alvo</th><th>Direção</th><th></th></tr></thead>
-      <tbody id="goal-tbody"></tbody>
-    </table>
-    <div class="modal-actions"><button class="btn" id="goal-close">Fechar</button></div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Notas ================================================================= -->
-<div class="modal-overlay" id="modal-notes">
-  <div class="modal">
-    <h2>Anotações</h2>
-    <div class="modal-subtitle">Observações de contexto: campanhas pausadas, eventos, sazonalidade.</div>
-    <div class="form-grid">
-      <div class="form-section">Nova anotação</div>
-      <div class="field"><label>Ano</label><select id="note-new-year"><option>2025</option><option selected>2026</option><option>2027</option></select></div>
-      <div class="field"><label>Mês</label>
-        <select id="note-new-month">
-          <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
-          <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
-          <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
-          <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
-        </select>
-      </div>
-      <div class="field"><label>Dia (opcional)</label><input type="number" min="1" max="31" id="note-new-day" placeholder="—"></div>
-      <div class="field"><label>Canal</label>
-        <select id="note-new-channel"><option value="all">Total</option><option value="google">Google</option><option value="meta">Meta</option></select>
-      </div>
-      <div class="field"><label>Tag</label><input id="note-new-tag" placeholder="ajuste / evento / campanha"></div>
-      <div class="field"></div>
-      <div class="field full"><label>Texto</label>
-        <textarea id="note-new-text" rows="2" placeholder="Ex: Campanha de aniversário iniciou dia 12."></textarea>
-      </div>
-    </div>
-    <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
-      <button class="btn teal" id="note-create">+ Salvar nota</button>
-    </div>
-    <div class="form-section" style="margin-top:24px">Anotações
-      <select id="note-filter-year" style="float:right;margin-top:-6px">
-        <option>2025</option><option selected>2026</option><option>2027</option>
-      </select>
-    </div>
-    <table class="mini-table">
-      <thead><tr><th>Data</th><th>Canal</th><th>Tag</th><th>Texto</th><th></th></tr></thead>
-      <tbody id="note-tbody"></tbody>
-    </table>
-    <div class="modal-actions"><button class="btn" id="note-close">Fechar</button></div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Usuários ================================================================= -->
-<div class="modal-overlay" id="modal-users">
-  <div class="modal">
-    <h2>Usuários</h2>
-    <div class="modal-subtitle">Gerencie acessos ao sistema. Role <strong>admin</strong> = acesso total. <strong>viewer</strong> = somente leitura.</div>
-    <div class="form-grid">
-      <div class="form-section">Novo usuário</div>
-      <div class="field"><label>Username</label><input id="user-new-username" placeholder="joao.silva"></div>
-      <div class="field"><label>Senha</label><input type="password" id="user-new-password" placeholder="mín. 6 caracteres"></div>
-      <div class="field"><label>Nome de exibição</label><input id="user-new-name" placeholder="João Silva"></div>
-      <div class="field"><label>Perfil</label>
-        <select id="user-new-role"><option value="viewer">Viewer</option><option value="admin">Admin</option></select>
-      </div>
-      <div class="field"><label>Cliente (Workspace)</label>
-        <select id="user-new-workspace"><option value="">-- Todos/Nenhum --</option></select>
-      </div>
-    </div>
-    <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
-      <button class="btn teal" id="user-create">+ Criar usuário</button>
-    </div>
-    <div class="form-section" style="margin-top:24px">Usuários cadastrados</div>
-    <table class="mini-table">
-      <thead><tr><th>Username</th><th>Nome</th><th>Perfil</th><th>Cliente (Workspace)</th><th>Nova senha</th><th></th></tr></thead>
-      <tbody id="user-tbody"></tbody>
-    </table>
-    <div class="modal-actions"><button class="btn" id="user-close">Fechar</button></div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Importação CSV ================================================================= -->
-<div class="modal-overlay" id="modal-import">
-  <div class="modal modal-wide">
-    <h2>Importar CSV</h2>
-    <div class="modal-subtitle">Cole o conteúdo do CSV abaixo. Separador: vírgula ou ponto-e-vírgula.</div>
-    <div class="form-section">Formato esperado</div>
-    <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4ecb71;background:rgba(0,173,167,0.05);border:1px solid rgba(0,173,167,0.15);border-radius:6px;padding:10px;margin-bottom:12px;overflow-x:auto;white-space:nowrap">
-      campaign_name,channel,date,impressions,clicks,conversions,spend,revenue
-    </div>
-    <div class="form-section">Dados</div>
-    <textarea id="import-csv" rows="10" style="font-family:'DM Mono',monospace;font-size:12px;width:100%;box-sizing:border-box" placeholder="campaign_name,channel,date,impressions,clicks,conversions,spend,revenue&#10;Fibra Residencial — Pesquisa,google,2026-04-15,15000,320,12,1800,0"></textarea>
-    <div id="import-result" style="margin-top:10px;font-size:13px;min-height:20px"></div>
-    <div class="modal-actions">
-      <button class="btn" id="import-close">Fechar</button>
-      <button class="btn" id="import-clear">Limpar</button>
-      <button class="btn teal" id="import-run">Importar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Sincronização ================================================================= -->
-<div class="modal-overlay" id="modal-sync">
-  <div class="modal">
-    <h2>Sincronizar Ads</h2>
-    <div class="modal-subtitle">Busca dados diretamente das APIs do Google Ads e Meta Ads para o período selecionado.</div>
-
-    <div class="form-section">Período de sincronização</div>
-    <div class="form-grid">
-      <div class="field"><label>De</label><input type="date" id="sync-from"></div>
-      <div class="field"><label>Até</label><input type="date" id="sync-to"></div>
-    </div>
-
-    <div class="form-section" style="margin-top:20px">Google Ads
-      <span id="sync-google-status" style="float:right;font-size:11px;font-weight:400"></span>
-    </div>
-    <div class="modal-actions" style="justify-content:flex-start;margin-top:8px">
-      <button class="btn teal" id="sync-google-run">⚡ Sincronizar Google</button>
-    </div>
-
-    <div class="form-section" style="margin-top:20px">Meta Ads
-      <span id="sync-meta-status" style="float:right;font-size:11px;font-weight:400"></span>
-    </div>
-    <div class="modal-actions" style="justify-content:flex-start;margin-top:8px">
-      <button class="btn" style="background:rgba(8,102,255,0.15);border-color:rgba(8,102,255,0.4);color:#4d90ff" id="sync-meta-run">⚡ Sincronizar Meta</button>
-    </div>
-
-    <div id="sync-result" style="margin-top:14px;font-size:13px;min-height:20px"></div>
-    <div class="modal-actions"><button class="btn" id="sync-close">Fechar</button></div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · White-Label (Branding) ================================================================= -->
-<div class="modal-overlay" id="modal-branding">
-  <div class="modal">
-    <h2>White-Label (Customização)</h2>
-    <div class="modal-subtitle">Personalize a identidade visual do cliente atual (Workspace)</div>
-    
-    <div class="form-group" style="margin-top:15px;">
-      <label>Nome do Workspace / Cliente</label>
-      <input type="text" id="branding-name" placeholder="Ex: NEXUS OS">
-    </div>
-
-    <div class="form-group">
-      <label>URL da Logo (PNG/SVG)</label>
-      <input type="text" id="branding-logo" placeholder="https://site.com/logo.png">
-    </div>
-
-    <div class="form-group">
-      <label>Cor Principal (Hexadecimal)</label>
-      <input type="color" id="branding-color" value="#00F0FF" style="width: 100%; height: 40px; cursor: pointer; background: transparent; border: 1px solid var(--border); border-radius: var(--border-radius-btn);">
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn" id="branding-close">Cancelar</button>
-      <button class="btn teal" id="branding-save">Salvar Personalização</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Gerador de UTM ================================================================= -->
-<div class="modal-overlay" id="modal-utm">
-  <div class="modal">
-    <h2>Gerador de UTMs</h2>
-    <div class="modal-subtitle">Crie links parametrizados infalíveis para suas campanhas</div>
-    
-    <div class="form-group" style="margin-top:15px;">
-      <label>URL do Site (obrigatório)</label>
-      <input type="url" id="utm-url" placeholder="https://seusite.com.br/oferta">
-    </div>
-
-    <div class="grid" style="grid-template-columns: 1fr 1fr; gap:10px;">
-      <div class="form-group">
-        <label>Origem (utm_source)</label>
-        <select id="utm-source">
-          <option value="facebook">Facebook Ads</option>
-          <option value="google">Google Ads</option>
-          <option value="instagram">Instagram</option>
-          <option value="tiktok">TikTok Ads</option>
-          <option value="email">Email Marketing</option>
-          <option value="whatsapp">WhatsApp</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Meio (utm_medium)</label>
-        <input type="text" id="utm-medium" placeholder="Ex: cpc, social, banner">
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>Nome da Campanha (utm_campaign)</label>
-      <input type="text" id="utm-campaign" placeholder="Ex: blackfriday_2026">
-    </div>
-    
-    <div class="grid" style="grid-template-columns: 1fr 1fr; gap:10px;">
-      <div class="form-group">
-        <label>Termo (utm_term)</label>
-        <input type="text" id="utm-term" placeholder="Ex: publico_lookalike">
-      </div>
-      <div class="form-group">
-        <label>Conteúdo (utm_content)</label>
-        <input type="text" id="utm-content" placeholder="Ex: video_01_verde">
-      </div>
-    </div>
-
-    <div class="form-group" style="margin-top:15px;">
-      <label>Link Gerado:</label>
-      <textarea id="utm-result" readonly style="height: 60px; background: var(--surface2);"></textarea>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn" id="utm-close">Fechar</button>
-      <button class="btn teal" id="utm-copy">Copiar Link</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Instalação do Pixel ================================================================= -->
-<div class="modal-overlay" id="modal-pixel">
-  <div class="modal modal-wide">
-    <h2>Instalação do Nexus Pixel 🎯</h2>
-    <div class="modal-subtitle">Cole este código na tag <code>&lt;head&gt;</code> de todas as páginas do seu site.</div>
-    
-    <div class="form-group" style="margin-top:15px;">
-      <label>1. Código de Acompanhamento (Server-Side Tracking)</label>
-      <textarea id="pixel-code-base" readonly style="height: 120px; font-family: monospace; font-size: 12px; background: #111; color: #4ecb71;"></textarea>
-      <button class="btn teal" id="pixel-copy-base" style="margin-top: 10px;">Copiar Código Base</button>
-    </div>
-
-    <div class="form-group" style="margin-top:20px; padding-top: 20px; border-top: 1px solid var(--border);">
-      <label>2. Código de Conversão (Opcional - Ex: Página de Obrigado)</label>
-      <p style="font-size:12px; color:var(--muted); margin-bottom:5px;">Dispare este evento apenas quando uma compra for confirmada.</p>
-      <textarea id="pixel-code-conversion" readonly style="height: 60px; font-family: monospace; font-size: 12px; background: #111; color: #4ecb71;">
-<script>
-  maranet('track', 'purchase', { value: 97.00 });
-</script>
-      </textarea>
-      <button class="btn teal" id="pixel-copy-conversion" style="margin-top: 10px;">Copiar Código de Conversão</button>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn" id="pixel-close">Fechar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · NEXUS SKYNET ================================================================= -->
-<div class="modal-overlay" id="modal-skynet">
-  <div class="modal modal-wide" style="max-width: 700px; border: 1px solid #ff0000; box-shadow: 0 0 50px rgba(255,0,0,0.2);">
-    <h2 style="color: #ff0000; text-transform:uppercase;">Operação Skynet 🤖🔥</h2>
-    <div class="modal-subtitle">O grau máximo de automação. A máquina caça, liga, vende e cobra as empresas sozinha. Você só recebe os recibos do Checkout.</div>
-    
-    <div class="form-group" style="margin-top:20px;">
-      <label style="color:#aaa;">Qual nicho a máquina deve caçar?</label>
-      <input type="text" id="skynet-niche" placeholder="Ex: Dentistas de Implante" style="width:100%; padding:10px; background:#111; color:#fff; border:1px solid #ff0000; margin-top:5px; margin-bottom:15px;">
-      
-      <label style="color:#aaa;">Qual cidade ou região?</label>
-      <input type="text" id="skynet-location" placeholder="Ex: São Paulo, Capital" style="width:100%; padding:10px; background:#111; color:#fff; border:1px solid #ff0000; margin-top:5px; margin-bottom:15px;">
+  <aside>
+    <div class="brand">
+      <h1>NEXUS<span>·</span>OS</h1>
+      <div class="v">COMMAND CENTER</div>
     </div>
 
-    <button class="btn-save pulse" id="btn-skynet-launch" onclick="launchSkynet()" style="width: 100%; background: #ff0000; color: #fff; margin-top:10px; font-weight:bold; font-size:18px;">INICIAR CAÇADA GLOBAL</button>
-    
-    <div id="skynet-result" style="margin-top:20px; text-align:left; background:#050505; padding:15px; border-radius:8px; border:1px solid #ff0000; display:none; font-family:monospace;"></div>
-
-    <div class="modal-actions" style="margin-top:20px;">
-      <button class="btn-cancel" onclick="document.getElementById('modal-skynet').style.display='none'">Abortar Missão</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · NEXUS FRANCHISE ================================================================= -->
-<div class="modal-overlay" id="modal-franchise">
-  <div class="modal modal-wide" style="max-width: 600px; border: 1px solid #ff0055;">
-    <h2 style="color: #ff0055;">Licenciamento NEXUS (SaaS) 🏢</h2>
-    <div class="modal-subtitle">Alugue o sistema para outras agências. Configure o nome deles e cobre um pedágio invisível.</div>
-    
-    <div class="form-group" style="margin-top:20px;">
-      <label style="color:#aaa;">Nome da Franquia (Ex: Agência XYZ)</label>
-      <input type="text" id="fran-name" placeholder="Agência XYZ" style="width:100%; padding:10px; background:#111; color:#fff; border:1px solid #333; margin-top:5px; margin-bottom:15px;">
-      
-      <label style="color:#aaa;">Email do Dono da Franquia</label>
-      <input type="email" id="fran-email" placeholder="dono@agenciaxyz.com" style="width:100%; padding:10px; background:#111; color:#fff; border:1px solid #333; margin-top:5px; margin-bottom:15px;">
-      
-      <label style="color:#aaa;">Seu Pedágio (% do Checkout NEXUS Black deles)</label>
-      <input type="number" id="fran-fee" value="5.0" style="width:100%; padding:10px; background:#111; color:#fff; border:1px solid #333; margin-top:5px; margin-bottom:15px;">
-    </div>
-
-    <button class="btn-save pulse" id="btn-fran-create" onclick="createFranchise()" style="width: 100%; background: #ff0055; color: #fff; margin-top:10px; font-weight:bold;">GERAR NOVA FRANQUIA</button>
-    <div id="fran-result" style="margin-top:20px; text-align:left; background:#111; padding:15px; border-radius:8px; border:1px solid #333; display:none;"></div>
-
-    <div class="modal-actions" style="margin-top:20px;">
-      <button class="btn-cancel" onclick="document.getElementById('modal-franchise').style.display='none'">Fechar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Automações (Stop-Loss) ================================================================= -->
-<div class="modal-overlay" id="modal-automations">
-  <div class="modal modal-wide">
-    <h2>Automações de Campanha (Stop-Loss) ⚡</h2>
-    <div class="modal-subtitle">Desative campanhas automaticamente quando atingirem métricas indesejadas.</div>
-    
-    <div class="table-container" style="margin-top:20px; max-height:250px;">
-      <table class="data-table" id="automations-table">
-        <thead>
-          <tr>
-            <th>Nome / Regra</th>
-            <th>Métrica</th>
-            <th>Condição</th>
-            <th>Ação</th>
-            <th>Status</th>
-            <th class="right">Opções</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div style="margin-top:20px; padding-top: 20px; border-top: 1px solid var(--border);">
-      <h3 style="font-size:14px; margin-bottom:15px; color:var(--teal);">Criar Nova Regra</h3>
-      <div class="grid" style="grid-template-columns: 2fr 1fr 1fr 1fr 2fr; gap:10px; align-items:end;">
-        <div class="form-group">
-          <label>Nome da Regra</label>
-          <input type="text" id="auto-name" placeholder="Ex: Stop-Loss Diário">
-        </div>
-        <div class="form-group">
-          <label>Métrica</label>
-          <select id="auto-metric">
-            <option value="spend">Gasto (R$)</option>
-            <option value="roas">ROAS</option>
-            <option value="cpl">Custo p/ Lead (R$)</option>
-            <option value="cpc">CPC (R$)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Condição</label>
-          <select id="auto-operator">
-            <option value=">">Maior que (>)</option>
-            <option value="<">Menor que (<)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Valor</label>
-          <input type="number" id="auto-value" step="0.01" placeholder="Ex: 50.00">
-        </div>
-        <div class="form-group">
-          <label>Ação</label>
-          <select id="auto-action">
-            <option value="pause_campaign">Pausar Campanha no Meta/Google</option>
-            <option value="notify_whatsapp">Apenas Notificar no WhatsApp</option>
-          </select>
-        </div>
-      </div>
-      <button class="btn teal" id="auto-add" style="margin-top: 15px; width: 100%;">Adicionar Regra</button>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn" id="automations-close">Fechar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · CRM / LEADS ================================================================= -->
-<div class="modal-overlay" id="modal-leads">
-  <div class="modal modal-wide">
-    <h2>CRM & Rastreador de Leads 🕵️‍♂️</h2>
-    <div class="modal-subtitle">Veja a origem exata (UTMs) de cada lead ou compra gerada nas suas landing pages.</div>
-    
-    <div class="table-container" style="margin-top:20px; max-height:400px; overflow-y:auto;">
-      <table class="data-table" id="leads-table">
-        <thead>
-          <tr>
-            <th>Data/Hora</th>
-            <th>Evento</th>
-            <th>Origem (Source/Medium)</th>
-            <th>Campanha</th>
-            <th>Termo / Conteúdo</th>
-            <th>URL Base</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn" id="leads-close">Fechar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · DRE / LUCRO REAL ================================================================= -->
-<div class="modal-overlay" id="modal-dre">
-  <div class="modal">
-    <h2>DRE Financeiro (Lucro Real) 💸</h2>
-    <div class="modal-subtitle">Configure suas taxas e margens para que o painel calcule o lucro líquido em vez da receita bruta.</div>
-    
-    <div class="form-group" style="margin-top:20px;">
-      <label>Custo Médio do Produto (CPA Aceitável) R$</label>
-      <input type="number" id="dre-product-cost" step="0.01" value="0">
-    </div>
-    <div class="form-group">
-      <label>Impostos (%)</label>
-      <input type="number" id="dre-tax-rate" step="0.01" value="0">
-    </div>
-    <div class="form-group">
-      <label>Taxa de Gateway (Kiwify/Hotmart) (%)</label>
-      <input type="number" id="dre-gateway-rate" step="0.01" value="0">
-    </div>
-    <div class="form-group">
-      <label>Fee da Agência (Mensal) R$</label>
-      <input type="number" id="dre-agency-fee" step="0.01" value="0">
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn" id="dre-close">Cancelar</button>
-      <button class="btn primary" id="dre-save">Salvar DRE</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · RAIO-X CRIATIVOS ================================================================= -->
-<div class="modal-overlay" id="modal-creatives">
-  <div class="modal modal-wide" style="max-width:900px;">
-    <h2>Raio-X de Criativos 🖼️</h2>
-    <div class="modal-subtitle">Descubra os melhores anúncios visuais do ecossistema.</div>
-    
-    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top:20px;">
-      <!-- Mock Creative 1 -->
-      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; overflow:hidden;">
-        <div style="height:150px; background:linear-gradient(45deg, var(--meta), #2a5298); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold;">Video_VSL_Final.mp4</div>
-        <div style="padding:15px;">
-          <div style="font-size:12px; color:var(--muted); margin-bottom:5px;">META ADS</div>
-          <div style="font-weight:bold; margin-bottom:10px;">ROAS: 4.5x</div>
-          <div style="font-size:12px;">Gasto: R$ 1.250,00</div>
-          <div style="font-size:12px;">CTR: 2.3%</div>
-        </div>
-      </div>
-      <!-- Mock Creative 2 -->
-      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; overflow:hidden;">
-        <div style="height:150px; background:linear-gradient(45deg, var(--google), #ea4335); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold;">Banner_Display_01.jpg</div>
-        <div style="padding:15px;">
-          <div style="font-size:12px; color:var(--muted); margin-bottom:5px;">GOOGLE ADS</div>
-          <div style="font-weight:bold; margin-bottom:10px;">ROAS: 2.1x</div>
-          <div style="font-size:12px;">Gasto: R$ 850,00</div>
-          <div style="font-size:12px;">CTR: 1.1%</div>
-        </div>
-      </div>
-      <!-- Mock Creative 3 -->
-      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; overflow:hidden; opacity:0.6;">
-        <div style="height:150px; background:#111; display:flex; align-items:center; justify-content:center; color:var(--muted); text-align:center; padding:10px;">
-          Sincronização de Imagens em Desenvolvimento...
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-actions" style="margin-top:20px;">
-      <button class="btn" id="creatives-close">Fechar Raio-X</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Ads Launcher Avançado ================================================================= -->
-<div class="modal-overlay" id="modal-launcher">
-  <div class="modal modal-wide" style="max-width: 700px;">
-    <h2>Lançador de Campanhas 🚀</h2>
-    <div class="modal-subtitle">NEXUS Smart Launcher. Crie, teste ou deixe a IA fazer tudo.</div>
-    
-    <div style="display:flex; gap:10px; margin-top:20px; border-bottom:1px solid #333; padding-bottom:10px;">
-      <button class="btn teal" id="tab-manual" onclick="setLauncherMode('manual')">Padrão</button>
-      <button class="btn-outline" id="tab-matrix" onclick="setLauncherMode('matrix')">Matrix A/B</button>
-      <button class="btn-outline" id="tab-ai" onclick="setLauncherMode('ai')" style="border-color:#ff007f; color:#ff007f;">Self-Driving AI</button>
-    </div>
-
-    <!-- STANDARD / MATRIX FIELDS -->
-    <div id="launcher-fields-standard" style="margin-top:20px;">
-      <div class="form-group">
-        <label>Nome da Campanha (Facebook)</label>
-        <input type="text" id="launcher-name" placeholder="Ex: [Lançamento NEXUS] - Conversão">
-      </div>
-      <div class="form-group">
-        <label>Orçamento Diário (R$)</label>
-        <input type="number" id="launcher-budget" placeholder="100.00">
-      </div>
-      <div class="form-group">
-        <label>Texto Principal (Copy) <span id="matrix-hint" style="display:none; color:#ff007f; font-size:11px;">[Separe múltiplas copys com barra vertical | ]</span></label>
-        <textarea id="launcher-copy" rows="5" placeholder="Escreva o texto do seu anúncio aqui..."></textarea>
-      </div>
-    </div>
-
-    <!-- AI FIELDS -->
-    <div id="launcher-fields-ai" style="margin-top:20px; display:none;">
-      <div class="form-group" style="background:#111; padding:15px; border:1px dashed #ff007f;">
-        <label style="color:#ff007f;">O que você quer vender? (Prompt para IA)</label>
-        <textarea id="launcher-prompt" rows="3" placeholder="Ex: Quero vender um ebook de emagrecimento para mulheres por R$ 97. Crie a campanha."></textarea>
-      </div>
-      <div class="form-group" style="margin-top:10px;">
-        <label>Orçamento Diário (R$)</label>
-        <input type="number" id="launcher-ai-budget" placeholder="100.00">
-      </div>
-    </div>
-
-    <div class="form-group" style="margin-top:15px;">
-      <label>URL de Destino (Site)</label>
-      <input type="text" id="launcher-link" placeholder="https://seu-site.com">
-    </div>
-
-    <input type="hidden" id="launcher-mode" value="manual">
-
-    <div style="margin-top: 25px;">
-      <button class="btn-save pulse" id="btn-launch" onclick="launchCampaign()" style="width: 100%; background: #ff007f; color: #fff; font-size:16px;">🚀 LANÇAR CAMPANHA</button>
-    </div>
-
-    <div id="launcher-status" style="margin-top: 15px; font-weight: bold; text-align: center; font-size: 14px;"></div>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeLauncherModal()">Fechar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · KANBAN CRIATIVOS ================================================================= -->
-<div class="modal-overlay" id="modal-kanban">
-  <div class="modal modal-wide" style="max-width:1000px;">
-    <h2>Esteira de Produção (Kanban) 🗂️</h2>
-    <div class="modal-subtitle">Organize a criação de novos vídeos e imagens com seu time de Copy e Design.</div>
-    
-    <div style="display:flex; justify-content:space-between; margin-top:20px;">
-      <button class="btn primary" id="btn-kanban-new">Novo Card +</button>
-    </div>
-
-    <div style="display:flex; gap:15px; margin-top:20px; overflow-x:auto; padding-bottom:10px;" id="kanban-board">
-      <!-- Coluna: Backlog -->
-      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; min-width:220px; flex:1; padding:10px;">
-        <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px; font-size:14px; text-transform:uppercase;">📝 Backlog (Ideias)</h3>
-        <div id="kanban-col-backlog" style="min-height:300px;"></div>
-      </div>
-      <!-- Coluna: Doing -->
-      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; min-width:220px; flex:1; padding:10px;">
-        <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px; font-size:14px; text-transform:uppercase;">⚙️ Em Produção (Design)</h3>
-        <div id="kanban-col-doing" style="min-height:300px;"></div>
-      </div>
-      <!-- Coluna: Review -->
-      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; min-width:220px; flex:1; padding:10px;">
-        <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px; font-size:14px; text-transform:uppercase;">🧐 Em Aprovação</h3>
-        <div id="kanban-col-review" style="min-height:300px;"></div>
-      </div>
-      <!-- Coluna: Done -->
-      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; min-width:220px; flex:1; padding:10px;">
-        <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px; font-size:14px; text-transform:uppercase;">✅ Finalizado (Subir Ads)</h3>
-        <div id="kanban-col-done" style="min-height:300px;"></div>
-      </div>
-    </div>
-
-    <div class="modal-actions" style="margin-top:20px;">
-      <button class="btn" id="kanban-close">Fechar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · WHATSAPP AUTOMATION ================================================================= -->
-<div class="modal-overlay" id="modal-wa">
-  <div class="modal">
-    <h2>Automação WhatsApp (Speed-to-Lead) 📱</h2>
-    <div class="modal-subtitle">Conecte sua API do WhatsApp para enviar mensagens automáticas quando uma conversão/lead cair no CRM.</div>
-    
-    <div class="form-group" style="margin-top:20px;">
-      <label>URL da API (Ex: Evolution API, Z-API)</label>
-      <input type="text" id="wa-api-url" placeholder="https://sua-api.com/message/sendText/Maranet">
-    </div>
-    <div class="form-group">
-      <label>Token da API (Bearer / Apikey)</label>
-      <input type="password" id="wa-api-token" placeholder="Global Apikey...">
-    </div>
-    <div class="form-group" style="display:flex; align-items:center; gap:10px;">
-      <input type="checkbox" id="wa-active" style="width:20px;height:20px;">
-      <label style="margin:0; font-weight:bold; color:var(--teal)">Ativar Automações de Disparo</label>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn" id="wa-close">Cancelar</button>
-      <button class="btn primary" id="wa-save">Salvar WhatsApp API</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · SAAS BILLING ================================================================= -->
-<div class="modal-overlay" id="modal-billing">
-  <div class="modal">
-    <h2>Faturamento e Planos (SaaS) 💳</h2>
-    <div class="modal-subtitle">Gerencie o seu plano no NEXUS OS.</div>
-    
-    <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:20px; margin-top:20px;">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <div style="font-size:12px; color:var(--muted); text-transform:uppercase;">Plano Atual</div>
-          <div style="font-size:24px; font-weight:800; color:var(--teal);" id="billing-plan-name">Pro (Agency)</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:12px; color:var(--muted); text-transform:uppercase;">Status</div>
-          <div style="font-weight:bold; color:var(--teal);" id="billing-status">🟢 Ativo</div>
-        </div>
-      </div>
-      <div style="margin-top:20px; font-size:12px;">
-        Próxima renovação: <b id="billing-period-end">15/05/2026</b>
-      </div>
-    </div>
-
-    <div style="margin-top:20px;">
-      <button class="btn primary" style="width:100%; padding:15px; background:linear-gradient(45deg, #635bff, #00d2ff); color:#fff; font-weight:bold;">
-        Acessar Portal do Cliente (Stripe)
-      </button>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn" id="billing-close">Fechar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Alertas ================================================================= -->
-<div class="modal-overlay" id="modal-alerts">
-  <div class="modal modal-wide">
-    <h2>Alertas por E-mail</h2>
-    <div class="modal-subtitle">Receba notificações automáticas quando um KPI ultrapassar o limiar definido.</div>
-    <div id="alerts-smtp-status" style="font-size:12px;margin-bottom:12px"></div>
-
-    <div class="form-section">Novo alerta</div>
-    <div class="form-grid">
-      <div class="field"><label>Métrica</label>
-        <select id="alerts-new-metric">
-          <option value="cpl">CPL</option><option value="conversions">Conversões</option>
-          <option value="spend">Investimento</option><option value="ctr">CTR</option>
-          <option value="roas">ROAS</option><option value="impressions">Impressões</option>
-          <option value="clicks">Cliques</option>
-        </select>
-      </div>
-      <div class="field"><label>Canal</label>
-        <select id="alerts-new-channel"><option value="all">Total</option><option value="google">Google</option><option value="meta">Meta</option></select>
-      </div>
-      <div class="field"><label>Direção</label>
-        <select id="alerts-new-direction"><option value="min">Abaixo do mínimo</option><option value="max">Acima do máximo</option></select>
-      </div>
-      <div class="field"><label>Limiar</label><input type="number" step="0.01" id="alerts-new-threshold" placeholder="Ex: 50"></div>
-      <div class="field"><label>Janela (Dias)</label><input type="number" id="alerts-new-window" placeholder="Vazio = Mês atual" title="Avaliar os últimos X dias em vez do mês inteiro"></div>
-      <div class="field full"><label>E-mail destinatário</label><input type="email" id="alerts-new-email" placeholder="gerente@empresa.com"></div>
-      <div class="field full"><label>Número WhatsApp</label><input type="text" id="alerts-new-whatsapp" placeholder="+5511999999999 (opcional)"></div>
-      <div class="field full"><label>Webhook (Slack / API)</label><input type="url" id="alerts-new-webhook" placeholder="https://..."></div>
-    </div>
-    <div class="modal-actions" style="justify-content:flex-start;margin-top:4px">
-      <button class="btn teal" id="alerts-create">+ Criar alerta</button>
-    </div>
-
-    <div class="form-section" style="margin-top:24px">Alertas cadastrados</div>
-    <table class="mini-table">
-      <thead><tr><th>Métrica</th><th>Canal</th><th>Limiar</th><th>E-mail</th><th>Status</th><th></th></tr></thead>
-      <tbody id="alerts-tbody"></tbody>
-    </table>
-
-    <div class="form-section" style="margin-top:24px">Histórico de Disparos (Últimos 30 dias)</div>
-    <div style="max-height: 200px; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px;">
-      <table class="mini-table" style="margin: 0; border: none;">
-        <thead><tr><th>Data</th><th>Métrica</th><th>Limiar</th><th>Valor Atingido</th></tr></thead>
-        <tbody id="alerts-log-tbody"></tbody>
-      </table>
-    </div>
-
-    <div class="form-section" style="margin-top:24px">Testar envio</div>
-    <div class="form-grid">
-      <div class="field full" style="flex-direction:row;gap:8px;align-items:flex-end">
-        <div style="flex:1"><label>E-mail de teste</label><input type="email" id="alerts-test-email" placeholder="seu@email.com"></div>
-        <button class="btn" id="alerts-test" style="margin-bottom:0;white-space:nowrap">Enviar teste</button>
-      </div>
-    </div>
-
-    <div class="modal-actions"><button class="btn" id="alerts-close">Fechar</button></div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Drill-down Campanha ================================================================= -->
-<div class="modal-overlay" id="modal-drill">
-  <div class="modal modal-xl">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
-      <h2 id="drill-title" style="margin:0">Campanha</h2>
-      <span id="drill-channel" class="drill-channel-badge"></span>
-    </div>
-    <div class="modal-subtitle">Série diária de métricas · clique em Fechar para voltar ao dashboard.</div>
-
-    <div id="drill-totals" style="margin-bottom:16px"></div>
-
-    <div style="position:relative;height:220px;margin-bottom:16px">
-      <canvas id="drill-chart"></canvas>
-    </div>
-
-    <div style="overflow-x:auto">
-      <table>
-        <thead>
-          <tr>
-            <th>Data</th><th>Impressões</th><th>Cliques</th><th>CTR</th>
-            <th>Conversões</th><th>Investimento</th><th>CPL</th><th>ROAS</th>
-          </tr>
-        </thead>
-        <tbody id="drill-tbody"></tbody>
-      </table>
-    </div>
-
-    <div class="modal-actions"><button class="btn" id="drill-close">Fechar</button></div>
-  </div>
-</div>
-
-<!-- ================================================================= MODAL · Integrações ================================================================= -->
-<div class="modal-overlay" id="modal-integrations">
-  <div class="modal">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-      <h2 style="margin:0;">🔌 Integrações de Motores e APIs</h2>
-      <button onclick="document.getElementById('modal-integrations').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
-    </div>
-    <div class="modal-subtitle">Configure suas chaves para habilitar funcionalidades exclusivas neste Workspace. (As chaves abaixo substituem o padrão do sistema).</div>
-    
-    <div class="form-section">Inteligência Artificial & Dados</div>
-    <div class="form-grid">
-      <div class="field full"><label>Gemini API Key (Mente da IA)</label><input type="password" id="int-gemini" placeholder="AIzaSy..."></div>
-      <div class="field full"><label>Anthropic API Key (Claude - Copywriter)</label><input type="password" id="int-anthropic" placeholder="sk-ant-..."></div>
-      <div class="field full"><label>OpenAI API Key (GPT-4o - Programador)</label><input type="password" id="int-openai" placeholder="sk-proj-..."></div>
-      <div class="field full"><label>Google Maps API Key (Radar Skynet)</label><input type="password" id="int-google" placeholder="AIzaSy..."></div>
-    </div>
-
-    <div class="form-section" style="margin-top:20px;">Meta Ads (Sentinel & Sincronização)</div>
-    <div class="form-grid">
-      <div class="field full"><label>Access Token de Usuário do Sistema</label><input type="password" id="int-meta-token" placeholder="EAAB..."></div>
-      <div class="field full"><label>Ad Account ID</label><input type="text" id="int-meta-adaccount" placeholder="act_123456789"></div>
-    </div>
-
-    <div class="form-section" style="color:#ff0000; font-weight:bold; margin-top:20px;">Protocolo Fênix (Contingência Anti-Ban)</div>
-    <div class="form-grid">
-      <div class="field full"><label>Meta Ad Account ID (Conta de Backup)</label><input type="text" id="int-meta-backup" placeholder="act_..."></div>
-    </div>
-
-    <div class="form-section" style="margin-top:20px;">Meios de Pagamento (Checkout Nativo)</div>
-    <div class="form-grid">
-      <div class="field full"><label>Stripe Secret Key (Cartão de Crédito)</label><input type="password" id="int-stripe" placeholder="sk_live_..."></div>
-      <div class="field full"><label>Mercado Pago Access Token (PIX)</label><input type="password" id="int-mp" placeholder="APP_USR-..."></div>
-    </div>
-
-    <div class="form-section" style="margin-top:20px;">NEXUS Studio (Clonagem de Voz e Avatar)</div>
-    <div class="form-grid">
-      <div class="field full"><label>ElevenLabs API Key (Voz)</label><input type="password" id="int-eleven" placeholder="sk_..."></div>
-      <div class="field full"><label>ElevenLabs Voice ID (ID da sua voz)</label><input type="text" id="int-voice-id" placeholder="Ex: pNInz6obpgDQGcFmaJcg"></div>
-      <div class="field full"><label>HeyGen API Key (Vídeo)</label><input type="password" id="int-heygen" placeholder="..."></div>
-    </div>
-
-    <div class="form-section" style="margin-top:20px;">Motores de Automação (Ativar/Desativar)</div>
-    <div class="form-grid">
-      <label style="display:flex; align-items:center; gap:10px;">
-        <input type="checkbox" id="toggle-forge"> Ativar Sentinel Forge V2 (Auto-Criação de Anúncios com Gemini)
-      </label>
-      <label style="display:flex; align-items:center; gap:10px;">
-        <input type="checkbox" id="toggle-oracle"> Ativar Skynet Oracle (Prospecção via Google Maps)
-      </label>
-      <label style="display:flex; align-items:center; gap:10px;">
-        <input type="checkbox" id="toggle-lazarus"> Ativar Protocolo Lázaro (Recuperação de Carrinho)
-      </label>
-      <label style="display:flex; align-items:center; gap:10px;">
-        <input type="checkbox" id="toggle-hive"> Ativar Hive Mind (Inteligência Coletiva entre Workspaces)
-      </label>
-      <label style="display:flex; align-items:center; gap:10px; color:#00ffff; font-weight:bold;">
-        <input type="checkbox" id="toggle-doppelganger"> Ativar Doppelgänger (Clonagem de Personalidade no Fechador)
-      </label>
-      <label style="display:flex; align-items:center; gap:10px; color:#ff00ff; font-weight:bold;">
-        <input type="checkbox" id="toggle-poltergeist"> Ativar Poltergeist (Controle de Impressora IoT e Logística)
-      </label>
-      <label style="display:flex; align-items:center; gap:10px; color:#ff0000; font-weight:bold;">
-        <input type="checkbox" id="toggle-corsario"> Ativar NEXUS Corsário (Roubo de Leads Instagram DM)
-      </label>
-    </div>
-
-    <div class="form-section" style="margin-top:20px;">Notificações e Alertas</div>
-    <div class="form-grid">
-      <div class="field full"><label>WhatsApp Admin (Receber alertas Sentinel)</label><input type="text" id="int-admin-phone" placeholder="5511999999999"></div>
-    </div>
-
-      <div style="display:flex; align-items:center; gap:10px;">
-        <input type="checkbox" id="toggle-hive" style="width:20px;height:20px;">
-        <label for="toggle-hive" style="margin:0;">Hive Mind (Sincronização Global)</label>
-      </div>
-    </div>
-
-    <div class="form-section" style="margin-top:20px; color:#ff9900;">🔥 Temperatura de Risco do Sentinel</div>
-    <div class="form-grid">
-        <div class="field full">
-            <label id="lbl-temp" style="margin-bottom:10px; display:block; font-weight:bold;">Nível: ⚖️ Morna (Equilibrada - Dá respiro à campanha)</label>
-            <input type="range" id="int-temp" min="1" max="3" value="2" style="width:100%; cursor:pointer;">
-            <div style="display:flex; justify-content:space-between; font-size:12px; color:#aaa; margin-top:5px;">
-                <span>🧊 Fria (Conservador)</span>
-                <span>⚖️ Morna (Equilíbrio)</span>
-                <span>🔥 Quente (Agressivo)</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-actions" style="margin-top:20px; justify-content: flex-end;">
-      <button class="btn" onclick="document.getElementById('modal-integrations').style.display='none'">Cancelar</button>
-      <button class="btn pulse" id="btn-save-integrations" style="color:#00ffa3; border-color:#00ffa3; font-weight:bold;">Salvar Integrações</button>
+    <div class="nav-section">
+      <div class="nav-label">Principal</div>
+      <a href="/" class="nav-item active"><span class="nav-icon">⌂</span>Dashboard</a>
+      <a href="/services" class="nav-item"><span class="nav-icon">⚙</span>Services</a>
     </div>
-  </div>
-</div>
-<!-- ================================================================= COPILOT UI ================================================================= -->
-<div id="copilot-fab" title="NEXUS Copilot">
-  <i class="ph ph-robot"></i>
-</div>
 
-<div id="copilot-panel">
-  <div class="copilot-header">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <i class="ph ph-robot" style="font-size:20px; color:var(--teal)"></i>
-      <strong>NEXUS Copilot</strong>
-    </div>
-    <button id="copilot-close" style="background:transparent; border:none; color:var(--text); cursor:pointer; font-size:20px;">&times;</button>
-  </div>
-  <div class="copilot-body" id="copilot-messages">
-    <div class="msg-bot">Olá! Sou o NEXUS Copilot. Como posso ajudar a analisar seus dados de tráfego hoje?</div>
-  </div>
-  <div class="copilot-input-area">
-    <input type="text" id="copilot-input" placeholder="Pergunte sobre seus dados...">
-    <button id="copilot-send"><i class="ph ph-paper-plane-right"></i></button>
-  </div>
-</div>
-
-  <!-- MODAL FORGE (Nova Página AI) -->
-  <div class="modal-overlay" id="modal-forge" style="display:none;">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>🧬 Forjar Landing Page</h2>
-        <button onclick="document.getElementById('modal-forge').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
-      </div>
-      <div class="modal-subtitle">A inteligência artificial do Gemini criará o HTML, Copywriting e Design de uma página de alta conversão para o seu nicho. O resultado é hospedado automaticamente no seu domínio.</div>
-      
-      <div class="form-section">Instruções para o Arquiteto IA</div>
-      <div class="form-grid">
-        <div class="field full">
-          <label>Nome do Projeto (Ex: Clínica de Implante Dr. Silva)</label>
-          <input type="text" id="forge-name" placeholder="Ex: Método Seca Rápido">
-        </div>
-        <div class="field full">
-          <label>Nicho e Detalhes da Oferta (Seja específico)</label>
-          <input type="text" id="forge-niche" placeholder="Ex: Emagrecimento para mulheres 30+. Promessa: Perder 5kg em 30 dias sem academia.">
-        </div>
-        <div class="field full">
-          <label>Slug da URL (O final do link)</label>
-          <input type="text" id="forge-slug" placeholder="ex: seca-rapido" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')">
-        </div>
-      </div>
-
-      <div class="modal-actions" style="margin-top:20px;">
-        <button class="btn" onclick="document.getElementById('modal-forge').style.display='none'">Cancelar</button>
-        <button class="btn pulse" id="btn-create-forge">Iniciar Forjamento (IA)</button>
-      </div>
-
-      <div class="form-section" style="margin-top:30px;">Suas Páginas Hospedadas</div>
-      <div style="max-height: 200px; overflow-y: auto;">
-        <table class="data-table" id="forge-list-table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Link (Clique para Copiar)</th>
-              <th>Visitas</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Preenchido via JS -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL SWARM (Agentes Conversando) -->
-  <div class="modal-overlay" id="modal-swarm" style="display:none;">
-    <div class="modal" style="width: 800px; background: #000; border: 1px solid #333;">
-      <div class="modal-header">
-        <h2 style="font-family: 'JetBrains Mono', monospace; color: #00ffa3;">👾 NEXUS Agentic Swarm</h2>
-        <button onclick="document.getElementById('modal-swarm').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
-      </div>
-      <div class="modal-subtitle" style="font-family: 'JetBrains Mono', monospace;">Monitoramento de comunicação em tempo real entre Módulos de I.A.</div>
-      
-      <div id="swarm-terminal" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #ccc; background: #050505; border: 1px solid #222; padding: 15px; height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
-        <!-- Terminal Logs -->
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL STUDIO (VSL HeyGen) -->
-  <div class="modal-overlay" id="modal-studio" style="display:none;">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>🎬 NEXUS Studio (VSL Mutante)</h2>
-        <button onclick="document.getElementById('modal-studio').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
-      </div>
-      <div class="modal-subtitle">O OmniRouter escreve o Copy e aciona a renderização de Vídeo Lip-Sync no HeyGen.</div>
-      <div class="form-grid">
-        <div class="field full">
-          <label>Nicho do Produto</label>
-          <input type="text" id="studio-niche" placeholder="Ex: Cursos de IA">
-        </div>
-        <div class="field full">
-          <label>Público Alvo Atual</label>
-          <input type="text" id="studio-target" placeholder="Ex: Advogados Tradicionais">
-        </div>
-      </div>
-      <div class="modal-actions" style="margin-top:20px;">
-        <button class="btn pulse" id="btn-create-vsl" style="border-color:#d946ef; color:#d946ef;">Renderizar Avatar VSL</button>
-      </div>
-      <div id="studio-result" style="margin-top: 15px; color: #00ffa3; font-weight:bold;"></div>
-    </div>
-  </div>
-
-  <!-- MODAL CALL CENTER (Telefonia IA) -->
-  <div class="modal-overlay" id="modal-call" style="display:none;">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>📞 Call Center Fantasma</h2>
-        <button onclick="document.getElementById('modal-call').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
-      </div>
-      <div class="modal-subtitle">O OmniRouter escreve o roteiro e o Twilio + ElevenLabs dispara a ligação VOIP pro lead.</div>
-      <div class="form-grid">
-        <div class="field full">
-          <label>Nome do Lead</label>
-          <input type="text" id="call-lead-name" placeholder="Ex: Roberto Carlos">
-        </div>
-        <div class="field full">
-          <label>Telefone do Lead</label>
-          <input type="text" id="call-lead-phone" placeholder="5511999999999">
-        </div>
-        <div class="field full">
-          <label>Contexto da Oferta</label>
-          <input type="text" id="call-context" placeholder="Página do Mentoria Premium">
-        </div>
-      </div>
-      <div class="modal-actions" style="margin-top:20px;">
-        <button class="btn pulse" id="btn-fire-call" style="border-color:#f59e0b; color:#f59e0b;">Disparar Ligação IA</button>
-      </div>
-      <div id="call-result" style="margin-top: 15px; color: #00ffa3; font-weight:bold;"></div>
-    </div>
-  </div>
-
-  <!-- ================================================================= MODAL · Gestão SaaS (Master) ================================================================= -->
-  <div class="modal-overlay" id="modal-saas" style="display:none; z-index: 9999;">
-    <div class="modal" style="max-width: 900px;">
-      <div class="modal-header">
-        <h2 style="color:#ff00ff;">💎 NEXUS Master (Faturamento SaaS)</h2>
-        <button onclick="document.getElementById('modal-saas').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
-      </div>
-      <div class="modal-subtitle">Controle de Franquias, Overage e Billing. Mark-up automático de 30% sobre o custo base da IA.</div>
-
-      <div class="kpi-grid" style="margin-top:20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
-        <div class="kpi-card" style="background:#111; border:1px solid #333; padding:15px;">
-          <div class="kpi-title" style="color:#888; font-size:12px; text-transform:uppercase;">Inquilinos (Franquias)</div>
-          <div class="kpi-value" id="saas-total-tenants" style="font-size:24px; font-weight:bold; color:#fff; margin-top:5px;">0</div>
-        </div>
-        <div class="kpi-card" style="background:#111; border:1px solid #ff3333; padding:15px;">
-          <div class="kpi-title" style="color:#888; font-size:12px; text-transform:uppercase;">Custo de API (Você Paga)</div>
-          <div class="kpi-value" id="saas-api-cost" style="font-size:24px; font-weight:bold; color:#ff3333; margin-top:5px;">R$ 0,00</div>
-        </div>
-        <div class="kpi-card" style="background:#111; border:1px solid #00ffff; padding:15px;">
-          <div class="kpi-title" style="color:#888; font-size:12px; text-transform:uppercase;">Faturamento (Você Recebe)</div>
-          <div class="kpi-value" id="saas-billed" style="font-size:24px; font-weight:bold; color:#00ffff; margin-top:5px;">R$ 0,00</div>
-        </div>
-        <div class="kpi-card" style="background:#111; border:1px solid #00ff00; padding:15px;">
-          <div class="kpi-title" style="color:#888; font-size:12px; text-transform:uppercase;">Lucro Líquido (Mark-up)</div>
-          <div class="kpi-value" id="saas-profit" style="font-size:24px; font-weight:bold; color:#00ff00; margin-top:5px;">R$ 0,00</div>
-        </div>
-      </div>
-
-      <div style="margin-top:30px; overflow-x:auto;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left;">
-          <thead>
-            <tr style="border-bottom: 1px solid #333;">
-              <th style="padding: 10px;">ID</th>
-              <th style="padding: 10px;">Workspace</th>
-              <th style="padding: 10px;">Plano</th>
-              <th style="padding: 10px;">Cota Limite</th>
-              <th style="padding: 10px;">Consumo Atual</th>
-              <th style="padding: 10px;">Status</th>
-            </tr>
-          </thead>
-          <tbody id="saas-tbody">
-            <!-- Renderizado via JS -->
-          </tbody>
-        </table>
-      </div>
-
-      <div class="modal-actions" style="margin-top:20px; display:flex; justify-content:flex-end;">
-        <button class="btn" onclick="document.getElementById('modal-saas').style.display='none'">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================================================================= MODAL · Planos do Usuário ================================================================= -->
-  <div class="modal-overlay" id="modal-plans" style="display:none; z-index: 9998;">
-    <div class="modal" style="max-width: 900px;">
-      <div class="modal-header">
-        <h2 style="color:#00ffa3;">🚀 Seu Plano e Consumo de IA</h2>
-        <button onclick="document.getElementById('modal-plans').style.display='none'" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
-      </div>
-      <div class="modal-subtitle">Monitore sua franquia de Inteligência Artificial e libere novos módulos do NEXUS.</div>
-
-      <div style="background:#111; border: 1px solid #333; padding: 20px; margin-top:20px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-          <strong style="color:#fff; font-size:18px;">Consumo de API (<span id="plan-current-name">TRIAL</span>)</strong>
-          <strong id="plan-usage-text" style="color:#00ffa3;">R$ 0.00 / R$ 5.00</strong>
-        </div>
-        <div style="width:100%; background:#222; height:20px; border-radius:10px; overflow:hidden;">
-          <div id="plan-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #00ffa3, #00ffff); transition: width 0.5s;"></div>
-        </div>
-        <p style="color:#888; font-size:12px; margin-top:10px;">Se o consumo bater 100%, os motores de Inteligência Artificial entram em pausa de segurança para não gerar custos não autorizados.</p>
-      </div>
-
-      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 30px;">
-        <!-- STARTER -->
-        <div style="border:1px solid #333; padding:20px; display:flex; flex-direction:column; background:#111;">
-          <h3 style="margin-top:0; color:#fff;">STARTER (Tráfego)</h3>
-          <h1 style="margin:10px 0; color:#fff;">R$ 97<span style="font-size:14px; color:#888;">/mês</span></h1>
-          <ul style="color:#aaa; font-size:14px; margin-bottom:20px; padding-left:20px; flex-grow:1;">
-            <li>Integração Meta e Mercado Pago</li>
-            <li>Dashboard Analytics</li>
-            <li>Sentinel de Tráfego</li>
-            <li style="text-decoration:line-through; color:#555;">Call Center e Voice AI</li>
-            <li style="text-decoration:line-through; color:#555;">NEXUS Studio VSL</li>
-          </ul>
-          <div style="color:#888; font-size:12px; margin-bottom:15px; text-align:center;">BYOK: Você usa suas chaves de API.</div>
-          <button class="btn btn-upgrade" data-plan="STARTER" style="width:100%; border-color:#fff; color:#fff;">Selecionar</button>
-        </div>
-
-        <!-- GROWTH -->
-        <div style="border:1px solid #00ffa3; padding:20px; display:flex; flex-direction:column; background:#111; box-shadow: 0 0 15px rgba(0,255,163,0.1);">
-          <h3 style="margin-top:0; color:#00ffa3;">GROWTH (Vendas)</h3>
-          <h1 style="margin:10px 0; color:#00ffa3;">R$ 297<span style="font-size:14px; color:#888;">/mês</span></h1>
-          <ul style="color:#aaa; font-size:14px; margin-bottom:20px; padding-left:20px; flex-grow:1;">
-            <li>Tudo do plano Starter</li>
-            <li>Ghost Checkout no WhatsApp</li>
-            <li>Protocolo Lázaro (Carrinhos)</li>
-            <li>R$ 50 de Franquia de IA Nossa</li>
-            <li style="text-decoration:line-through; color:#555;">NEXUS Studio VSL</li>
-          </ul>
-          <div style="color:#00ffa3; font-size:12px; margin-bottom:15px; text-align:center;">Inclui Franquia de Custo de Mágica IA</div>
-          <button class="btn btn-upgrade" data-plan="GROWTH" style="width:100%; background:#00ffa3; color:#111; font-weight:bold; border:none;">Atualizar</button>
-        </div>
-
-        <!-- ELITE -->
-        <div style="border:1px solid #d946ef; padding:20px; display:flex; flex-direction:column; background:#111; box-shadow: 0 0 15px rgba(217,70,239,0.1);">
-          <h3 style="margin-top:0; color:#d946ef;">ELITE (Ficção Científica)</h3>
-          <h1 style="margin:10px 0; color:#d946ef;">R$ 997<span style="font-size:14px; color:#888;">/mês</span></h1>
-          <ul style="color:#aaa; font-size:14px; margin-bottom:20px; padding-left:20px; flex-grow:1;">
-            <li>Tudo do plano Growth</li>
-            <li>Doppelgänger (Clone de Personalidade)</li>
-            <li>NEXUS Studio (VSL Mutante)</li>
-            <li>NEXUS Voice (Call Center Fantasma)</li>
-            <li>R$ 200 de Franquia de IA Nossa</li>
-          </ul>
-          <div style="color:#d946ef; font-size:12px; margin-bottom:15px; text-align:center;">Todas as Tecnologias Liberadas</div>
-          <button class="btn btn-upgrade" data-plan="ELITE" style="width:100%; border-color:#d946ef; color:#d946ef;">Tornar-se Elite</button>
-        </div>
-      </div>
+    <div class="nav-section">
+      <div class="nav-label">Tráfego & Vendas</div>
+      <a href="/traffic" class="nav-item"><span class="nav-icon">📊</span>Tráfego pago</a>
+      <a href="/sentinel" class="nav-item"><span class="nav-icon">🛡</span>Sentinel</a>
+      <a href="/launcher" class="nav-item"><span class="nav-icon">🚀</span>Launcher</a>
+      <a href="/lazarus" class="nav-item"><span class="nav-icon">🧟</span>Lázaro</a>
     </div>
-  </div>
 
-  <script src="/js/integrations.js"></script>
-  <script src="/js/plans.js"></script>
-  <script src="/js/saas.js"></script>
-  <script src="/js/app.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/api.js"></script>
-<script src="js/modals.js"></script>
-<script src="js/launcher.js"></script>
-<script src="js/market.js"></script>
-<script src="js/lazarus_pay.js"></script>
-<script src="js/checkout_orders.js"></script>
-<script src="js/final_boss.js"></script>
-<script src="js/forge.js"></script>
-<script src="js/god_mode.js"></script>
-<script src="js/franchise.js"></script>
-<script src="js/skynet.js"></script>
-<script src="js/sentinel.js"></script>
-<script src="js/integrations.js"></script>
-<script src="js/saas.js"></script>
-<script type="module" src="/js/app.js"></script>
+    <div class="nav-section">
+      <div class="nav-label">IA & Vendas</div>
+      <a href="/skynet" class="nav-item"><span class="nav-icon">🎯</span>Skynet</a>
+      <a href="/doppelganger" class="nav-item"><span class="nav-icon">🤖</span>Doppelgänger</a>
+      <a href="/forge" class="nav-item"><span class="nav-icon">🔮</span>Forge</a>
+      <a href="/studio" class="nav-item"><span class="nav-icon">🎙</span>Studio</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Receita</div>
+      <a href="/vending" class="nav-item"><span class="nav-icon">🏧</span>Vending</a>
+      <a href="/market" class="nav-item"><span class="nav-icon">💱</span>Market</a>
+      <a href="/franchise" class="nav-item"><span class="nav-icon">🏢</span>Franchise</a>
+      <a href="/billing/master" class="nav-item"><span class="nav-icon">💳</span>Billing</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Operacional</div>
+      <a href="/empire" class="nav-item"><span class="nav-icon">📋</span>Empire (Kanban)</a>
+      <a href="/poltergeist" class="nav-item"><span class="nav-icon">👻</span>Poltergeist</a>
+      <a href="/titan" class="nav-item"><span class="nav-icon">🧿</span>Titan</a>
+      <a href="/hive" class="nav-item"><span class="nav-icon">🐝</span>Hive</a>
+    </div>
+
+    <div class="nav-section" style="margin-top:auto;">
+      <div class="nav-label">Conta</div>
+      <a href="#" id="btn-logout" class="nav-item"><span class="nav-icon">↪</span>Sair</a>
+    </div>
+  </aside>
+
+  <main>
+    <header>
+      <div class="greeting">
+        <h2 id="greeting-text">Carregando…</h2>
+        <p id="greeting-sub">Bem-vindo ao centro de comando</p>
+      </div>
+      <div class="header-right">
+        <span id="last-update">--:--:--</span>
+        <button class="btn" onclick="loadAll()">⟳ Atualizar</button>
+      </div>
+    </header>
+
+    <!-- Hero metrics -->
+    <section>
+      <div class="section-head">
+        <span class="section-title">⚡ Hoje</span>
+        <a href="/traffic" class="section-action">Ver detalhes →</a>
+      </div>
+      <div class="metrics-grid" id="metrics-grid">
+        <div class="metric-card skeleton"><div class="metric-label">Receita</div><div class="metric-value">--</div></div>
+        <div class="metric-card skeleton"><div class="metric-label">Vendas</div><div class="metric-value">--</div></div>
+        <div class="metric-card skeleton"><div class="metric-label">Leads</div><div class="metric-value">--</div></div>
+        <div class="metric-card skeleton"><div class="metric-label">ROAS</div><div class="metric-value">--</div></div>
+      </div>
+    </section>
+
+    <!-- Agentes IA -->
+    <section>
+      <div class="section-head">
+        <span class="section-title">🤖 Agentes IA</span>
+      </div>
+      <div class="agents-grid" id="agents-grid">
+        <div class="agent-card skeleton">Carregando…</div>
+      </div>
+    </section>
+
+    <!-- Pending actions -->
+    <section>
+      <div class="section-head">
+        <span class="section-title">🔔 Ações pendentes <span id="pending-count" style="color:var(--accent); margin-left:6px;"></span></span>
+      </div>
+      <div id="actions-container">
+        <div class="actions-list skeleton"><div class="action-item">Carregando…</div></div>
+      </div>
+    </section>
+
+    <!-- Activity timeline -->
+    <section>
+      <div class="section-head">
+        <span class="section-title">📜 Atividade recente (24h)</span>
+      </div>
+      <div id="activity-container">
+        <div class="activity skeleton"><div class="activity-item">Carregando…</div></div>
+      </div>
+    </section>
+
+    <!-- Modules grid -->
+    <section>
+      <div class="section-head">
+        <span class="section-title">⊞ Todos os módulos</span>
+      </div>
+      <div class="modules-grid">
+        <a href="/traffic" class="module-card"><div class="em">📊</div><div class="nm">Tráfego</div></a>
+        <a href="/sentinel" class="module-card"><div class="em">🛡</div><div class="nm">Sentinel</div></a>
+        <a href="/skynet" class="module-card"><div class="em">🎯</div><div class="nm">Skynet</div></a>
+        <a href="/doppelganger" class="module-card"><div class="em">🤖</div><div class="nm">Doppelgänger</div></a>
+        <a href="/lazarus" class="module-card"><div class="em">🧟</div><div class="nm">Lázaro</div></a>
+        <a href="/forge" class="module-card"><div class="em">🔮</div><div class="nm">Forge</div></a>
+        <a href="/studio" class="module-card"><div class="em">🎙</div><div class="nm">Studio</div></a>
+        <a href="/vending" class="module-card"><div class="em">🏧</div><div class="nm">Vending</div></a>
+        <a href="/market" class="module-card"><div class="em">💱</div><div class="nm">Market</div></a>
+        <a href="/franchise" class="module-card"><div class="em">🏢</div><div class="nm">Franchise</div></a>
+        <a href="/empire" class="module-card"><div class="em">📋</div><div class="nm">Empire</div></a>
+        <a href="/poltergeist" class="module-card"><div class="em">👻</div><div class="nm">Poltergeist</div></a>
+        <a href="/titan" class="module-card"><div class="em">🧿</div><div class="nm">Titan</div></a>
+        <a href="/hive" class="module-card"><div class="em">🐝</div><div class="nm">Hive</div></a>
+        <a href="/services" class="module-card"><div class="em">⚙</div><div class="nm">Services</div></a>
+        <a href="/billing/master" class="module-card"><div class="em">💳</div><div class="nm">Billing</div></a>
+      </div>
+    </section>
+  </main>
 
 <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js').catch(err => {
-        console.log('Service Worker registration failed: ', err);
-      });
-    });
+function brl(n) {
+  return new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(Number(n) || 0);
+}
+function pctClass(n) { return n > 0 ? 'up' : (n < 0 ? 'down' : 'flat'); }
+function pctSign(n) { return n > 0 ? '+' : ''; }
+
+async function loadGreeting() {
+  try {
+    const r = await fetch('/api/auth/me', { credentials:'include' });
+    if (!r.ok) { window.location.href = '/login'; return; }
+    const data = await r.json();
+    const h = new Date().getHours();
+    const greet = h < 12 ? 'Bom dia' : (h < 18 ? 'Boa tarde' : 'Boa noite');
+    document.getElementById('greeting-text').textContent = `${greet}, ${data.user?.name?.split(' ')[0] || 'Daniel'}`;
+    document.getElementById('greeting-sub').textContent = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
+  } catch {}
+}
+
+async function loadMetrics() {
+  try {
+    const r = await fetch('/api/dashboard/metrics-today', { credentials:'include' });
+    const d = await r.json();
+    const grid = document.getElementById('metrics-grid');
+    grid.innerHTML = `
+      <div class="metric-card">
+        <div class="metric-label">Receita hoje</div>
+        <div class="metric-value">${brl(d.revenue.today)}</div>
+        <div class="metric-change ${pctClass(d.revenue.change_pct)}">${pctSign(d.revenue.change_pct)}${d.revenue.change_pct}% vs ontem</div>
+        <div class="metric-sub">Ontem: ${brl(d.revenue.yesterday)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Vendas hoje</div>
+        <div class="metric-value">${d.sales.today}</div>
+        <div class="metric-change ${pctClass(d.sales.change_pct)}">${pctSign(d.sales.change_pct)}${d.sales.change_pct}% vs ontem</div>
+        <div class="metric-sub">Ontem: ${d.sales.yesterday}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Leads novos</div>
+        <div class="metric-value">${d.leads.today}</div>
+        <div class="metric-change ${pctClass(d.leads.change_pct)}">${pctSign(d.leads.change_pct)}${d.leads.change_pct}% vs ontem</div>
+        <div class="metric-sub">Ontem: ${d.leads.yesterday}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">ROAS hoje</div>
+        <div class="metric-value">${d.roas.today.toFixed(2)}x</div>
+        <div class="metric-change flat">Spend: ${brl(d.roas.ad_spend)}</div>
+        <div class="metric-sub">Receita ads: ${brl(d.roas.ad_revenue)}</div>
+      </div>
+    `;
+  } catch (err) {
+    document.getElementById('metrics-grid').innerHTML = `<div class="empty-state">Erro ao carregar métricas: ${err.message}</div>`;
   }
-</script>
+}
 
+async function loadAgents() {
+  try {
+    const r = await fetch('/api/dashboard/agents-status', { credentials:'include' });
+    const d = await r.json();
+    const grid = document.getElementById('agents-grid');
+    grid.innerHTML = d.agents.map(a => `
+      <a href="${a.link}" class="agent-card ${a.active ? 'active' : 'inactive'}">
+        <div class="agent-icon">${a.icon}</div>
+        <div class="agent-info">
+          <div class="agent-name">${a.name}</div>
+          <div class="agent-status">${a.active ? 'Ativo' : 'Inativo'} · ${a.today_label}</div>
+        </div>
+        <div class="agent-count">${a.today_count}</div>
+      </a>
+    `).join('');
+  } catch (err) {
+    document.getElementById('agents-grid').innerHTML = `<div class="empty-state">Erro ao carregar agentes</div>`;
+  }
+}
 
-<script>
-  window.onclick = function(event) {
-    if (!event.target.matches('.btn-save') && !event.target.matches('.pulse')) {
-      var dropdowns = document.getElementsByClassName("dropdown-content");
-      for (var i = 0; i < dropdowns.length; i++) {
-        var openDropdown = dropdowns[i];
-        if (openDropdown.style.display === 'block' || openDropdown.classList.contains('show-dropdown')) {
-          openDropdown.style.display = 'none';
-          openDropdown.classList.remove('show-dropdown');
-        }
-      }
-    } else {
-      let menu = document.getElementById('arsenal-menu');
-      if(menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+async function loadPending() {
+  try {
+    const r = await fetch('/api/dashboard/pending-actions', { credentials:'include' });
+    const d = await r.json();
+    document.getElementById('pending-count').textContent = d.pending_count > 0 ? `(${d.pending_count})` : '';
+    const c = document.getElementById('actions-container');
+    if (!d.actions.length) {
+      c.innerHTML = `
+        <div class="actions-list">
+          <div class="empty-state">
+            <div class="em-icon">✓</div>
+            Nenhuma ação pendente. Sistema rodando tranquilo.
+          </div>
+        </div>
+      `;
+      return;
     }
+    c.innerHTML = `<div class="actions-list">` + d.actions.map(a => `
+      <div class="action-item severity-${a.severity}">
+        <div class="action-icon">${a.icon}</div>
+        <div class="action-text">
+          <div class="action-title">${escapeHtml(a.title)}</div>
+          <div class="action-subtitle">${escapeHtml(a.subtitle)}</div>
+        </div>
+        <a href="${a.action_url}" class="action-btn">${a.action_label} →</a>
+      </div>
+    `).join('') + `</div>`;
+  } catch (err) {
+    document.getElementById('actions-container').innerHTML = `<div class="actions-list"><div class="empty-state">Erro ao carregar</div></div>`;
   }
+}
+
+async function loadActivity() {
+  try {
+    const r = await fetch('/api/dashboard/recent-activity', { credentials:'include' });
+    const d = await r.json();
+    const c = document.getElementById('activity-container');
+    if (!d.events.length) {
+      c.innerHTML = `
+        <div class="activity">
+          <div class="empty-state">
+            <div class="em-icon">📭</div>
+            Sem atividade nas últimas 24h. Quando o sistema processar webhooks, vendas ou ações automáticas, aparecem aqui.
+          </div>
+        </div>
+      `;
+      return;
+    }
+    c.innerHTML = `<div class="activity">` + d.events.map(e => `
+      <div class="activity-item">
+        <div class="activity-time">${new Date(e.ts).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}</div>
+        <div class="activity-icon">${e.icon}</div>
+        <div class="activity-content">
+          <div class="activity-title">${escapeHtml(e.title)}</div>
+          ${e.detail ? `<div class="activity-detail">${escapeHtml(e.detail)}</div>` : ''}
+        </div>
+      </div>
+    `).join('') + `</div>`;
+  } catch (err) {
+    document.getElementById('activity-container').innerHTML = `<div class="activity"><div class="empty-state">Erro ao carregar</div></div>`;
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+}
+
+async function loadAll() {
+  document.getElementById('last-update').textContent = new Date().toLocaleTimeString('pt-BR');
+  await Promise.all([loadGreeting(), loadMetrics(), loadAgents(), loadPending(), loadActivity()]);
+}
+
+document.getElementById('btn-logout').addEventListener('click', async (e) => {
+  e.preventDefault();
+  await fetch('/api/auth/logout', { method:'POST', credentials:'include' });
+  window.location.href = '/login';
+});
+
+// Boot + auto-refresh a cada 60s
+loadAll();
+setInterval(loadAll, 60000);
 </script>
 </body>
-  
 </html>
