@@ -81,6 +81,27 @@ router.get('/mp', async (_req, res) => {
   }
 });
 
+/**
+ * GET /api/health/test-sentry?token=XXX
+ * Dispara erro controlado pra validar que Sentry está capturando.
+ * Protegido por SENTRY_TEST_TOKEN pra ninguém ficar disparando eventos sem motivo.
+ */
+router.get('/test-sentry', (req, res, next) => {
+  const expectedToken = process.env.SENTRY_TEST_TOKEN || 'nexus-test-2026';
+  if (req.query.token !== expectedToken) {
+    return res.status(403).json({ error: 'token inválido' });
+  }
+  const testId = `sentry-test-${Date.now()}`;
+  log.error(`Sentry test trigger`, new Error(`NEXUS Sentry test: ${testId}`), {
+    test: true,
+    test_id: testId,
+    triggered_at: new Date().toISOString(),
+  });
+  const err = new Error(`NEXUS Sentry test exception: ${testId}`);
+  err.status = 500;
+  next(err);
+});
+
 router.get('/ready', async (_req, res) => {
   const checks = { db: null, redis: null, mp: null };
   const t0 = Date.now();
