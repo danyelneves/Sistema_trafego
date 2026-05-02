@@ -10,7 +10,7 @@ ou recuperar o sistema. Não é documentação de código — é manual de bombe
 ### O site está fora do ar / retornando 500
 
 1. **Veja Vercel Runtime Logs** primeiro:
-   https://vercel.com/maranet/sistrafego/logs
+   https://vercel.com/maranet/nexus-os/logs
 
 2. **Roda os health checks granulares** (vão te dizer onde está o gargalo):
    ```bash
@@ -140,7 +140,7 @@ Todos os logs em produção saem como JSON em uma linha. Filtros úteis:
 ### Rollback de produção
 
 A Vercel mantém histórico de todos os deploys:
-1. https://vercel.com/maranet/sistrafego/deployments
+1. https://vercel.com/maranet/nexus-os/deployments
 2. Acha o último deploy que estava funcionando
 3. ⋯ → Promote to Production
 

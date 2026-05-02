@@ -430,7 +430,7 @@ Kiwify.
 
 ## 📞 Contato técnico
 
-**Repositório:** https://github.com/danyelneves/Sistema_trafego (privado)
+**Repositório:** https://github.com/danyelneves/nexus-os (privado)
 **Domínio de produção:** https://nexusagencia.app
 **Documentação operacional:** [RUNBOOK.md](RUNBOOK.md)
 **Documentação técnica:** [README.md](README.md)
