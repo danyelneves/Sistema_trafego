@@ -19,8 +19,8 @@ router.post('/reverse', requireAuth, async (req, res) => {
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    // Para imagens, gemini-1.5-pro ou gemini-1.5-flash ambos suportam multimodal
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Para imagens, gemini-2.5-pro ou gemini-2.5-flash ambos suportam multimodal
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     let prompt = "";
     if (type === 'ad') {

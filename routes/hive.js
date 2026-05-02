@@ -13,7 +13,7 @@ router.get('/pulse', requireAuth, async (req, res) => {
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY não configurada.");
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const db = require('../db');
     const anomaliesRows = await db.all(`SELECT value FROM workspace_settings WHERE key LIKE 'hive.anomaly.%' ORDER BY id DESC LIMIT 5`);

@@ -30,7 +30,7 @@ router.post('/checkout', vendingLimiter, async (req, res) => {
 
     // 1. GERAR A CAMPANHA COM IA (Sem toque humano)
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     
     const prompt = `Atue como um copywriter hiper-agressivo para negócios locais.
 Preciso de uma campanha de anúncios do Facebook para: "${business_type}" na cidade de "${city}".

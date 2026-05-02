@@ -34,7 +34,7 @@ async function runSentinelLogic(workspaceId) {
   if (GEMINI_API_KEY) {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    geminiModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    geminiModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
   // SIMULAÇÃO DE ESTRUTURA PARA FINS DE DEMONSTRAÇÃO (Vai tentar rodar a real)

@@ -48,7 +48,7 @@ router.post('/meta', requireAuth, async (req, res) => {
       if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY não configurada.");
       
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       
       const prompt = `Você é um gestor de tráfego de elite. Crie a estrutura de uma campanha de Facebook Ads de alta conversão baseado no seguinte objetivo: "${ai_prompt}".
 Responda EXATAMENTE neste formato JSON, sem crases, sem formatação Markdown:
