@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { generateWithOmniRouter } = require('../utils/omni-router');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
+
+const PERSONA_KEYS = ['doppelganger.persona_name', 'doppelganger.persona_bio', 'doppelganger.persona_traits'];
 
 const DEFAULT_PERSONA_NAME = 'o(a) CEO da empresa';
 const DEFAULT_PERSONA_BIO = 'Atendente experiente em vendas consultivas, foco em automação e escala.';
@@ -53,6 +56,71 @@ Responda de forma curta, no estilo de WhatsApp, mantendo a persona acima. Você 
             reply: cloneReply
         });
 
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ----------------------------------------------------------------
+// GET /api/doppelganger/persona
+// Retorna a persona configurada do workspace + defaults Nexus.
+// ----------------------------------------------------------------
+router.get('/persona', requireAuth, async (req, res) => {
+    try {
+        const workspace_id = req.user.workspace_id;
+        const rows = await db.all(
+            "SELECT key, value FROM workspace_settings WHERE workspace_id = $1 AND key = ANY($2)",
+            [workspace_id, PERSONA_KEYS]
+        );
+        const get = (k) => rows.find(r => r.key === k)?.value || '';
+        res.json({
+            ok: true,
+            persona: {
+                name:   get('doppelganger.persona_name'),
+                bio:    get('doppelganger.persona_bio'),
+                traits: get('doppelganger.persona_traits'),
+            },
+            defaults: {
+                name:   DEFAULT_PERSONA_NAME,
+                bio:    DEFAULT_PERSONA_BIO,
+                traits: DEFAULT_PERSONA_TRAITS,
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ----------------------------------------------------------------
+// PUT /api/doppelganger/persona
+// Atualiza persona do workspace. Apenas admin pode alterar.
+// Body: { name?, bio?, traits? } — strings vazias removem o override.
+// ----------------------------------------------------------------
+router.put('/persona', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const workspace_id = req.user.workspace_id;
+        const { name, bio, traits } = req.body || {};
+        const map = {
+            'doppelganger.persona_name':   name,
+            'doppelganger.persona_bio':    bio,
+            'doppelganger.persona_traits': traits,
+        };
+        for (const [key, value] of Object.entries(map)) {
+            if (value === undefined) continue;
+            if (value === null || String(value).trim() === '') {
+                await db.run(
+                    'DELETE FROM workspace_settings WHERE workspace_id = $1 AND key = $2',
+                    [workspace_id, key]
+                );
+            } else {
+                await db.run(
+                    `INSERT INTO workspace_settings (workspace_id, key, value) VALUES ($1, $2, $3)
+                     ON CONFLICT (workspace_id, key) DO UPDATE SET value = EXCLUDED.value`,
+                    [workspace_id, key, String(value).trim()]
+                );
+            }
+        }
+        res.json({ ok: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
