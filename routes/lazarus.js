@@ -80,8 +80,10 @@ router.all('/cron', async (req, res) => {
 
     let recoveredLogs = [];
 
+    const { hasFeature } = require('../utils/features');
     for (const order of orders) {
       if (!order.customer_phone) continue;
+      if (!await hasFeature(order.workspace_id, 'lazarus')) continue;
 
       const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [order.workspace_id]);
       const getSetting = (k, envKey) => settings.find(s => s.key === k)?.value || process.env[envKey];

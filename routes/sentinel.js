@@ -208,13 +208,15 @@ router.all('/cron', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized CRON' });
     }
     
+    const { hasFeature } = require('../utils/features');
     const workspaces = await db.all("SELECT id FROM workspaces");
     let allReports = [];
     for (const ws of workspaces) {
-        const result = await runSentinelLogic(ws.id);
-        allReports.push({ workspace: ws.id, report: result.report });
+      if (!await hasFeature(ws.id, 'sentinel')) continue;
+      const result = await runSentinelLogic(ws.id);
+      allReports.push({ workspace: ws.id, report: result.report });
     }
-    res.json({ ok: true, reports: allReports });
+    res.json({ ok: true, processed: allReports.length, reports: allReports });
   } catch (error) {
     console.error("[SENTINEL CRON] Error:", error.message);
     res.status(500).json({ error: error.message });
