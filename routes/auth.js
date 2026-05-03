@@ -58,6 +58,16 @@ router.get('/me', requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
 
+router.get('/me/features', requireAuth, async (req, res) => {
+  try {
+    const { getFullFeatureContext } = require('../utils/features');
+    const ctx = await getFullFeatureContext(req.user.workspace_id, req.user);
+    res.json({ ok: true, ...ctx });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.get('/viewer-link', requireAuth, require('../middleware/auth').requireAdmin, (req, res) => {
   const IS_PROD = process.env.NODE_ENV === 'production';
   const token = signToken({ id: 0, username: 'diretoria', role: 'viewer', name: 'Diretoria' });

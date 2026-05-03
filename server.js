@@ -82,6 +82,9 @@ app.use('/api/import', express.json({ limit: '50mb' }), express.urlencoded({ lim
 // ------------------------------------------------------------
 // API Routes
 // ------------------------------------------------------------
+const { requireFeature } = require('./middleware/feature-gate');
+
+// === CORE (sempre ativo, nunca gateted) ============================
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/audit',      require('./routes/audit'));
 app.use('/api/workspaces', require('./routes/workspaces'));
@@ -91,40 +94,40 @@ app.use('/api/goals',      require('./routes/goals'));
 app.use('/api/notes',      require('./routes/notes'));
 app.use('/api/settings',   require('./routes/settings'));
 app.use('/api/users',      require('./routes/users'));
-// Import already mounted above
 app.use('/api/drill',      require('./routes/drill'));
 app.use('/api/sync',       require('./routes/sync').router);
-app.use('/api/cron',       require('./routes/cron'));
+app.use('/api/cron',       require('./routes/cron'));            // protegido por CRON_SECRET
 app.use('/api/instagram',  require('./routes/instagram'));
-
-app.use('/api/webhook',    require('./routes/webhook'));
+app.use('/api/webhook',    require('./routes/webhook'));         // webhook MP — NUNCA gateted
+app.use('/api/webhooks',   require('./routes/webhooks'));        // webhook Kiwify — NUNCA gateted
 app.use('/api/pixel',      require('./routes/pixel'));
 app.use('/api/automations',require('./routes/automations'));
 app.use('/api/reports',    require('./routes/reports'));
 app.use('/api/ai',         require('./routes/ai'));
 app.use('/api/financial',  require('./routes/financial'));
-app.use('/api/webhooks',   require('./routes/webhooks'));
 app.use('/api/billing',    require('./routes/billing'));
 app.use('/api/alerts',     require('./routes/alerts'));
-app.use('/api/empire',     require('./routes/empire'));
-app.use('/api/launcher',   require('./routes/launcher'));
-app.use('/api/vending',    require('./routes/vending')); // Vending Machine
-app.use('/api/market',     require('./routes/market')); // Bolsa de Valores de Leads
-app.use('/api/lazarus',    require('./routes/lazarus')); // Protocolo Lázaro
-app.use('/api/pay',        require('./routes/pay')); // Fintech Gateway
-app.use('/api/checkout',   require('./routes/checkout')); // Kiwify Killer
-app.use('/api/hive',       require('./routes/hive')); // Mente de Colmeia
-app.use('/api/vision',     require('./routes/vision')); // Engenharia Reversa Visual
-app.use('/api/sentinel',   require('./routes/sentinel')); // Trader de Tráfego 24/7
-app.use('/api/forge',      require('./routes/forge')); // O Forjador de Landing Pages Mutantes
-app.use('/api/voice',      require('./routes/voice')); // Robô de Call Center AI
-app.use('/api/franchise',  require('./routes/franchise')); // Motor White-Label
-app.use('/api/skynet',     require('./routes/skynet')); // Operação Skynet (Auto-Aquisição)
-app.use('/api/studio',     require('./routes/studio')); // NEXUS Studio (Clonagem de Voz/Vídeo)
-app.use('/api/heal',       require('./routes/heal')); // Agentic DevOps (Auto-Cura)
-app.use('/api/titan',      require('./routes/titan')); // CEO Autônomo e Serial
-app.use('/api/doppelganger', require('./routes/doppelganger')); // Clone Digital Neural
-app.use('/api/poltergeist', require('./routes/poltergeist')); // IoT e Logística Física
+app.use('/api/pay',        require('./routes/pay'));
+app.use('/api/checkout',   require('./routes/checkout'));        // CORE: cliente sempre paga
+app.use('/api/heal',       require('./routes/heal'));            // conceptual (não pluga em UI)
+app.use('/api/voice',      require('./routes/voice'));           // call center auxiliar
+
+// === FEATURES gated por workspace_features =========================
+app.use('/api/sentinel',     requireFeature('sentinel'),     require('./routes/sentinel'));
+app.use('/api/launcher',     requireFeature('launcher'),     require('./routes/launcher'));
+app.use('/api/hive',         requireFeature('hive'),         require('./routes/hive'));
+app.use('/api/skynet',       requireFeature('skynet'),       require('./routes/skynet'));
+app.use('/api/market',       requireFeature('market'),       require('./routes/market'));
+app.use('/api/doppelganger', requireFeature('doppelganger'), require('./routes/doppelganger'));
+app.use('/api/vending',      requireFeature('vending'),      require('./routes/vending'));
+app.use('/api/lazarus',      requireFeature('lazarus'),      require('./routes/lazarus'));
+app.use('/api/forge',        requireFeature('forge'),        require('./routes/forge'));
+app.use('/api/studio',       requireFeature('studio'),       require('./routes/studio'));
+app.use('/api/vision',       requireFeature('vision'),       require('./routes/vision'));
+app.use('/api/titan',        requireFeature('titan'),        require('./routes/titan'));
+app.use('/api/poltergeist',  requireFeature('poltergeist'),  require('./routes/poltergeist'));
+app.use('/api/franchise',    requireFeature('franchise'),    require('./routes/franchise'));
+app.use('/api/empire',       requireFeature('empire'),       require('./routes/empire'));
 
 // ------------------------------------------------------------
 // HOSPEDAGEM DINÂMICA DE LANDING PAGES (NEXUS FORGE)

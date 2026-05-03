@@ -63,18 +63,55 @@
     ]},
   ];
 
-  function renderSidebar(activeId) {
+  // Mapeamento item.id → feature_key (somente features gateted; core não tem entry)
+  const ITEM_FEATURE = {
+    sentinel: 'sentinel', launcher: 'launcher', hive: 'hive',
+    skynet: 'skynet', market: 'market',
+    doppelganger: 'doppelganger', vending: 'vending',
+    lazarus: 'lazarus',
+    forge: 'forge', studio: 'studio', vision: 'vision',
+    titan: 'titan', poltergeist: 'poltergeist', franchise: 'franchise',
+    empire: 'empire',
+  };
+
+  let _featureCache = null;
+  async function fetchFeatures() {
+    if (_featureCache) return _featureCache;
+    try {
+      const r = await fetch('/api/auth/me/features', { credentials: 'include' });
+      if (!r.ok) return null;
+      _featureCache = await r.json();
+      return _featureCache;
+    } catch { return null; }
+  }
+
+  function isItemEnabled(item, ctx) {
+    // Sem feature gate (core): sempre liberado
+    const feat = ITEM_FEATURE[item.id];
+    if (!feat) return true;
+    // Owner: tudo liberado
+    if (ctx?.isOwner) return true;
+    // Features explícitas
+    if (Array.isArray(ctx?.enabled)) return ctx.enabled.includes(feat);
+    // Sem contexto carregado: render otimista (não trava UI)
+    return true;
+  }
+
+  async function renderSidebar(activeId) {
     const aside = document.getElementById('sidebar');
     if (!aside) return;
+    const ctx = await fetchFeatures();
     let html = `
       <div class="brand">
         <h1>NEXUS<span>·</span>OS</h1>
-        <div class="v">COMMAND CENTER</div>
+        <div class="v">${ctx?.isOwner ? 'OWNER · FULL ACCESS' : (ctx?.planName || 'COMMAND CENTER')}</div>
       </div>
     `;
     NAV_GROUPS.forEach(group => {
+      const visible = group.items.filter(i => isItemEnabled(i, ctx));
+      if (!visible.length) return; // pula grupo inteiro se nenhum item liberado
       html += `<div class="nav-section"><div class="nav-label">${group.label}</div>`;
-      group.items.forEach(item => {
+      visible.forEach(item => {
         const active = item.id === activeId ? ' active' : '';
         const icon = ICONS[item.icon] || '';
         const desc = item.desc ? `<span class="nav-desc">${item.desc}</span>` : '';
