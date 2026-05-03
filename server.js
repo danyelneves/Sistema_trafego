@@ -83,6 +83,7 @@ app.use('/api/import', express.json({ limit: '50mb' }), express.urlencoded({ lim
 // API Routes
 // ------------------------------------------------------------
 const { requireFeature } = require('./middleware/feature-gate');
+const { requireAuth } = require('./middleware/auth');
 
 // === CORE (sempre ativo, nunca gateted) ============================
 app.use('/api/auth',       require('./routes/auth'));
@@ -113,6 +114,8 @@ app.use('/api/heal',       require('./routes/heal'));            // conceptual (
 app.use('/api/voice',      require('./routes/voice'));           // call center auxiliar
 
 // === FEATURES gated por workspace_features =========================
+// requireFeature já internamente: bypass se Bearer CRON_SECRET, senão
+// chama requireAuth e depois valida feature.
 app.use('/api/sentinel',     requireFeature('sentinel'),     require('./routes/sentinel'));
 app.use('/api/launcher',     requireFeature('launcher'),     require('./routes/launcher'));
 app.use('/api/hive',         requireFeature('hive'),         require('./routes/hive'));
