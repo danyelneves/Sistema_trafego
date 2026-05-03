@@ -222,8 +222,15 @@ async function _renderLanding(workspaceId) {
   if (hit && Date.now() - hit.ts < LANDING_TTL) return hit.html;
   try {
     const { resolveContent } = require('./utils/landing-content');
+    const { content, source } = await resolveContent({ workspaceId });
+    // Otimização: se não há conteúdo publicado no DB, devolve arquivo estático
+    // sem chamar jsdom (caro). jsdom só roda quando há customização real.
+    if (source === 'hardcoded') {
+      const html = require('fs').readFileSync(path.join(PUBLIC, 'landing.html'), 'utf8');
+      _landingCache.set(key, { ts: Date.now(), html });
+      return html;
+    }
     const { render } = require('./utils/landing-render');
-    const { content } = await resolveContent({ workspaceId });
     const html = render(content);
     _landingCache.set(key, { ts: Date.now(), html });
     return html;
