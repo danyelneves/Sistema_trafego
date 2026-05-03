@@ -53,7 +53,7 @@
 <main>
   <div class="page-header">
     <div>
-      <h2>⚙️ Admin · Planos & Workspaces</h2>
+      <h2>Admin · Planos & Workspaces</h2>
       <p>Gerencia catálogo de planos comerciais e atribui workspaces.</p>
     </div>
     <div class="page-actions">
@@ -129,7 +129,7 @@
             <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:14px; border:2px solid var(--border); border-radius:8px; transition:border-color .15s;" id="opt-manual">
               <input type="radio" name="ob-mode" value="manual" id="rb-manual" checked>
               <div>
-                <div style="font-weight:700; font-size:14px;">📞 Manual <span style="color:var(--up); font-size:11px; margin-left:6px;" id="active-manual">(ATIVO)</span></div>
+                <div style="font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Manual <span style="color:var(--up); font-size:11px; margin-left:6px;" id="active-manual">(ATIVO)</span></div>
                 <div style="color:var(--muted); font-size:12px; margin-top:2px;">Cliente clica em "Quero esse plano" e abre WhatsApp pra você criar conta manualmente. Indicado pros primeiros clientes.</div>
               </div>
             </label>
@@ -138,13 +138,13 @@
             <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:14px; border:2px solid var(--border); border-radius:8px; transition:border-color .15s;" id="opt-auto">
               <input type="radio" name="ob-mode" value="auto" id="rb-auto">
               <div>
-                <div style="font-weight:700; font-size:14px;">🤖 Automático <span style="color:var(--up); font-size:11px; margin-left:6px; display:none;" id="active-auto">(ATIVO)</span></div>
+                <div style="font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>Automático <span style="color:var(--up); font-size:11px; margin-left:6px; display:none;" id="active-auto">(ATIVO)</span></div>
                 <div style="color:var(--muted); font-size:12px; margin-top:2px;">Cliente paga via Mercado Pago direto, recebe credenciais por e-mail e ganha acesso na hora. Use quando você não tiver tempo de atender manual (ex: viagem).</div>
               </div>
             </label>
           </div>
           <div style="margin-top:14px; padding:12px; background:var(--bg-2); border-radius:6px; font-size:12px; color:var(--muted);">
-            ⚠️ Antes de ligar o modo automático: configure SMTP (env: <code style="color:var(--accent);">SMTP_HOST/USER/PASS</code>) e Mercado Pago (<code style="color:var(--accent);">MERCADOPAGO_ACCESS_TOKEN</code>). E pelo menos 1 plano marcado como "ativo".
+            <strong style="color:var(--accent); text-transform:uppercase; letter-spacing:.05em; font-size:10px; font-family:'JetBrains Mono',monospace;">Atenção:</strong> antes de ligar o modo automático, configure SMTP (env: <code style="color:var(--accent);">SMTP_HOST/USER/PASS</code>) e Mercado Pago (<code style="color:var(--accent);">MERCADOPAGO_ACCESS_TOKEN</code>). E pelo menos 1 plano marcado como "ativo".
           </div>
           <span class="status-msg" id="ob-status" style="margin-top:12px; display:block;"></span>
         </div>
@@ -182,10 +182,10 @@
 
     <div class="card" id="land-editor" style="display:none;">
       <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;">
-        <button class="btn btn-primary" id="land-save">💾 Salvar rascunho</button>
-        <button class="btn" id="land-preview" style="background:var(--bg-3); color:var(--text); border:1px solid var(--border-2);">👁 Pré-visualizar</button>
-        <button class="btn" id="land-publish" style="background:var(--up); color:#000; border:none;">🚀 Publicar</button>
-        <button class="btn" id="land-unpublish" style="background:var(--bg-3); color:var(--down); border:1px solid var(--down); display:none;">⏸ Despublicar</button>
+        <button class="btn btn-primary" id="land-save">Salvar rascunho</button>
+        <button class="btn" id="land-preview" style="background:var(--bg-3); color:var(--text); border:1px solid var(--border-2);">Pré-visualizar</button>
+        <button class="btn" id="land-publish" style="background:var(--up); color:#000; border:none;">Publicar</button>
+        <button class="btn" id="land-unpublish" style="background:var(--bg-3); color:var(--down); border:1px solid var(--down); display:none;">Despublicar</button>
         <span class="status-msg" id="land-status" style="margin-left:8px; align-self:center;"></span>
       </div>
 
@@ -200,6 +200,32 @@
 <script src="/js/sidebar.js"></script>
 <script src="/js/module-helpers.js"></script>
 <script>
+// Ícones inline Lucide-style (stroke 1.75) — usados nos labels/botões.
+// Padrão visual da sidebar do sistema.
+const _SVG = (paths) => `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:6px;">${paths}</svg>`;
+const ICON = {
+  search:   _SVG('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'),
+  menu:     _SVG('<line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/>'),
+  rocket:   _SVG('<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>'),
+  bars:     _SVG('<path d="M3 3v18h18"/><path d="M7 16V9"/><path d="M11 16V5"/><path d="M15 16v-3"/><path d="M19 16v-7"/>'),
+  list:     _SVG('<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>'),
+  grid:     _SVG('<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>'),
+  quote:    _SVG('<path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/>'),
+  target:   _SVG('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>'),
+  layout:   _SVG('<rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/>'),
+  dollar:   _SVG('<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'),
+  message:  _SVG('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
+  help:     _SVG('<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>'),
+  save:     _SVG('<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>'),
+  eye:      _SVG('<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>'),
+  send:     _SVG('<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>'),
+  pause:    _SVG('<rect width="4" height="16" x="6" y="4"/><rect width="4" height="16" x="14" y="4"/>'),
+  lock:     _SVG('<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'),
+  cog:      _SVG('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>'),
+  phone:    _SVG('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>'),
+  bot:      _SVG('<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>'),
+};
+
 let plansCache = [];
 let featuresCache = [];
 let bundlesCache = [];
@@ -222,7 +248,7 @@ function renderPlans() {
   const list = document.getElementById('plans-list');
   list.innerHTML = plansCache.map(p => `
     <div class="plan-card${p.id === selectedPlanId ? ' selected' : ''}" data-id="${p.id}">
-      <div class="plan-name">${NEXUS.escapeHtml(p.name)} ${p.key === 'owner' ? '🔒' : ''}</div>
+      <div class="plan-name">${NEXUS.escapeHtml(p.name)}${p.key === 'owner' ? ' <span style="font-size:9px; background:var(--bg-2); color:var(--muted); padding:1px 5px; border-radius:3px; vertical-align:2px; letter-spacing:.05em; font-family:JetBrains Mono,monospace;">CORE</span>' : ''}</div>
       <div class="plan-meta">
         <span class="plan-price">R$ ${Number(p.price_brl).toFixed(2)}</span>
         <span class="pill">${p.features.length} features</span>
@@ -241,7 +267,7 @@ function selectPlan(id) {
   const plan = plansCache.find(p => p.id === id);
   if (!plan) return;
   document.getElementById('editor').style.display = 'block';
-  document.getElementById('editor-title').textContent = plan.key === 'owner' ? '🔒 Plano Owner (somente leitura)' : `Editar: ${plan.name}`;
+  document.getElementById('editor-title').textContent = plan.key === 'owner' ? 'Plano Owner (somente leitura)' : `Editar: ${plan.name}`;
   document.getElementById('ed-key').value = plan.key;
   document.getElementById('ed-key').disabled = true; // key nunca muda
   document.getElementById('ed-name').value = plan.name;
@@ -275,7 +301,7 @@ function renderFeatureEditor(selected, readonly) {
       const checked = f.is_core || selected.includes(f.key);
       html += `<label class="feature-row${f.is_core ? ' core' : ''}">
         <input type="checkbox" data-key="${f.key}" ${checked ? 'checked' : ''} ${(f.is_core || readonly) ? 'disabled' : ''}>
-        <span>${NEXUS.escapeHtml(f.name)}${f.is_core ? ' 🔒' : ''}</span>
+        <span>${NEXUS.escapeHtml(f.name)}${f.is_core ? ' <span style="font-size:9px; color:var(--muted); letter-spacing:.05em; font-family:JetBrains Mono,monospace;">core</span>' : ''}</span>
       </label>`;
     }
     html += `</div></div>`;
@@ -354,7 +380,7 @@ function renderWorkspaces(workspaces) {
       <td>${NEXUS.escapeHtml(w.name)}</td>
       <td>
         <select data-action="assign" data-ws="${w.id}">
-          ${plansCache.map(p => `<option value="${p.id}" ${p.id === w.plan_id ? 'selected' : ''}>${NEXUS.escapeHtml(p.name)}${p.key === 'owner' ? ' 🔒' : ''}</option>`).join('')}
+          ${plansCache.map(p => `<option value="${p.id}" ${p.id === w.plan_id ? 'selected' : ''}>${NEXUS.escapeHtml(p.name)}${p.key === 'owner' ? ' (core)' : ''}</option>`).join('')}
         </select>
       </td>
       <td>${w.assigned_at ? new Date(w.assigned_at).toLocaleDateString('pt-BR') : '—'}</td>
@@ -432,35 +458,35 @@ let landCurrent = null;
 let landContext = { scope: 'system_default', workspace_id: null };
 
 const SECTION_LABELS = {
-  meta:            { label: '🔍 SEO / Meta tags',    fields: { title:'Título da aba', description:'Descrição (meta description)', theme_color:'Cor do tema (hex)' } },
-  nav:             { label: '🧭 Navegação topo',      fields: { logo_text:'Texto do logo', cta_label:'Texto do botão CTA', cta_href:'Link do CTA' } },
-  hero:            { label: '🚀 Hero (topo da página)', fields: {
+  meta:            { label: ICON.search + 'SEO / Meta tags',    fields: { title:'Título da aba', description:'Descrição (meta description)', theme_color:'Cor do tema (hex)' } },
+  nav:             { label: ICON.menu + 'Navegação topo',        fields: { logo_text:'Texto do logo', cta_label:'Texto do botão CTA', cta_href:'Link do CTA' } },
+  hero:            { label: ICON.rocket + 'Hero (topo da página)', fields: {
     badge:'Badge superior', title_pre:'Título antes do destaque', title_grad:'Título destacado (em gradiente)', title_post:'Título depois do destaque',
     subtitle:'Subtítulo', cta_primary_label:'Botão principal — texto', cta_primary_href:'Botão principal — link',
     cta_secondary_label:'Botão secundário — texto', cta_secondary_href:'Botão secundário — link'
   }},
-  stats:           { label: '📊 Estatísticas',        array: true, fields: { num:'Número', label:'Rótulo' } },
-  how:             { label: '⚙️ Como funciona',       fields: { tag:'Tag (cima)', title:'Título', subtitle:'Subtítulo' }, sub: { steps: { array: true, label: 'Passos', fields: { title:'Título do passo', desc:'Descrição' } } } },
-  modules_section: { label: '🧩 Seção Módulos',        fields: { tag:'Tag', title:'Título', subtitle:'Subtítulo' } },
-  quote:           { label: '💬 Quote',                fields: { text:'Texto da citação', author:'Autor' } },
-  cta_final:       { label: '🎯 CTA final',            fields: { title:'Título', subtitle:'Subtítulo', button_label:'Botão — texto', button_href:'Botão — link' } },
-  footer:          { label: '🦶 Rodapé',               fields: { copyright:'Texto do copyright' }, sub: { links: { array: true, label: 'Links', fields: { label:'Texto', href:'Link' } } } },
+  stats:           { label: ICON.bars + 'Estatísticas',          array: true, fields: { num:'Número', label:'Rótulo' } },
+  how:             { label: ICON.list + 'Como funciona',         fields: { tag:'Tag (cima)', title:'Título', subtitle:'Subtítulo' }, sub: { steps: { array: true, label: 'Passos', fields: { title:'Título do passo', desc:'Descrição' } } } },
+  modules_section: { label: ICON.grid + 'Seção Módulos',         fields: { tag:'Tag', title:'Título', subtitle:'Subtítulo' } },
+  quote:           { label: ICON.quote + 'Quote',                fields: { text:'Texto da citação', author:'Autor' } },
+  cta_final:       { label: ICON.target + 'CTA final',           fields: { title:'Título', subtitle:'Subtítulo', button_label:'Botão — texto', button_href:'Botão — link' } },
+  footer:          { label: ICON.layout + 'Rodapé',              fields: { copyright:'Texto do copyright' }, sub: { links: { array: true, label: 'Links', fields: { label:'Texto', href:'Link' } } } },
 };
 
 // Seções opcionais (toggle ativa/desativa)
 const OPTIONAL_SECTIONS = {
   'sections.pricing': {
-    label: '💰 Preços / Planos (opcional)',
+    label: ICON.dollar + 'Preços / Planos (opcional)',
     fields: { tag:'Tag', title:'Título', subtitle:'Subtítulo' },
     sub: { plans: { array: true, label: 'Planos exibidos', fields: { name:'Nome', description:'Descrição', price:'Preço (sem R$)', period:'Período (ex: /mês)', cta_label:'Texto do botão', cta_href:'Link do botão', highlight:'Destacado? (true/false)' } } },
   },
   'sections.testimonials': {
-    label: '💬 Depoimentos (opcional)',
+    label: ICON.message + 'Depoimentos (opcional)',
     fields: { tag:'Tag', title:'Título', subtitle:'Subtítulo' },
     sub: { items: { array: true, label: 'Depoimentos', fields: { name:'Nome', role:'Cargo / Empresa', quote:'Depoimento', avatar:'URL da foto (opcional)' } } },
   },
   'sections.faq': {
-    label: '❓ FAQ (opcional)',
+    label: ICON.help + 'FAQ (opcional)',
     fields: { tag:'Tag', title:'Título', subtitle:'Subtítulo (opcional)' },
     sub: { items: { array: true, label: 'Perguntas', fields: { q:'Pergunta', a:'Resposta' } } },
   },
@@ -507,7 +533,7 @@ function renderForm(content) {
   for (const [key, def] of Object.entries(SECTION_LABELS)) {
     const data = content[key] || {};
     html += `<details ${key === 'hero' ? 'open' : ''} style="margin-bottom:16px; background:var(--bg-3); border:1px solid var(--border); border-radius:8px;">
-      <summary style="padding:12px 16px; cursor:pointer; font-weight:600; font-size:14px;">${NEXUS.escapeHtml(def.label)}</summary>
+      <summary style="padding:12px 16px; cursor:pointer; font-weight:600; font-size:14px;">${def.label}</summary>
       <div style="padding:16px;">`;
     if (def.array) {
       html += renderArrayBlock(key, Array.isArray(data) ? data : [], def.fields, def.label);
@@ -540,7 +566,7 @@ function renderForm(content) {
           <input type="checkbox" data-key="${path}.enabled" ${enabled ? 'checked' : ''} style="accent-color:var(--accent); width:16px; height:16px;">
           <span style="font-size:11px; color:${enabled ? 'var(--up)' : 'var(--muted)'}; text-transform:uppercase; letter-spacing:.05em;">${enabled ? 'ATIVO' : 'inativo'}</span>
         </label>
-        <span>${NEXUS.escapeHtml(def.label)}</span>
+        <span>${def.label}</span>
       </summary>
       <div style="padding:16px;">`;
     Object.entries(def.fields).forEach(([k, label]) => {
