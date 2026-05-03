@@ -153,15 +153,24 @@ const DEFAULT_CONTENT = {
   },
 };
 
-/** Merge raso 2 níveis: customContent.field sobrescreve default.field (sem deep merge complexo) */
+/**
+ * Merge recursivo: override sobrescreve base. Arrays substituem (não fazem merge).
+ * Objetos plain fazem merge profundo recursivamente.
+ *
+ * Exemplo:
+ *   merge({a:{b:1,c:2}}, {a:{c:9}}) → {a:{b:1,c:9}}
+ */
 function merge(base, override) {
-  if (!override) return base;
+  if (override == null) return base;
+  if (Array.isArray(base) || Array.isArray(override)) return override ?? base;
+  if (typeof base !== 'object' || typeof override !== 'object') return override;
   const out = { ...base };
   for (const [k, v] of Object.entries(override)) {
     if (v == null) continue;
-    if (Array.isArray(v)) out[k] = v;
-    else if (typeof v === 'object' && typeof base[k] === 'object' && !Array.isArray(base[k])) {
-      out[k] = { ...base[k], ...v };
+    if (Array.isArray(v)) {
+      out[k] = v;
+    } else if (typeof v === 'object' && typeof base[k] === 'object' && !Array.isArray(base[k])) {
+      out[k] = merge(base[k], v); // recursivo
     } else {
       out[k] = v;
     }
