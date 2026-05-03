@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comprar · Nexus OS</title>
+<meta name="description" content="Escolha seu plano Nexus OS e ative seu sistema operacional de IA pra vendas em minutos.">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0e; --bg-2:#13131a; --bg-3:#1a1a23; --text:#f0f0f5; --muted:#7a7a88;
+    --accent:#0099ff; --accent-2:#00d4ff; --border:#222230; --border-2:#2a2a38;
+    --gradient:linear-gradient(135deg, #0099ff 0%, #00d4ff 100%);
+    --up:#22c55e; --down:#ef4444;
+  }
+  body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; min-height:100vh; padding:48px 24px;}
+  .container{max-width:960px; margin:0 auto;}
+  .top{text-align:center; margin-bottom:48px;}
+  h1{font-size:clamp(28px, 4vw, 40px); font-weight:800; letter-spacing:-1px; margin-bottom:12px;}
+  .grad{background:var(--gradient); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+  .sub{color:var(--muted); font-size:16px; max-width:520px; margin:0 auto;}
+  .plans{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-bottom:32px;}
+  .plan{background:var(--bg-3); border:1px solid var(--border); border-radius:12px; padding:24px; cursor:pointer; transition:all .2s; position:relative;}
+  .plan:hover{border-color:var(--border-2); transform:translateY(-2px);}
+  .plan.selected{border-color:var(--accent); background:rgba(0,153,255,.08); box-shadow:0 0 24px rgba(0,153,255,.15);}
+  .pname{font-size:18px; font-weight:700; margin-bottom:6px;}
+  .pdesc{color:var(--muted); font-size:13px; min-height:38px; margin-bottom:14px;}
+  .pprice{font-size:28px; font-weight:800; color:var(--accent); font-family:'JetBrains Mono',monospace; margin-bottom:14px;}
+  .pprice small{font-size:12px; color:var(--muted); font-weight:400;}
+  .feat{font-size:13px; color:var(--muted); padding:3px 0;}
+  .feat::before{content:'✓ '; color:var(--up); font-weight:700;}
+  .form{background:var(--bg-3); border:1px solid var(--border); border-radius:12px; padding:24px; margin-top:24px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;}
+  .field input{width:100%; background:var(--bg-2); border:1px solid var(--border-2); border-radius:6px; padding:10px 12px; color:var(--text); font-size:14px; outline:none;}
+  .field input:focus{border-color:var(--accent);}
+  .btn-pay{width:100%; padding:14px; background:var(--gradient); color:#000; font-weight:700; border:none; border-radius:8px; cursor:pointer; font-size:15px; margin-top:8px;}
+  .btn-pay:hover{opacity:.9;}
+  .btn-pay:disabled{opacity:.4; cursor:not-allowed;}
+  .err{color:var(--down); font-size:13px; margin-top:8px; min-height:18px;}
+  .manual{background:var(--bg-3); border:1px solid var(--border); border-radius:12px; padding:32px; text-align:center;}
+  .manual h2{font-size:20px; margin-bottom:12px;}
+  .manual p{color:var(--muted); font-size:14px; margin-bottom:20px;}
+  .btn-wa{display:inline-flex; align-items:center; gap:8px; background:#25D366; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:700;}
+  .footer-link{text-align:center; margin-top:32px; color:var(--muted); font-size:13px;}
+  .footer-link a{color:var(--accent); text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="top">
+    <h1>Ative seu <span class="grad">Nexus OS</span></h1>
+    <p class="sub">Escolha o plano, pague pelo Mercado Pago, e em minutos você recebe seu acesso por e-mail.</p>
+  </div>
+
+  <div id="content">Carregando...</div>
+
+  <div class="footer-link">
+    Já tem conta? <a href="/login">Entrar</a>
+  </div>
+</div>
+
+<script>
+const $ = sel => document.querySelector(sel);
+const escapeHtml = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let selected = null;
+let plans = [];
+
+(async () => {
+  try {
+    const cfg = await fetch('/api/onboarding/config').then(r => r.json());
+    plans = cfg.plans || [];
+    if (cfg.mode !== 'auto') {
+      renderManual(cfg.whatsapp);
+      return;
+    }
+    if (!plans.length) {
+      $('#content').innerHTML = '<div class="manual"><h2>Em breve</h2><p>Estamos finalizando os planos. Volte em breve.</p></div>';
+      return;
+    }
+    renderAuto();
+  } catch (e) {
+    $('#content').innerHTML = `<div class="manual"><h2>Erro</h2><p>${escapeHtml(e.message)}</p></div>`;
+  }
+})();
+
+function renderManual(whatsapp) {
+  const phone = (whatsapp || '5511999990000').replace(/\D/g, '');
+  const msg = encodeURIComponent('Olá! Quero contratar o Nexus OS. Pode me passar os planos?');
+  $('#content').innerHTML = `
+    <div class="manual">
+      <h2>Auto-cadastro temporariamente desativado</h2>
+      <p>Pra contratar agora, fala direto com a gente no WhatsApp. A gente te ajuda a escolher o plano e libera seu acesso na hora.</p>
+      <a class="btn-wa" href="https://wa.me/${phone}?text=${msg}" target="_blank">📱 Falar no WhatsApp</a>
+    </div>`;
+}
+
+function renderAuto() {
+  $('#content').innerHTML = `
+    <div class="plans">${plans.map(p => `
+      <div class="plan" data-key="${p.key}">
+        <div class="pname">${escapeHtml(p.name)}</div>
+        <div class="pdesc">${escapeHtml(p.description || '')}</div>
+        <div class="pprice">R$ ${Number(p.price_brl).toFixed(2)}<small>/mês</small></div>
+        <div>${(p.features || []).slice(0, 5).map(f => `<div class="feat">${escapeHtml(f)}</div>`).join('')}
+        ${(p.features || []).length > 5 ? `<div class="feat" style="opacity:.5;">+ ${p.features.length - 5} módulos</div>` : ''}</div>
+      </div>`).join('')}
+    </div>
+    <div class="form" id="form" style="display:none;">
+      <h3 style="margin-bottom:16px; font-size:16px;">Seus dados</h3>
+      <div class="field"><label>Nome completo</label><input id="f-name" autocomplete="name"></div>
+      <div class="field"><label>E-mail (será seu login)</label><input id="f-email" type="email" autocomplete="email"></div>
+      <div class="field"><label>WhatsApp (opcional)</label><input id="f-phone" placeholder="(11) 99999-0000"></div>
+      <div class="field"><label>Nome da sua empresa/projeto</label><input id="f-ws" placeholder="Ex: Clínica Bella Pele"></div>
+      <button class="btn-pay" id="btn-pay">Ir para o pagamento →</button>
+      <div class="err" id="err"></div>
+    </div>`;
+  document.querySelectorAll('.plan').forEach(el => {
+    el.addEventListener('click', () => {
+      selected = el.dataset.key;
+      document.querySelectorAll('.plan').forEach(p => p.classList.toggle('selected', p === el));
+      $('#form').style.display = 'block';
+      $('#form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+  $('#btn-pay').addEventListener('click', startPayment);
+}
+
+async function startPayment() {
+  const err = $('#err');
+  err.textContent = '';
+  const body = {
+    plan_key: selected,
+    name: $('#f-name').value.trim(),
+    email: $('#f-email').value.trim().toLowerCase(),
+    phone: $('#f-phone').value.trim() || null,
+    workspace_name: $('#f-ws').value.trim() || $('#f-name').value.trim(),
+  };
+  if (!selected) { err.textContent = 'Selecione um plano'; return; }
+  if (!body.name || !body.email) { err.textContent = 'Nome e e-mail obrigatórios'; return; }
+
+  const btn = $('#btn-pay');
+  btn.disabled = true;
+  btn.textContent = 'Criando preferência...';
+  try {
+    const r = await fetch('/api/onboarding/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.message || data.error || 'erro');
+    window.location.href = data.init_point;
+  } catch (e) {
+    err.textContent = 'Erro: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = 'Ir para o pagamento →';
+  }
+}
+</script>
+</body>
+</html>

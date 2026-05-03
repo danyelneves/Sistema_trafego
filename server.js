@@ -88,6 +88,7 @@ const { requireAuth } = require('./middleware/auth');
 // === CORE (sempre ativo, nunca gateted) ============================
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/admin',      require('./routes/admin'));
+app.use('/api/onboarding', require('./routes/onboarding'));
 app.use('/api/audit',      require('./routes/audit'));
 app.use('/api/workspaces', require('./routes/workspaces'));
 app.use('/api/campaigns',  require('./routes/campaigns'));
@@ -210,6 +211,9 @@ function guardHTML(req, res) {
 
 // Landing pública (Nexus Agência)
 app.get('/', (req, res) => res.sendFile(path.join(PUBLIC, 'landing.html')));
+app.get('/comprar', (req, res) => res.sendFile(path.join(PUBLIC, 'comprar.html')));
+app.get('/onboarding/sucesso', (req, res) => res.sendFile(path.join(PUBLIC, 'onboarding-sucesso.html')));
+app.get('/onboarding/aguardando', (req, res) => res.sendFile(path.join(PUBLIC, 'onboarding-sucesso.html')));
 
 // Command Center (sistema interno, exige auth)
 app.get('/app', guardHTML);

@@ -108,4 +108,24 @@ async function sendKpiAlert({ to, metric, value, target, direction, channel, per
   });
 }
 
-module.exports = { send, sendKpiAlert, isConfigured };
+async function sendOnboardingCredentials({ to, name, username, password, workspace_name }) {
+  const baseUrl = process.env.PUBLIC_BASE_URL || 'https://nexusagencia.app';
+  const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const html = `<!doctype html><html><body style="font-family:-apple-system,sans-serif; max-width:600px; margin:0 auto; padding:24px; background:#f7f7f9; color:#222;">
+  <div style="background:#fff; border-radius:12px; padding:32px;">
+    <h1 style="color:#0099ff; margin:0 0 8px;">Bem-vindo ao Nexus OS</h1>
+    <p style="color:#666; margin:0 0 24px;">Olá ${esc(name)}, seu pagamento foi confirmado. Suas credenciais:</p>
+    <div style="background:#f0f8ff; border:1px solid #cce4ff; border-radius:8px; padding:20px; margin-bottom:24px; font-family:monospace;">
+      <div><strong>Workspace:</strong> ${esc(workspace_name)}</div>
+      <div><strong>Usuário:</strong> ${esc(username)}</div>
+      <div><strong>Senha temporária:</strong> ${esc(password)}</div>
+    </div>
+    <a href="${baseUrl}/login" style="display:inline-block; background:#0099ff; color:#fff; text-decoration:none; padding:12px 24px; border-radius:6px; font-weight:600;">Acessar Nexus OS →</a>
+    <p style="color:#888; font-size:13px; margin:32px 0 0;">Recomendamos trocar a senha após o primeiro login.</p>
+  </div>
+</body></html>`;
+  const text = `Bem-vindo ao Nexus OS!\n\nWorkspace: ${workspace_name}\nUsuário: ${username}\nSenha: ${password}\n\nLogin: ${baseUrl}/login`;
+  return send({ to, subject: 'Bem-vindo ao Nexus OS — suas credenciais', html, text });
+}
+
+module.exports = { send, sendKpiAlert, sendOnboardingCredentials, isConfigured };
