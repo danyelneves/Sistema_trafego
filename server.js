@@ -293,7 +293,7 @@ const MODULE_PAGES = [
   'sentinel', 'launcher', 'lazarus', 'skynet', 'doppelganger',
   'forge', 'studio', 'vending', 'market', 'franchise',
   'empire', 'poltergeist', 'titan', 'hive', 'billing',
-  'audit', 'admin', 'upgrade',
+  'audit', 'admin', 'upgrade', 'alerts',
 ];
 MODULE_PAGES.forEach(page => {
   app.get(`/${page}`, (req, res) => {

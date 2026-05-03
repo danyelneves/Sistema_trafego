@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alertas · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+<style>
+  .panel { background: var(--bg-3); border:1px solid var(--border); border-radius:10px; padding:24px; margin-bottom:20px; }
+  .panel h3 { font-size:16px; font-weight:700; margin:0 0 6px; color:var(--text); }
+  .panel p { color:var(--muted); font-size:13px; margin:0 0 16px; line-height:1.5; }
+  .row { display:flex; gap:8px; align-items:flex-start; }
+  .row input[type=email] { flex:1; background:var(--bg-2); border:1px solid var(--border-2); border-radius:6px; padding:10px 12px; color:var(--text); font-size:14px; outline:none; }
+  .row input[type=email]:focus { border-color:var(--accent); }
+  .btn { padding:10px 20px; background:linear-gradient(135deg,#0099ff,#00d4ff); color:#000; font-weight:700; border:none; border-radius:6px; cursor:pointer; font-size:14px; white-space:nowrap; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .btn-ghost { background:var(--bg-2); color:var(--text); border:1px solid var(--border-2); }
+  .out { margin-top:12px; padding:12px; background:var(--bg-2); border:1px solid var(--border); border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); white-space:pre-wrap; word-break:break-all; min-height:40px; }
+  .out.ok { color:var(--up); border-color:rgba(34,197,94,.3); background:rgba(34,197,94,.05); }
+  .out.err { color:var(--down); border-color:rgba(239,68,68,.3); background:rgba(239,68,68,.05); }
+  .meta { color:var(--muted); font-size:12px; margin-top:8px; line-height:1.6; }
+  .meta code { background:var(--bg-2); padding:2px 6px; border-radius:3px; font-size:11px; color:var(--accent-2); }
+  table.cfg { width:100%; border-collapse:collapse; font-size:13px; }
+  table.cfg th, table.cfg td { padding:8px 10px; border-bottom:1px solid var(--border); text-align:left; }
+  table.cfg th { color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.05em; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+  .pill.on  { background:rgba(34,197,94,.15); color:var(--up); }
+  .pill.off { background:rgba(122,122,136,.15); color:var(--muted); }
+  .empty { color:var(--muted); font-style:italic; padding:16px; text-align:center; }
+</style>
+</head>
+<body>
+<aside id="sidebar" data-active="alerts"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>Alertas</h2>
+      <p>Notificações por e-mail quando KPIs saem do esperado. Aqui você também testa se o envio está saudável.</p>
+    </div>
+  </div>
+
+  <!-- TESTE DE ENVIO -->
+  <section class="s">
+    <div class="panel">
+      <h3>Disparar e-mail de teste</h3>
+      <p>Envia uma mensagem simulada pra confirmar que o SMTP está respondendo. Use seu próprio e-mail. Se o BCC interno estiver ativo, você verá uma cópia adicional na caixa do operador.</p>
+      <div class="row">
+        <input type="email" id="testEmail" placeholder="seu@email.com" autocomplete="email">
+        <button class="btn" id="btnTest">Enviar teste</button>
+      </div>
+      <div id="testOut" class="out" style="display:none;"></div>
+      <div class="meta">
+        Endpoint: <code>POST /api/alerts/test</code> · BCC: <code>INTERNAL_ADMIN_EMAIL</code> (silencioso, salvo se destinatário == admin)
+      </div>
+    </div>
+  </section>
+
+  <!-- ALERTAS CONFIGURADOS -->
+  <section class="s">
+    <div class="panel">
+      <h3>Alertas configurados</h3>
+      <p>Lista de regras ativas no workspace. Pra criar/editar, use o painel do módulo correspondente (Sentinel, Hive, etc.).</p>
+      <div id="cfgWrap"><div class="empty">Carregando...</div></div>
+    </div>
+  </section>
+
+  <!-- HISTÓRICO -->
+  <section class="s">
+    <div class="panel">
+      <h3>Histórico de envios</h3>
+      <p>Últimos alertas disparados nesse workspace.</p>
+      <div id="logWrap"><div class="empty">Carregando...</div></div>
+    </div>
+  </section>
+</main>
+
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+const $ = sel => document.querySelector(sel);
+const escHtml = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// Pré-preenche email do user logado se possível
+fetch('/api/auth/me', { credentials: 'include' }).then(r => r.json()).then(u => {
+  if (u?.user?.username) $('#testEmail').value = u.user.username;
+}).catch(() => {});
+
+$('#btnTest').addEventListener('click', async () => {
+  const email = $('#testEmail').value.trim();
+  const out = $('#testOut');
+  const btn = $('#btnTest');
+  out.style.display = 'block';
+  out.className = 'out';
+  if (!email) { out.className = 'out err'; out.textContent = 'Informe um e-mail.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  out.textContent = 'Disparando...';
+  try {
+    const r = await fetch('/api/alerts/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || data.message || `HTTP ${r.status}`);
+    out.className = 'out ok';
+    out.textContent = `OK · ${data.message || 'enviado'}\n\nResposta:\n${JSON.stringify(data, null, 2)}`;
+  } catch (e) {
+    out.className = 'out err';
+    out.textContent = 'Erro: ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Enviar teste';
+  }
+});
+
+async function loadConfigs() {
+  const wrap = $('#cfgWrap');
+  try {
+    const r = await fetch('/api/alerts/config', { credentials: 'include' });
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) {
+      wrap.innerHTML = '<div class="empty">Nenhum alerta configurado.</div>';
+      return;
+    }
+    wrap.innerHTML = `<table class="cfg">
+      <thead><tr><th>Métrica</th><th>Canal</th><th>Direção</th><th>Limite</th><th>E-mail</th><th>Status</th></tr></thead>
+      <tbody>${rows.map(r => `
+        <tr>
+          <td><strong>${escHtml(r.metric)}</strong></td>
+          <td>${escHtml(r.channel || 'all')}</td>
+          <td>${r.direction === 'min' ? '≥ mínimo' : '≤ máximo'}</td>
+          <td>${escHtml(String(r.threshold))}</td>
+          <td style="font-size:12px;color:var(--muted);">${escHtml(r.email || '—')}</td>
+          <td><span class="pill ${r.active ? 'on' : 'off'}">${r.active ? 'ativo' : 'inativo'}</span></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch (e) {
+    wrap.innerHTML = `<div class="empty">Erro ao carregar: ${escHtml(e.message)}</div>`;
+  }
+}
+
+async function loadLog() {
+  const wrap = $('#logWrap');
+  try {
+    const r = await fetch('/api/alerts/log', { credentials: 'include' });
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) {
+      wrap.innerHTML = '<div class="empty">Sem disparos recentes.</div>';
+      return;
+    }
+    wrap.innerHTML = `<table class="cfg">
+      <thead><tr><th>Quando</th><th>Métrica</th><th>Valor</th><th>E-mail</th></tr></thead>
+      <tbody>${rows.slice(0, 20).map(r => `
+        <tr>
+          <td style="font-family:'JetBrains Mono',monospace; font-size:11px;">${new Date(r.fired_at || r.created_at).toLocaleString('pt-BR')}</td>
+          <td>${escHtml(r.metric || '—')}</td>
+          <td>${escHtml(String(r.value ?? '—'))}</td>
+          <td style="font-size:12px;color:var(--muted);">${escHtml(r.email || '—')}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch (e) {
+    wrap.innerHTML = `<div class="empty">Erro ao carregar: ${escHtml(e.message)}</div>`;
+  }
+}
+
+loadConfigs();
+loadLog();
+</script>
+</body>
+</html>
