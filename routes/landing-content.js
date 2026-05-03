@@ -144,10 +144,16 @@ router.post('/:scope/:workspace_id?/publish', async (req, res) => {
       : `scope = 'tenant' AND workspace_id = $1`;
     const params = scope === 'system_default' ? [] : [workspaceId];
 
+    // Pre-render do HTML (jsdom roda aqui, no admin, NÃO em request da home)
+    const { resolveDraft, merge, DEFAULT_CONTENT } = require('../utils/landing-content');
+    const draft = await resolveDraft({ scope, workspaceId });
+    const { render } = require('../utils/landing-render');
+    const renderedHtml = render(draft);
+
     const sql = scope === 'system_default'
-      ? `UPDATE landing_page_content SET published_json = content_json, is_published = true, status='published', published_at = now(), updated_by = $1 WHERE scope='system_default' RETURNING id, published_at, scope, workspace_id`
-      : `UPDATE landing_page_content SET published_json = content_json, is_published = true, status='published', published_at = now(), updated_by = $1 WHERE scope='tenant' AND workspace_id = $2 RETURNING id, published_at, scope, workspace_id`;
-    const sqlParams = scope === 'system_default' ? [req.user.id] : [req.user.id, workspaceId];
+      ? `UPDATE landing_page_content SET published_json = content_json, rendered_html = $2, is_published = true, status='published', published_at = now(), updated_by = $1 WHERE scope='system_default' RETURNING id, published_at, scope, workspace_id`
+      : `UPDATE landing_page_content SET published_json = content_json, rendered_html = $2, is_published = true, status='published', published_at = now(), updated_by = $1 WHERE scope='tenant' AND workspace_id = $3 RETURNING id, published_at, scope, workspace_id`;
+    const sqlParams = scope === 'system_default' ? [req.user.id, renderedHtml] : [req.user.id, renderedHtml, workspaceId];
     const updated = await db.get(sql, sqlParams);
 
     if (!updated) return res.status(404).json({ error: 'no_draft_to_publish', message: 'Salve um rascunho primeiro' });
