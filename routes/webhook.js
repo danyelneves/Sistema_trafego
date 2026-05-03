@@ -346,7 +346,26 @@ router.post('/mercadopago', async (req, res) => {
     // Validação estrita
     if (paymentData.status === 'approved') {
       const extRef = paymentData.external_reference || '';
-      
+
+      // ========== AUTO-ONBOARDING (plan_signup) ==========
+      if (extRef.startsWith('signup:')) {
+        const signupId = parseInt(extRef.split(':')[1], 10);
+        if (paymentData.currency_id !== 'BRL') {
+          console.error(`[FRAUDE-MP-SIGNUP] Moeda inválida: ${paymentData.currency_id}`);
+          return res.status(200).json({ ok: true });
+        }
+        try {
+          const onboarding = require('./onboarding');
+          const result = await onboarding.convertSignup(signupId, String(paymentData.id));
+          console.log(`[ONBOARDING] Signup ${signupId} convertido → workspace ${result.workspace_id}`);
+          return res.status(200).json({ ok: true, signup_id: signupId, workspace_id: result.workspace_id });
+        } catch (err) {
+          console.error('[ONBOARDING] Falha na conversão:', err.message);
+          // Retorna 200 mesmo em erro pra MP não reentregar (signup fica como 'failed' no DB)
+          return res.status(200).json({ ok: true, error: err.message });
+        }
+      }
+
       if (extRef.startsWith('UPGRADE_')) {
         const parts = extRef.split('_');
         const targetWorkspaceId = parseInt(parts[1], 10);

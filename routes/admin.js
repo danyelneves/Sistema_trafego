@@ -240,4 +240,52 @@ router.delete('/workspaces/:id/feature/:key', async (req, res) => {
   }
 });
 
+// ============================================================
+// ONBOARDING MODE (toggle manual / auto)
+// ============================================================
+
+/** GET /api/admin/onboarding — modo atual + signups recentes */
+router.get('/onboarding', async (req, res) => {
+  try {
+    const setting = await db.get(`SELECT value FROM settings WHERE key = 'onboarding.mode'`);
+    const recent = await db.all(`
+      SELECT s.id, s.email, s.name, s.workspace_name, s.status, s.created_at, s.paid_at, s.converted_at,
+             p.name AS plan_name, p.price_brl
+      FROM pending_signups s
+      LEFT JOIN plans p ON p.id = s.plan_id
+      ORDER BY s.created_at DESC LIMIT 50
+    `);
+    const stats = await db.get(`
+      SELECT
+        COUNT(*) FILTER (WHERE status='pending')   AS pending,
+        COUNT(*) FILTER (WHERE status='paid')      AS paid,
+        COUNT(*) FILTER (WHERE status='converted') AS converted,
+        COUNT(*) FILTER (WHERE status='failed')    AS failed
+      FROM pending_signups
+    `);
+    res.json({ ok: true, mode: setting?.value || 'manual', signups: recent, stats });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** PUT /api/admin/onboarding — alterna modo (manual/auto) */
+router.put('/onboarding', async (req, res) => {
+  try {
+    const { mode } = req.body || {};
+    if (!['manual', 'auto'].includes(mode)) {
+      return res.status(400).json({ error: 'mode deve ser manual ou auto' });
+    }
+    await db.run(
+      `INSERT INTO settings (key, value) VALUES ('onboarding.mode', $1)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+      [mode]
+    );
+    audit.log('admin.onboarding.mode_changed', { ...audit.fromReq(req), mode });
+    res.json({ ok: true, mode });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;

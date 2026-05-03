@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pagamento confirmado · Nexus OS</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0a0a0e; color:#f0f0f5; font-family:-apple-system,sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+  .card{background:#1a1a23; border:1px solid #222230; border-radius:14px; padding:40px; max-width:520px; text-align:center;}
+  .icon{font-size:48px; margin-bottom:16px;}
+  h1{font-size:28px; font-weight:800; margin-bottom:12px;}
+  p{color:#7a7a88; margin-bottom:20px; line-height:1.5;}
+  .step{background:#13131a; border-radius:8px; padding:16px; margin:12px 0; text-align:left; font-size:14px; color:#b8b8c5;}
+  .step strong{color:#0099ff;}
+  .btn{display:inline-block; background:linear-gradient(135deg, #0099ff, #00d4ff); color:#000; font-weight:700; padding:12px 24px; border-radius:8px; text-decoration:none; margin-top:16px;}
+  .status{font-family:monospace; font-size:13px; color:#7a7a88; margin-top:16px; min-height:18px;}
+  .status.ok{color:#22c55e;} .status.err{color:#ef4444;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon" id="ic">⏳</div>
+  <h1 id="title">Confirmando pagamento...</h1>
+  <p id="subtitle">Estamos processando sua compra. Em segundos suas credenciais chegam por e-mail.</p>
+
+  <div class="step">📧 <strong>Passo 1:</strong> Aguarde o e-mail com usuário e senha temporária (verifica spam também).</div>
+  <div class="step">🔓 <strong>Passo 2:</strong> Faça login em <strong>nexusagencia.app/login</strong> com as credenciais recebidas.</div>
+  <div class="step">⚙️ <strong>Passo 3:</strong> Configure suas APIs (Meta, WhatsApp, IA) em Settings e ative seus módulos.</div>
+
+  <div class="status" id="status">Verificando status...</div>
+  <a href="/login" class="btn" id="btn" style="display:none;">Fazer login agora →</a>
+</div>
+<script>
+const params = new URLSearchParams(location.search);
+const signupId = params.get('signup');
+const status = document.getElementById('status');
+const ic = document.getElementById('ic');
+const title = document.getElementById('title');
+const subtitle = document.getElementById('subtitle');
+const btn = document.getElementById('btn');
+
+let tries = 0;
+async function check() {
+  if (!signupId) { status.textContent = 'ID de signup não encontrado'; return; }
+  try {
+    const r = await fetch('/api/onboarding/status/' + signupId);
+    const d = await r.json();
+    if (d.status === 'converted') {
+      ic.textContent = '✅';
+      title.textContent = 'Tudo pronto!';
+      subtitle.textContent = 'Suas credenciais foram enviadas pro seu e-mail. Já pode fazer login.';
+      status.className = 'status ok';
+      status.textContent = 'Workspace criado com sucesso.';
+      btn.style.display = 'inline-block';
+      return;
+    }
+    if (d.status === 'failed') {
+      ic.textContent = '⚠️';
+      title.textContent = 'Erro no processamento';
+      subtitle.textContent = 'Algo deu errado após o pagamento. Entre em contato no WhatsApp pra liberar manualmente.';
+      status.className = 'status err';
+      status.textContent = 'Status: failed';
+      return;
+    }
+    tries++;
+    status.textContent = `Aguardando confirmação... (${tries})`;
+    if (tries < 30) setTimeout(check, 3000);
+    else status.textContent = 'Demorou mais que o esperado. Verifique seu e-mail ou contate o suporte.';
+  } catch (e) {
+    status.className = 'status err';
+    status.textContent = 'Erro: ' + e.message;
+  }
+}
+check();
+</script>
+</body>
+</html>

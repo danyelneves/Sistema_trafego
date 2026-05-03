@@ -64,6 +64,7 @@
   <div class="tab-bar">
     <div class="tab active" data-tab="plans">Planos</div>
     <div class="tab" data-tab="workspaces">Workspaces</div>
+    <div class="tab" data-tab="onboarding">Onboarding</div>
   </div>
 
   <div id="panel-plans" class="panel active">
@@ -114,6 +115,54 @@
       <table class="ws">
         <thead><tr><th>ID</th><th>Nome</th><th>Plano atual</th><th>Atribuído em</th><th>Users</th></tr></thead>
         <tbody id="ws-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="panel-onboarding" class="panel">
+    <div class="section-head"><span class="section-title">Modo de onboarding</span></div>
+    <div class="card" style="margin-bottom:20px;">
+      <div style="display:flex; gap:24px; align-items:flex-start;">
+        <div style="flex:1;">
+          <div style="margin-bottom:14px;">
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:14px; border:2px solid var(--border); border-radius:8px; transition:border-color .15s;" id="opt-manual">
+              <input type="radio" name="ob-mode" value="manual" id="rb-manual" checked>
+              <div>
+                <div style="font-weight:700; font-size:14px;">📞 Manual <span style="color:var(--up); font-size:11px; margin-left:6px;" id="active-manual">(ATIVO)</span></div>
+                <div style="color:var(--muted); font-size:12px; margin-top:2px;">Cliente clica em "Quero esse plano" e abre WhatsApp pra você criar conta manualmente. Indicado pros primeiros clientes.</div>
+              </div>
+            </label>
+          </div>
+          <div>
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:14px; border:2px solid var(--border); border-radius:8px; transition:border-color .15s;" id="opt-auto">
+              <input type="radio" name="ob-mode" value="auto" id="rb-auto">
+              <div>
+                <div style="font-weight:700; font-size:14px;">🤖 Automático <span style="color:var(--up); font-size:11px; margin-left:6px; display:none;" id="active-auto">(ATIVO)</span></div>
+                <div style="color:var(--muted); font-size:12px; margin-top:2px;">Cliente paga via Mercado Pago direto, recebe credenciais por e-mail e ganha acesso na hora. Use quando você não tiver tempo de atender manual (ex: viagem).</div>
+              </div>
+            </label>
+          </div>
+          <div style="margin-top:14px; padding:12px; background:var(--bg-2); border-radius:6px; font-size:12px; color:var(--muted);">
+            ⚠️ Antes de ligar o modo automático: configure SMTP (env: <code style="color:var(--accent);">SMTP_HOST/USER/PASS</code>) e Mercado Pago (<code style="color:var(--accent);">MERCADOPAGO_ACCESS_TOKEN</code>). E pelo menos 1 plano marcado como "ativo".
+          </div>
+          <span class="status-msg" id="ob-status" style="margin-top:12px; display:block;"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head"><span class="section-title">Estatísticas</span></div>
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:20px;">
+      <div class="card" style="text-align:center;"><div style="font-size:24px; font-weight:800; color:var(--muted);" id="stat-pending">0</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Pendentes</div></div>
+      <div class="card" style="text-align:center;"><div style="font-size:24px; font-weight:800; color:var(--accent);" id="stat-paid">0</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Pagos</div></div>
+      <div class="card" style="text-align:center;"><div style="font-size:24px; font-weight:800; color:var(--up);" id="stat-converted">0</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Convertidos</div></div>
+      <div class="card" style="text-align:center;"><div style="font-size:24px; font-weight:800; color:var(--down);" id="stat-failed">0</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Falhas</div></div>
+    </div>
+
+    <div class="section-head"><span class="section-title">Signups recentes</span></div>
+    <div class="card">
+      <table class="ws">
+        <thead><tr><th>ID</th><th>E-mail</th><th>Workspace</th><th>Plano</th><th>Status</th><th>Criado</th></tr></thead>
+        <tbody id="signups-tbody"></tbody>
       </table>
     </div>
   </div>
@@ -303,6 +352,63 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'onboarding') loadOnboarding();
+  });
+});
+
+async function loadOnboarding() {
+  try {
+    const data = await NEXUS.apiCall('GET', '/api/admin/onboarding');
+    document.getElementById('rb-manual').checked = data.mode === 'manual';
+    document.getElementById('rb-auto').checked = data.mode === 'auto';
+    document.getElementById('active-manual').style.display = data.mode === 'manual' ? '' : 'none';
+    document.getElementById('active-auto').style.display = data.mode === 'auto' ? '' : 'none';
+    document.getElementById('opt-manual').style.borderColor = data.mode === 'manual' ? 'var(--accent)' : 'var(--border)';
+    document.getElementById('opt-auto').style.borderColor = data.mode === 'auto' ? 'var(--accent)' : 'var(--border)';
+
+    document.getElementById('stat-pending').textContent = data.stats?.pending || 0;
+    document.getElementById('stat-paid').textContent = data.stats?.paid || 0;
+    document.getElementById('stat-converted').textContent = data.stats?.converted || 0;
+    document.getElementById('stat-failed').textContent = data.stats?.failed || 0;
+
+    const tbody = document.getElementById('signups-tbody');
+    if (!data.signups?.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:24px;">Nenhum signup ainda.</td></tr>';
+    } else {
+      tbody.innerHTML = data.signups.map(s => {
+        const colors = {pending:'var(--muted)', paid:'var(--accent)', converted:'var(--up)', failed:'var(--down)'};
+        return `<tr>
+          <td>${s.id}</td>
+          <td>${NEXUS.escapeHtml(s.email)}</td>
+          <td>${NEXUS.escapeHtml(s.workspace_name)}</td>
+          <td>${NEXUS.escapeHtml(s.plan_name || '—')}</td>
+          <td style="color:${colors[s.status]||'var(--muted)'}; font-family:'JetBrains Mono',monospace;">${s.status}</td>
+          <td style="color:var(--muted); font-size:11px;">${new Date(s.created_at).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+        </tr>`;
+      }).join('');
+    }
+  } catch (e) {
+    document.getElementById('ob-status').className = 'status-msg err';
+    document.getElementById('ob-status').textContent = 'Erro: ' + e.message;
+  }
+}
+
+document.querySelectorAll('input[name=ob-mode]').forEach(rb => {
+  rb.addEventListener('change', async () => {
+    const mode = rb.value;
+    const status = document.getElementById('ob-status');
+    status.className = 'status-msg';
+    status.textContent = 'Salvando...';
+    try {
+      await NEXUS.apiCall('PUT', '/api/admin/onboarding', { mode });
+      status.className = 'status-msg ok';
+      status.textContent = `✓ Modo trocado pra ${mode.toUpperCase()}`;
+      loadOnboarding();
+      setTimeout(() => { status.textContent = ''; }, 3000);
+    } catch (e) {
+      status.className = 'status-msg err';
+      status.textContent = 'Erro: ' + e.message;
+    }
   });
 });
 

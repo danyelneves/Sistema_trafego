@@ -109,7 +109,16 @@ function renderAvailable(plans, currentId) {
     `;
   }).join('');
   grid.querySelectorAll('button[data-key]:not([disabled])').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
+      // Tenta auto-upgrade se modo auto + cliente já existente; senão WhatsApp
+      try {
+        const cfg = await fetch('/api/onboarding/config').then(r => r.json());
+        if (cfg.mode === 'auto') {
+          // Cliente existente quer upgrade — também usa /comprar mas pré-seleciona plano
+          window.location.href = `/comprar?plan=${btn.dataset.key}&from=upgrade`;
+          return;
+        }
+      } catch { /* segue pro fallback WhatsApp */ }
       const msg = encodeURIComponent(`Olá! Quero migrar pro plano "${btn.dataset.key}" do Nexus OS.`);
       window.open(`https://wa.me/5511999990000?text=${msg}`, '_blank');
     });
