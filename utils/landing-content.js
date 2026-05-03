@@ -70,6 +70,49 @@ const DEFAULT_CONTENT = {
       { label: 'Login', href: '/login' },
     ],
   },
+
+  // ============================================================
+  // SEÇÕES OPCIONAIS — desligadas por padrão.
+  // Quando enabled=true, renderizam entre o Quote e o CTA final.
+  // Ordem de exibição: pricing → testimonials → faq.
+  // ============================================================
+  sections: {
+    pricing: {
+      enabled: false,
+      tag: 'Planos',
+      title: 'Escolha seu Nexus',
+      subtitle: 'Comece simples, expanda quando o caixa pedir.',
+      plans: [
+        { name: 'Starter', price: '297', period: '/mês', description: 'Tráfego pago automatizado', features: ['Sentinel', 'Launcher', 'Hive', 'Suporte por e-mail'], cta_label: 'Começar', cta_href: '/comprar?plan=starter', highlight: false },
+        { name: 'Growth',  price: '497', period: '/mês', description: 'Vendas autônomas + tráfego',  features: ['Tudo do Starter', 'Doppelgänger', 'Vending', 'Lazarus', 'Suporte WhatsApp'], cta_label: 'Quero esse', cta_href: '/comprar?plan=growth', highlight: true },
+        { name: 'Elite',   price: '997', period: '/mês', description: 'Operação completa',           features: ['Tudo do Growth', 'Forge + Studio', 'Titan + Hive', 'Onboarding 1:1'], cta_label: 'Falar com vendas', cta_href: '/comprar?plan=elite', highlight: false },
+      ],
+    },
+    testimonials: {
+      enabled: false,
+      tag: 'Quem usa fala',
+      title: 'Resultado em prova',
+      subtitle: 'Donos de negócios que trocaram time inteiro pelo Nexus.',
+      items: [
+        { name: 'Carlos Mendes', role: 'CEO · Clínica Bella Pele',     quote: 'Em 30 dias o Doppelgänger fechou mais vendas que minha SDR fechou em 3 meses. Não dou mais conta de viver sem.', avatar: '' },
+        { name: 'Ana Oliveira',  role: 'Sócia · Estúdio Acquaverde',    quote: 'O Sentinel pausou 6 anúncios que eu não tinha tempo de monitorar. Salvou R$ 4.200 num mês só.', avatar: '' },
+        { name: 'Rafael Souza',  role: 'Founder · Acai do Bairro',      quote: 'Poltergeist + Vending: pedido cai, motoboy sai, comanda imprime. Sem operador. É surreal.', avatar: '' },
+      ],
+    },
+    faq: {
+      enabled: false,
+      tag: 'Perguntas frequentes',
+      title: 'Tira dúvidas em 30 segundos',
+      subtitle: '',
+      items: [
+        { q: 'Preciso saber programar?',                 a: 'Não. Você só conecta suas contas (Meta Ads, WhatsApp, Mercado Pago) e o sistema opera sozinho. Quem programa é nossa IA.' },
+        { q: 'Quanto tempo leva pra ativar?',            a: 'Em média 5 minutos depois do pagamento. Você recebe credenciais por e-mail, faz login e está dentro com os módulos liberados.' },
+        { q: 'Posso cancelar a qualquer momento?',       a: 'Sim. Sem fidelidade, sem multa. Cancela direto pelo painel ou via WhatsApp.' },
+        { q: 'O Doppelgänger fala como meus clientes?',  a: 'Configurável por workspace: você define nome, bio e estilo de escrita do "vendedor IA". Ele responde no WhatsApp imitando essa persona.' },
+        { q: 'E se eu trocar de plano?',                 a: 'Troca direto na área Meu Plano. Upgrade libera módulos imediatamente. Downgrade vale a partir do próximo ciclo.' },
+      ],
+    },
+  },
 };
 
 /** Merge raso 2 níveis: customContent.field sobrescreve default.field (sem deep merge complexo) */

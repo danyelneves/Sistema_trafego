@@ -223,9 +223,14 @@ async function _renderLanding(workspaceId) {
   try {
     const { resolveContent } = require('./utils/landing-content');
     const { content, source } = await resolveContent({ workspaceId });
-    // Otimização: se não há conteúdo publicado no DB, devolve arquivo estático
-    // sem chamar jsdom (caro). jsdom só roda quando há customização real.
-    if (source === 'hardcoded') {
+    // Otimização: se não há conteúdo publicado no DB E nenhuma seção opcional
+    // ativa, devolve arquivo estático sem chamar jsdom.
+    const hasOptionalSection = content?.sections && (
+      content.sections.pricing?.enabled ||
+      content.sections.testimonials?.enabled ||
+      content.sections.faq?.enabled
+    );
+    if (source === 'hardcoded' && !hasOptionalSection) {
       const html = require('fs').readFileSync(path.join(PUBLIC, 'landing.html'), 'utf8');
       _landingCache.set(key, { ts: Date.now(), html });
       return html;
