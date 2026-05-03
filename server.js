@@ -89,6 +89,7 @@ const { requireAuth } = require('./middleware/auth');
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/admin',      require('./routes/admin'));
 app.use('/api/onboarding', require('./routes/onboarding'));
+app.use('/api/admin/landing', require('./routes/landing-content'));
 app.use('/api/audit',      require('./routes/audit'));
 app.use('/api/workspaces', require('./routes/workspaces'));
 app.use('/api/campaigns',  require('./routes/campaigns'));
@@ -210,7 +211,42 @@ function guardHTML(req, res) {
 }
 
 // Landing pública (Nexus Agência)
-app.get('/', (req, res) => res.sendFile(path.join(PUBLIC, 'landing.html')));
+// Landing pública: SSR a partir do conteúdo no DB com fallback chain.
+// nexusagencia.app/        → system_default → hardcoded
+// nexusagencia.app/t/<slug>→ tenant → system_default → hardcoded
+const _landingCache = new Map(); // key=`${scope}:${ws||0}`, value={ts, html}
+const LANDING_TTL = 30 * 1000;
+async function _renderLanding(workspaceId) {
+  const key = `${workspaceId || 0}`;
+  const hit = _landingCache.get(key);
+  if (hit && Date.now() - hit.ts < LANDING_TTL) return hit.html;
+  try {
+    const { resolveContent } = require('./utils/landing-content');
+    const { render } = require('./utils/landing-render');
+    const { content } = await resolveContent({ workspaceId });
+    const html = render(content);
+    _landingCache.set(key, { ts: Date.now(), html });
+    return html;
+  } catch (err) {
+    log.error('landing render falhou, usando arquivo estático', err);
+    return require('fs').readFileSync(path.join(PUBLIC, 'landing.html'), 'utf8');
+  }
+}
+app.get('/', async (req, res) => {
+  const html = await _renderLanding(null);
+  res.set('Content-Type', 'text/html').send(html);
+});
+app.get('/t/:slug', async (req, res, next) => {
+  try {
+    const ws = await require('./db').get(
+      `SELECT lpc.workspace_id FROM landing_page_content lpc WHERE lpc.scope='tenant' AND lpc.slug = $1 AND lpc.is_published = true`,
+      [req.params.slug]
+    );
+    if (!ws) return next(); // 404 padrão
+    const html = await _renderLanding(ws.workspace_id);
+    res.set('Content-Type', 'text/html').send(html);
+  } catch (e) { res.status(500).send(`Erro: ${e.message}`); }
+});
 app.get('/comprar', (req, res) => res.sendFile(path.join(PUBLIC, 'comprar.html')));
 app.get('/onboarding/sucesso', (req, res) => res.sendFile(path.join(PUBLIC, 'onboarding-sucesso.html')));
 app.get('/onboarding/aguardando', (req, res) => res.sendFile(path.join(PUBLIC, 'onboarding-sucesso.html')));

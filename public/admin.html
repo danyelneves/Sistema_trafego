@@ -65,6 +65,7 @@
     <div class="tab active" data-tab="plans">Planos</div>
     <div class="tab" data-tab="workspaces">Workspaces</div>
     <div class="tab" data-tab="onboarding">Onboarding</div>
+    <div class="tab" data-tab="landing">Landing</div>
   </div>
 
   <div id="panel-plans" class="panel active">
@@ -164,6 +165,35 @@
         <thead><tr><th>ID</th><th>E-mail</th><th>Workspace</th><th>Plano</th><th>Status</th><th>Criado</th></tr></thead>
         <tbody id="signups-tbody"></tbody>
       </table>
+    </div>
+  </div>
+
+  <div id="panel-landing" class="panel">
+    <div class="section-head"><span class="section-title">Editor de Landing Page</span></div>
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <label style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Editando:</label>
+        <select id="land-context" style="background:var(--bg-2); border:1px solid var(--border-2); color:var(--text); padding:8px 12px; border-radius:6px; font-size:13px; min-width:280px;">
+          <option value="system_default">🌐 Default do sistema (nexusagencia.app)</option>
+        </select>
+        <span id="land-status-pill" style="font-family:'JetBrains Mono',monospace; font-size:11px; padding:3px 8px; border-radius:4px;"></span>
+      </div>
+    </div>
+
+    <div class="card" id="land-editor" style="display:none;">
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;">
+        <button class="btn btn-primary" id="land-save">💾 Salvar rascunho</button>
+        <button class="btn" id="land-preview" style="background:var(--bg-3); color:var(--text); border:1px solid var(--border-2);">👁 Pré-visualizar</button>
+        <button class="btn" id="land-publish" style="background:var(--up); color:#000; border:none;">🚀 Publicar</button>
+        <button class="btn" id="land-unpublish" style="background:var(--bg-3); color:var(--down); border:1px solid var(--down); display:none;">⏸ Despublicar</button>
+        <span class="status-msg" id="land-status" style="margin-left:8px; align-self:center;"></span>
+      </div>
+
+      <div id="land-form"></div>
+    </div>
+
+    <div class="card" id="land-empty" style="text-align:center; color:var(--muted); padding:40px; display:none;">
+      Selecione um contexto pra começar a editar.
     </div>
   </div>
 </main>
@@ -353,6 +383,9 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
     if (tab.dataset.tab === 'onboarding') loadOnboarding();
+    if (tab.dataset.tab === 'landing') {
+      loadLandingList().then(loadLandingContent);
+    }
   });
 });
 
@@ -392,6 +425,191 @@ async function loadOnboarding() {
     document.getElementById('ob-status').textContent = 'Erro: ' + e.message;
   }
 }
+
+// =================== LANDING ===================
+let landSchema = null;
+let landCurrent = null;
+let landContext = { scope: 'system_default', workspace_id: null };
+
+const SECTION_LABELS = {
+  meta:            { label: '🔍 SEO / Meta tags',    fields: { title:'Título da aba', description:'Descrição (meta description)', theme_color:'Cor do tema (hex)' } },
+  nav:             { label: '🧭 Navegação topo',      fields: { logo_text:'Texto do logo', cta_label:'Texto do botão CTA', cta_href:'Link do CTA' } },
+  hero:            { label: '🚀 Hero (topo da página)', fields: {
+    badge:'Badge superior', title_pre:'Título antes do destaque', title_grad:'Título destacado (em gradiente)', title_post:'Título depois do destaque',
+    subtitle:'Subtítulo', cta_primary_label:'Botão principal — texto', cta_primary_href:'Botão principal — link',
+    cta_secondary_label:'Botão secundário — texto', cta_secondary_href:'Botão secundário — link'
+  }},
+  stats:           { label: '📊 Estatísticas',        array: true, fields: { num:'Número', label:'Rótulo' } },
+  how:             { label: '⚙️ Como funciona',       fields: { tag:'Tag (cima)', title:'Título', subtitle:'Subtítulo' }, sub: { steps: { array: true, label: 'Passos', fields: { title:'Título do passo', desc:'Descrição' } } } },
+  modules_section: { label: '🧩 Seção Módulos',        fields: { tag:'Tag', title:'Título', subtitle:'Subtítulo' } },
+  quote:           { label: '💬 Quote',                fields: { text:'Texto da citação', author:'Autor' } },
+  cta_final:       { label: '🎯 CTA final',            fields: { title:'Título', subtitle:'Subtítulo', button_label:'Botão — texto', button_href:'Botão — link' } },
+  footer:          { label: '🦶 Rodapé',               fields: { copyright:'Texto do copyright' }, sub: { links: { array: true, label: 'Links', fields: { label:'Texto', href:'Link' } } } },
+};
+
+function fieldInput(name, value, label, multiline=false) {
+  const safe = String(value ?? '').replace(/"/g,'&quot;');
+  if (multiline) {
+    return `<div class="field"><label>${NEXUS.escapeHtml(label)}</label>
+      <textarea data-key="${name}" rows="3" style="width:100%; background:var(--bg-2); border:1px solid var(--border-2); border-radius:6px; padding:10px; color:var(--text); font-size:13px; font-family:inherit; resize:vertical;">${NEXUS.escapeHtml(value || '')}</textarea>
+    </div>`;
+  }
+  return `<div class="field"><label>${NEXUS.escapeHtml(label)}</label>
+    <input data-key="${name}" value="${safe}" style="width:100%; background:var(--bg-2); border:1px solid var(--border-2); border-radius:6px; padding:10px 12px; color:var(--text); font-size:13px;">
+  </div>`;
+}
+
+function renderArrayBlock(path, items, fields, label) {
+  let html = `<div style="margin-bottom:16px;">
+    <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px;">${NEXUS.escapeHtml(label || path)}</div>`;
+  items.forEach((item, idx) => {
+    html += `<div style="background:var(--bg-2); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:8px;">
+      <div style="font-size:10px; color:var(--muted); margin-bottom:6px;">Item #${idx + 1}</div>`;
+    Object.entries(fields).forEach(([k, l]) => {
+      const val = item?.[k] ?? '';
+      const multiline = l.includes('Descrição') || l.includes('subtítulo') || l.includes('citação');
+      html += fieldInput(`${path}.${idx}.${k}`, val, l, multiline);
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+function renderForm(content) {
+  const wrap = document.getElementById('land-form');
+  let html = '';
+  for (const [key, def] of Object.entries(SECTION_LABELS)) {
+    const data = content[key] || {};
+    html += `<details ${key === 'hero' ? 'open' : ''} style="margin-bottom:16px; background:var(--bg-3); border:1px solid var(--border); border-radius:8px;">
+      <summary style="padding:12px 16px; cursor:pointer; font-weight:600; font-size:14px;">${NEXUS.escapeHtml(def.label)}</summary>
+      <div style="padding:16px;">`;
+    if (def.array) {
+      html += renderArrayBlock(key, Array.isArray(data) ? data : [], def.fields, def.label);
+    } else if (def.fields) {
+      Object.entries(def.fields).forEach(([k, label]) => {
+        const multiline = label.toLowerCase().includes('subtítulo') || label.toLowerCase().includes('descrição') || label.toLowerCase().includes('citação');
+        html += fieldInput(`${key}.${k}`, data[k] ?? '', label, multiline);
+      });
+      if (def.sub) {
+        for (const [subKey, subDef] of Object.entries(def.sub)) {
+          if (subDef.array) {
+            html += renderArrayBlock(`${key}.${subKey}`, Array.isArray(data[subKey]) ? data[subKey] : [], subDef.fields, subDef.label);
+          }
+        }
+      }
+    }
+    html += `</div></details>`;
+  }
+  wrap.innerHTML = html;
+}
+
+function collectForm() {
+  const out = {};
+  document.querySelectorAll('#land-form [data-key]').forEach(el => {
+    const path = el.dataset.key.split('.');
+    let cur = out;
+    for (let i = 0; i < path.length - 1; i++) {
+      const seg = path[i];
+      const next = path[i + 1];
+      const nextIsIdx = /^\d+$/.test(next);
+      if (cur[seg] == null) cur[seg] = nextIsIdx ? [] : {};
+      cur = cur[seg];
+    }
+    const lastKey = path[path.length - 1];
+    cur[/^\d+$/.test(lastKey) ? parseInt(lastKey, 10) : lastKey] = el.value;
+  });
+  return out;
+}
+
+async function loadLandingList() {
+  const list = await NEXUS.apiCall('GET', '/api/admin/landing');
+  const sel = document.getElementById('land-context');
+  sel.innerHTML = '<option value="system_default::">🌐 Default do sistema (nexusagencia.app)</option>';
+  // Adiciona tenants onde temos workspaces
+  const ws = await NEXUS.apiCall('GET', '/api/admin/workspaces');
+  ws.workspaces.forEach(w => {
+    if (w.id === 1) return; // 1 é owner, não conta como tenant
+    sel.innerHTML += `<option value="tenant::${w.id}">🏢 ${NEXUS.escapeHtml(w.name)} (ws ${w.id})</option>`;
+  });
+}
+
+async function loadLandingContent() {
+  const status = document.getElementById('land-status');
+  status.textContent = 'Carregando...'; status.className = 'status-msg';
+  const url = landContext.scope === 'system_default'
+    ? '/api/admin/landing/system_default'
+    : `/api/admin/landing/tenant/${landContext.workspace_id}`;
+  try {
+    const data = await NEXUS.apiCall('GET', url);
+    landSchema = data.defaults;
+    landCurrent = data.content || data.content_json || data.defaults;
+    renderForm(landCurrent);
+    document.getElementById('land-editor').style.display = 'block';
+    document.getElementById('land-empty').style.display = 'none';
+    const pill = document.getElementById('land-status-pill');
+    if (data.is_published) {
+      pill.style.background = 'rgba(34,197,94,.15)'; pill.style.color = 'var(--up)'; pill.textContent = 'PUBLICADA';
+      document.getElementById('land-unpublish').style.display = 'inline-block';
+    } else if (data.exists) {
+      pill.style.background = 'rgba(0,153,255,.15)'; pill.style.color = 'var(--accent)'; pill.textContent = 'RASCUNHO';
+      document.getElementById('land-unpublish').style.display = 'none';
+    } else {
+      pill.style.background = 'var(--bg-3)'; pill.style.color = 'var(--muted)'; pill.textContent = 'NÃO CRIADA';
+      document.getElementById('land-unpublish').style.display = 'none';
+    }
+    status.textContent = '';
+  } catch (e) {
+    status.className = 'status-msg err';
+    status.textContent = 'Erro: ' + e.message;
+  }
+}
+
+async function saveLanding(publish = false) {
+  const status = document.getElementById('land-status');
+  status.className = 'status-msg'; status.textContent = 'Salvando...';
+  const content = collectForm();
+  const url = landContext.scope === 'system_default'
+    ? '/api/admin/landing/system_default'
+    : `/api/admin/landing/tenant/${landContext.workspace_id}`;
+  try {
+    await NEXUS.apiCall('PUT', url, { content });
+    if (publish) await NEXUS.apiCall('POST', url + '/publish', {});
+    status.className = 'status-msg ok';
+    status.textContent = publish ? '✓ Publicado em produção' : '✓ Rascunho salvo';
+    await loadLandingContent();
+    setTimeout(() => { status.textContent = ''; }, 3000);
+  } catch (e) {
+    status.className = 'status-msg err';
+    status.textContent = 'Erro: ' + e.message;
+  }
+}
+
+document.getElementById('land-context').addEventListener('change', e => {
+  const [scope, ws] = e.target.value.split('::');
+  landContext = { scope, workspace_id: ws ? parseInt(ws, 10) : null };
+  loadLandingContent();
+});
+document.getElementById('land-save').addEventListener('click', () => saveLanding(false));
+document.getElementById('land-publish').addEventListener('click', async () => {
+  if (!confirm('Publicar essa versão? Vai aparecer em produção imediatamente.')) return;
+  await saveLanding(true);
+});
+document.getElementById('land-preview').addEventListener('click', async () => {
+  await saveLanding(false); // salva primeiro
+  const url = landContext.scope === 'system_default'
+    ? '/api/admin/landing/system_default/preview'
+    : `/api/admin/landing/tenant/${landContext.workspace_id}/preview`;
+  window.open(url, '_blank');
+});
+document.getElementById('land-unpublish').addEventListener('click', async () => {
+  if (!confirm('Despublicar a landing? Vai voltar ao default do sistema/hardcoded.')) return;
+  const url = landContext.scope === 'system_default'
+    ? '/api/admin/landing/system_default/unpublish'
+    : `/api/admin/landing/tenant/${landContext.workspace_id}/unpublish`;
+  await NEXUS.apiCall('POST', url, {});
+  await loadLandingContent();
+});
 
 document.querySelectorAll('input[name=ob-mode]').forEach(rb => {
   rb.addEventListener('change', async () => {
