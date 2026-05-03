@@ -262,15 +262,25 @@ function renderOptionalSections(sec) {
 }
 
 function renderPricing(p) {
-  const plans = (p.plans || []).map(plan => `
+  const plans = (p.plans || []).map(plan => {
+    const features = (plan.features || []).map(f => {
+      // Retrocompat: feature pode ser string (legado) ou {title, desc} (novo)
+      if (typeof f === 'string') return `<li class="opt-feat"><div class="opt-feat-title">${escText(f)}</div></li>`;
+      const title = escText(f.title || '');
+      const desc = f.desc ? `<div class="opt-feat-desc">${escText(f.desc)}</div>` : '';
+      return `<li class="opt-feat"><div class="opt-feat-title">${title}</div>${desc}</li>`;
+    }).join('');
+    return `
     <div class="opt-pcard ${plan.highlight ? 'opt-pcard-highlight' : ''}">
       ${plan.highlight ? '<div class="opt-pcard-tag">Mais popular</div>' : ''}
       <div class="opt-pcard-name">${escText(plan.name)}</div>
-      <div class="opt-pcard-desc">${escText(plan.description || '')}</div>
+      ${plan.tagline ? `<div class="opt-pcard-tagline">${escText(plan.tagline)}</div>` : ''}
       <div class="opt-pcard-price">R$ ${escText(plan.price)}<small>${escText(plan.period || '/mês')}</small></div>
-      <ul class="opt-pcard-feats">${(plan.features || []).map(f => `<li>${escText(f)}</li>`).join('')}</ul>
+      ${plan.description ? `<div class="opt-pcard-desc">${escText(plan.description)}</div>` : ''}
+      <ul class="opt-pcard-feats">${features}</ul>
       <a href="${escAttr(plan.cta_href || '/comprar')}" class="opt-pcard-btn">${escText(plan.cta_label || 'Começar')}</a>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   return `<section class="s opt-pricing">
     <div class="container">
       <div class="section-tag">${escText(p.tag || 'Planos')}</div>
@@ -325,13 +335,17 @@ const OPTIONAL_SECTIONS_CSS = `
 .opt-pcard:hover{transform:translateY(-3px);border-color:var(--border-2,#2a2a38)}
 .opt-pcard-highlight{border-color:var(--accent,#0099ff);background:linear-gradient(135deg,rgba(0,153,255,.08),rgba(0,212,255,.02))}
 .opt-pcard-tag{position:absolute;top:-10px;left:24px;background:var(--gradient,linear-gradient(135deg,#0099ff,#00d4ff));color:#000;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
-.opt-pcard-name{font-size:18px;font-weight:700;margin-bottom:6px}
-.opt-pcard-desc{color:var(--muted,#7a7a88);font-size:13px;min-height:34px;margin-bottom:16px}
-.opt-pcard-price{font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:800;color:var(--accent,#0099ff);margin-bottom:18px;line-height:1}
+.opt-pcard-name{font-size:20px;font-weight:800;margin-bottom:4px}
+.opt-pcard-tagline{color:var(--accent-2,#00d4ff);font-size:12px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:16px;font-family:'JetBrains Mono',monospace}
+.opt-pcard-desc{color:var(--text-2,#b8b8c5);font-size:13px;line-height:1.55;margin-bottom:18px}
+.opt-pcard-price{font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:800;color:var(--accent,#0099ff);margin-bottom:6px;line-height:1}
 .opt-pcard-price small{font-size:13px;color:var(--muted,#7a7a88);font-weight:400}
-.opt-pcard-feats{list-style:none;padding:0;margin:0 0 24px 0;font-size:13px;color:var(--text-2,#b8b8c5)}
-.opt-pcard-feats li{padding:5px 0}
-.opt-pcard-feats li::before{content:'✓ ';color:#22c55e;font-weight:700}
+.opt-pcard-feats{list-style:none;padding:0;margin:18px 0 24px 0}
+.opt-pcard-feats .opt-feat{padding:10px 0;border-top:1px solid var(--border,#222230);display:flex;flex-direction:column;gap:3px}
+.opt-pcard-feats .opt-feat:first-child{border-top:none;padding-top:4px}
+.opt-pcard-feats .opt-feat-title{font-size:13px;font-weight:700;color:var(--text,#f0f0f5);position:relative;padding-left:18px}
+.opt-pcard-feats .opt-feat-title::before{content:'';position:absolute;left:0;top:5px;width:11px;height:6px;border-left:2px solid #22c55e;border-bottom:2px solid #22c55e;transform:rotate(-45deg)}
+.opt-pcard-feats .opt-feat-desc{font-size:12px;color:var(--muted,#7a7a88);line-height:1.45;padding-left:18px}
 .opt-pcard-btn{display:block;width:100%;padding:11px;background:var(--gradient,linear-gradient(135deg,#0099ff,#00d4ff));color:#000;font-weight:700;text-align:center;border-radius:8px;text-decoration:none;font-size:14px}
 .opt-pcard-btn:hover{opacity:.9}
 .opt-test-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:32px}
