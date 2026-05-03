@@ -68,6 +68,34 @@ router.get('/me/features', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/me/plan', requireAuth, async (req, res) => {
+  try {
+    const wsId = req.user.workspace_id;
+    const plan = await db.get(`
+      SELECT p.id, p.key, p.name, p.description, p.price_brl,
+             COALESCE(json_agg(json_build_object(
+               'key', f.key, 'name', f.name, 'description', f.description,
+               'bundle_key', f.bundle_key, 'is_core', f.is_core
+             ) ORDER BY f.is_core DESC, f.display_order)
+             FILTER (WHERE f.key IS NOT NULL), '[]') AS features
+      FROM workspace_plan wp
+      JOIN plans p ON p.id = wp.plan_id
+      LEFT JOIN plan_features pf ON pf.plan_id = p.id
+      LEFT JOIN features f ON f.key = pf.feature_key
+      WHERE wp.workspace_id = $1
+      GROUP BY p.id
+    `, [wsId]);
+    const all_plans = await db.all(`
+      SELECT id, key, name, description, price_brl, active FROM plans
+      WHERE active = true AND key != 'owner'
+      ORDER BY price_brl ASC
+    `);
+    res.json({ ok: true, current: plan, available: all_plans });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.get('/viewer-link', requireAuth, require('../middleware/auth').requireAdmin, (req, res) => {
   const IS_PROD = process.env.NODE_ENV === 'production';
   const token = signToken({ id: 0, username: 'diretoria', role: 'viewer', name: 'Diretoria' });

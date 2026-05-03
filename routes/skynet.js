@@ -11,12 +11,27 @@ const db = require('../db');
 router.post('/hunt', requireAuth, async (req, res) => {
   try {
     const { target_niche, location, max_targets } = req.body;
-    
+
     if (!target_niche || !location) {
       throw new Error("Nicho e Localização são obrigatórios.");
     }
 
-    console.log(`[SKYNET] Iniciando Caçada: Buscando ${max_targets || 5} ${target_niche} em ${location}...`);
+    // Enforcement de quota: cada hunt consome 1 do limite "calls_per_day"
+    // Plano com limits {"calls_per_day": 50} = 50 hunts/dia.
+    // Sem limite definido = livre.
+    const limits = require('../utils/limits');
+    const quota = await limits.check(req.user.workspace_id, 'skynet', 'calls_per_day', 1, { user: req.user });
+    if (!quota.ok) {
+      return res.status(429).json({
+        error: 'limit_exceeded',
+        feature: 'skynet',
+        limit: quota.limit,
+        used: quota.used,
+        message: `Limite diário do Skynet atingido (${quota.used}/${quota.limit}). Faça upgrade pra liberar mais.`,
+      });
+    }
+
+    console.log(`[SKYNET] Iniciando Caçada: Buscando ${max_targets || 5} ${target_niche} em ${location}... (quota ${quota.used + 1}/${quota.limit ?? '∞'})`);
 
     const settings = await db.all("SELECT key, value FROM workspace_settings WHERE workspace_id = $1", [req.user.workspace_id]);
     const getSetting = (k, envKey) => settings.find(s => s.key === k)?.value || process.env[envKey];
@@ -165,11 +180,15 @@ Logo após, avise que você tem leads QUENTES precisando de ${target_niche} e ma
       });
     }
 
+    // Registra consumo após sucesso (1 chamada usada)
+    await limits.record(req.user.workspace_id, 'skynet', 'calls_per_day', 1);
+
     res.json({
       ok: true,
       mission_status: "SKYNET_ACTIVE",
       targets_acquired: targets.length,
       logs: callsLog,
+      quota: { limit: quota.limit, used: quota.used + 1, remaining: quota.remaining ? quota.remaining - 1 : null },
       message: "Operação Skynet concluída. A rede neural prospectou, ligou e enviou os links de pagamento. O sistema agora aguarda o dinheiro cair."
     });
 

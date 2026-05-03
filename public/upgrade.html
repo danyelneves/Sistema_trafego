@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meu Plano · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+<style>
+  .current-plan-card {
+    background: linear-gradient(135deg, rgba(0,153,255,.12), rgba(0,212,255,.04));
+    border: 1px solid var(--accent); border-radius: 10px;
+    padding: 24px; margin-bottom: 28px;
+  }
+  .cp-badge { display:inline-block; background:var(--accent); color:#000; font-weight:700; padding:3px 10px; border-radius:4px; font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
+  .cp-name { font-size:24px; font-weight:800; margin-bottom:4px; }
+  .cp-price { color:var(--accent); font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; margin-bottom:16px; }
+  .cp-features { display:flex; flex-wrap:wrap; gap:6px; }
+  .feat-chip { background: rgba(0,153,255,.1); border:1px solid var(--border-2); padding:4px 10px; border-radius:4px; font-size:11px; font-family:'JetBrains Mono',monospace; }
+  .feat-chip.core { opacity:.55; }
+
+  .plans-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px; }
+  .pcard { background: var(--bg-3); border:1px solid var(--border); border-radius:10px; padding:20px; transition: border-color .15s; }
+  .pcard:hover { border-color: var(--border-2); }
+  .pcard.current { border-color: var(--accent); background: rgba(0,153,255,.05); }
+  .pname { font-size:18px; font-weight:700; margin-bottom:6px; }
+  .pdesc { color:var(--muted); font-size:13px; min-height:36px; margin-bottom:12px; }
+  .pprice { font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:800; color:var(--accent); margin-bottom:16px; }
+  .pprice small { font-size:12px; color:var(--muted); font-weight:400; }
+  .pfeat-list { font-size:12px; color:var(--muted); margin-bottom:16px; }
+  .pfeat-list li { padding:3px 0; }
+  .pfeat-list li::before { content:'✓ '; color:var(--up); font-weight:700; }
+  .btn-cta { width:100%; padding:10px; background:var(--gradient, linear-gradient(135deg,#0099ff,#00d4ff)); color:#000; font-weight:700; border:none; border-radius:6px; cursor:pointer; font-size:14px; }
+  .btn-cta:hover { opacity:.9; }
+  .btn-current { background: var(--bg-2); color: var(--muted); cursor: default; border: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<aside id="sidebar" data-active="upgrade"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>💳 Meu plano</h2>
+      <p>Veja o que está incluso no seu plano e quais módulos você pode liberar fazendo upgrade.</p>
+    </div>
+  </div>
+
+  <section class="s">
+    <div id="current-plan-wrap"></div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Outros planos disponíveis</span></div>
+    <div class="plans-grid" id="plans-grid"></div>
+    <div style="margin-top:24px; color:var(--muted); font-size:12px; text-align:center;">
+      Quer outro plano ou um pacote customizado? Entre em contato no WhatsApp <strong>(11) 99999-0000</strong>.
+    </div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+(async () => {
+  try {
+    const data = await NEXUS.apiCall('GET', '/api/auth/me/plan');
+    renderCurrent(data.current);
+    renderAvailable(data.available, data.current?.id);
+  } catch (e) {
+    document.getElementById('current-plan-wrap').innerHTML = `<div class="card" style="color:var(--down)">Erro: ${NEXUS.escapeHtml(e.message)}</div>`;
+  }
+})();
+
+function renderCurrent(plan) {
+  const wrap = document.getElementById('current-plan-wrap');
+  if (!plan) {
+    wrap.innerHTML = '<div class="card" style="color:var(--muted)">Nenhum plano atribuído. Fale com a gente pra ativar.</div>';
+    return;
+  }
+  const features = plan.features || [];
+  wrap.innerHTML = `
+    <div class="current-plan-card">
+      <div class="cp-badge">Plano atual</div>
+      <div class="cp-name">${NEXUS.escapeHtml(plan.name)}</div>
+      <div class="cp-price">R$ ${Number(plan.price_brl).toFixed(2)}/mês</div>
+      ${plan.description ? `<p style="color:var(--text-2); font-size:14px; margin-bottom:14px;">${NEXUS.escapeHtml(plan.description)}</p>` : ''}
+      <div class="cp-features">
+        ${features.map(f => `<span class="feat-chip${f.is_core ? ' core' : ''}" title="${NEXUS.escapeHtml(f.description||'')}">${NEXUS.escapeHtml(f.name)}${f.is_core ? ' 🔒' : ''}</span>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderAvailable(plans, currentId) {
+  const grid = document.getElementById('plans-grid');
+  if (!plans || !plans.length) {
+    grid.innerHTML = '<div class="card" style="color:var(--muted); text-align:center; padding:40px;">Nenhum plano alternativo configurado.</div>';
+    return;
+  }
+  grid.innerHTML = plans.map(p => {
+    const isCurrent = p.id === currentId;
+    return `
+      <div class="pcard${isCurrent ? ' current' : ''}">
+        <div class="pname">${NEXUS.escapeHtml(p.name)}</div>
+        <div class="pdesc">${NEXUS.escapeHtml(p.description || '')}</div>
+        <div class="pprice">R$ ${Number(p.price_brl).toFixed(2)}<small> /mês</small></div>
+        <button class="btn-cta ${isCurrent ? 'btn-current' : ''}" data-key="${p.key}" ${isCurrent ? 'disabled' : ''}>
+          ${isCurrent ? '✓ Plano atual' : 'Quero esse plano'}
+        </button>
+      </div>
+    `;
+  }).join('');
+  grid.querySelectorAll('button[data-key]:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const msg = encodeURIComponent(`Olá! Quero migrar pro plano "${btn.dataset.key}" do Nexus OS.`);
+      window.open(`https://wa.me/5511999990000?text=${msg}`, '_blank');
+    });
+  });
+}
+</script>
+</body>
+</html>

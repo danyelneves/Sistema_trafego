@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin · Planos & Features · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+<style>
+  .admin-grid { display:grid; grid-template-columns: 320px 1fr; gap:20px; }
+  .plans-list { display:flex; flex-direction:column; gap:8px; }
+  .plan-card {
+    background:var(--bg-3); border:1px solid var(--border); border-radius:8px;
+    padding:14px; cursor:pointer; transition: border-color .15s;
+  }
+  .plan-card:hover { border-color: var(--border-2); }
+  .plan-card.selected { border-color: var(--accent); background: rgba(0,153,255,.08); }
+  .plan-name { font-weight:700; font-size:14px; margin-bottom:4px; }
+  .plan-meta { color:var(--muted); font-size:11px; font-family:'JetBrains Mono',monospace; display:flex; gap:8px; }
+  .plan-price { color:var(--accent); font-weight:600; }
+  .plan-meta .pill { background:var(--bg-2); padding:1px 6px; border-radius:3px; }
+  .editor { background:var(--bg-3); border:1px solid var(--border); border-radius:8px; padding:20px; }
+  .editor h3 { font-size:14px; margin-bottom:14px; color:var(--accent); text-transform:uppercase; letter-spacing:.05em; }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+  .field input, .field textarea {
+    width:100%; background:var(--bg-2); border:1px solid var(--border-2); border-radius:6px;
+    padding:8px 10px; color:var(--text); font-size:13px; outline:none;
+  }
+  .feature-grid { display:grid; grid-template-columns: 1fr 1fr; gap:6px; }
+  .feature-row { display:flex; align-items:center; gap:8px; padding:6px 8px; background:var(--bg-2); border-radius:4px; font-size:12px; }
+  .feature-row.core { opacity:.5; }
+  .feature-row input[type=checkbox] { accent-color: var(--accent); }
+  .bundle-section { margin-bottom:14px; }
+  .bundle-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; font-family:'JetBrains Mono',monospace; }
+  .actions { display:flex; gap:8px; margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
+  .btn-danger { background: var(--down) !important; color:#fff !important; border:none; }
+  table.ws { width:100%; border-collapse:collapse; font-size:13px; margin-top:8px; }
+  table.ws th, table.ws td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); }
+  table.ws th { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  table.ws select { background:var(--bg-2); border:1px solid var(--border-2); color:var(--text); padding:4px 6px; border-radius:4px; font-size:12px; }
+  .status-msg { font-size:12px; margin-top:8px; min-height:18px; }
+  .status-msg.ok { color: var(--up); }
+  .status-msg.err { color: var(--down); }
+  .tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; }
+  .tab { padding:10px 18px; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; font-size:13px; }
+  .tab.active { color:var(--accent); border-bottom-color: var(--accent); }
+  .panel { display:none; }
+  .panel.active { display:block; }
+</style>
+</head>
+<body>
+<aside id="sidebar" data-active="admin"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>⚙️ Admin · Planos & Workspaces</h2>
+      <p>Gerencia catálogo de planos comerciais e atribui workspaces.</p>
+    </div>
+    <div class="page-actions">
+      <span class="badge up">ADMIN ONLY</span>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab active" data-tab="plans">Planos</div>
+    <div class="tab" data-tab="workspaces">Workspaces</div>
+  </div>
+
+  <div id="panel-plans" class="panel active">
+    <div class="admin-grid">
+      <div>
+        <div class="section-head" style="margin-bottom:8px;"><span class="section-title">Planos</span></div>
+        <div class="plans-list" id="plans-list"></div>
+        <button class="btn btn-primary" id="btn-new-plan" style="margin-top:12px; width:100%;">+ Novo plano</button>
+      </div>
+
+      <div class="editor" id="editor" style="display:none;">
+        <h3 id="editor-title">Editar plano</h3>
+        <div class="field">
+          <label>Key (slug, único, sem espaços)</label>
+          <input id="ed-key" placeholder="ex: growth_engine">
+        </div>
+        <div class="field">
+          <label>Nome</label>
+          <input id="ed-name" placeholder="ex: Growth Engine">
+        </div>
+        <div class="field">
+          <label>Descrição</label>
+          <textarea id="ed-desc" rows="2" placeholder="Explica o que o plano oferece"></textarea>
+        </div>
+        <div class="field">
+          <label>Preço (R$)</label>
+          <input id="ed-price" type="number" step="0.01" placeholder="297.00">
+        </div>
+        <div class="field">
+          <label><input type="checkbox" id="ed-active" checked> Plano ativo (clientes podem comprar)</label>
+        </div>
+
+        <h3 style="margin-top:24px;">Features incluídas</h3>
+        <div id="features-editor"></div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="btn-save">Salvar</button>
+          <button class="btn btn-danger" id="btn-delete">Deletar</button>
+          <span class="status-msg" id="ed-status"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-workspaces" class="panel">
+    <div class="section-head"><span class="section-title">Workspaces e seus planos</span></div>
+    <div class="card">
+      <table class="ws">
+        <thead><tr><th>ID</th><th>Nome</th><th>Plano atual</th><th>Atribuído em</th><th>Users</th></tr></thead>
+        <tbody id="ws-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+let plansCache = [];
+let featuresCache = [];
+let bundlesCache = [];
+let selectedPlanId = null;
+
+async function loadAll() {
+  const [p, f, w] = await Promise.all([
+    NEXUS.apiCall('GET', '/api/admin/plans'),
+    NEXUS.apiCall('GET', '/api/admin/features'),
+    NEXUS.apiCall('GET', '/api/admin/workspaces'),
+  ]);
+  plansCache = p.plans;
+  featuresCache = f.features;
+  bundlesCache = f.bundles;
+  renderPlans();
+  renderWorkspaces(w.workspaces);
+}
+
+function renderPlans() {
+  const list = document.getElementById('plans-list');
+  list.innerHTML = plansCache.map(p => `
+    <div class="plan-card${p.id === selectedPlanId ? ' selected' : ''}" data-id="${p.id}">
+      <div class="plan-name">${NEXUS.escapeHtml(p.name)} ${p.key === 'owner' ? '🔒' : ''}</div>
+      <div class="plan-meta">
+        <span class="plan-price">R$ ${Number(p.price_brl).toFixed(2)}</span>
+        <span class="pill">${p.features.length} features</span>
+        <span class="pill">${p.workspace_count} ws</span>
+        ${!p.active ? '<span class="pill" style="color:var(--down)">inativo</span>' : ''}
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('.plan-card').forEach(el => {
+    el.addEventListener('click', () => selectPlan(parseInt(el.dataset.id, 10)));
+  });
+}
+
+function selectPlan(id) {
+  selectedPlanId = id;
+  const plan = plansCache.find(p => p.id === id);
+  if (!plan) return;
+  document.getElementById('editor').style.display = 'block';
+  document.getElementById('editor-title').textContent = plan.key === 'owner' ? '🔒 Plano Owner (somente leitura)' : `Editar: ${plan.name}`;
+  document.getElementById('ed-key').value = plan.key;
+  document.getElementById('ed-key').disabled = true; // key nunca muda
+  document.getElementById('ed-name').value = plan.name;
+  document.getElementById('ed-desc').value = plan.description || '';
+  document.getElementById('ed-price').value = plan.price_brl;
+  document.getElementById('ed-active').checked = plan.active;
+
+  const isOwner = plan.key === 'owner';
+  ['ed-name','ed-desc','ed-price','ed-active','btn-save','btn-delete'].forEach(id => {
+    document.getElementById(id).disabled = isOwner;
+  });
+  renderFeatureEditor(plan.features, isOwner);
+  renderPlans();
+}
+
+function renderFeatureEditor(selected, readonly) {
+  const wrap = document.getElementById('features-editor');
+  const byBundle = {};
+  featuresCache.forEach(f => {
+    const b = f.bundle_key || 'other';
+    (byBundle[b] = byBundle[b] || []).push(f);
+  });
+  let html = '';
+  for (const bundle of bundlesCache) {
+    const feats = byBundle[bundle.key] || [];
+    if (!feats.length) continue;
+    html += `<div class="bundle-section">
+      <div class="bundle-label">${NEXUS.escapeHtml(bundle.name)}</div>
+      <div class="feature-grid">`;
+    for (const f of feats) {
+      const checked = f.is_core || selected.includes(f.key);
+      html += `<label class="feature-row${f.is_core ? ' core' : ''}">
+        <input type="checkbox" data-key="${f.key}" ${checked ? 'checked' : ''} ${(f.is_core || readonly) ? 'disabled' : ''}>
+        <span>${NEXUS.escapeHtml(f.name)}${f.is_core ? ' 🔒' : ''}</span>
+      </label>`;
+    }
+    html += `</div></div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+document.getElementById('btn-new-plan').addEventListener('click', () => {
+  selectedPlanId = null;
+  document.getElementById('editor').style.display = 'block';
+  document.getElementById('editor-title').textContent = 'Novo plano';
+  document.getElementById('ed-key').value = '';
+  document.getElementById('ed-key').disabled = false;
+  document.getElementById('ed-name').value = '';
+  document.getElementById('ed-desc').value = '';
+  document.getElementById('ed-price').value = '0';
+  document.getElementById('ed-active').checked = true;
+  ['ed-name','ed-desc','ed-price','ed-active','btn-save','btn-delete'].forEach(id => document.getElementById(id).disabled = false);
+  document.getElementById('btn-delete').disabled = true;
+  renderFeatureEditor([], false);
+});
+
+document.getElementById('btn-save').addEventListener('click', async () => {
+  const status = document.getElementById('ed-status');
+  status.className = 'status-msg';
+  status.textContent = 'Salvando...';
+  const body = {
+    key: document.getElementById('ed-key').value.trim(),
+    name: document.getElementById('ed-name').value.trim(),
+    description: document.getElementById('ed-desc').value.trim(),
+    price_brl: parseFloat(document.getElementById('ed-price').value) || 0,
+    active: document.getElementById('ed-active').checked,
+    features: Array.from(document.querySelectorAll('#features-editor input[type=checkbox]:checked:not([disabled])'))
+      .map(el => el.dataset.key),
+  };
+  // Inclui core (sempre faz parte) e disabled-checked (selecionados)
+  document.querySelectorAll('#features-editor input[disabled]:checked').forEach(el => {
+    if (!body.features.includes(el.dataset.key)) body.features.push(el.dataset.key);
+  });
+  try {
+    if (selectedPlanId) {
+      await NEXUS.apiCall('PUT', `/api/admin/plans/${selectedPlanId}`, body);
+    } else {
+      const r = await NEXUS.apiCall('POST', '/api/admin/plans', body);
+      selectedPlanId = r.plan.id;
+    }
+    status.className = 'status-msg ok';
+    status.textContent = '✓ Salvo';
+    await loadAll();
+    setTimeout(() => { status.textContent = ''; }, 2500);
+  } catch (e) {
+    status.className = 'status-msg err';
+    status.textContent = 'Erro: ' + e.message;
+  }
+});
+
+document.getElementById('btn-delete').addEventListener('click', async () => {
+  if (!selectedPlanId) return;
+  if (!confirm('Deletar esse plano? (Só funciona se nenhum workspace estiver usando)')) return;
+  try {
+    await NEXUS.apiCall('DELETE', `/api/admin/plans/${selectedPlanId}`);
+    selectedPlanId = null;
+    document.getElementById('editor').style.display = 'none';
+    await loadAll();
+  } catch (e) {
+    document.getElementById('ed-status').className = 'status-msg err';
+    document.getElementById('ed-status').textContent = 'Erro: ' + e.message;
+  }
+});
+
+function renderWorkspaces(workspaces) {
+  const tbody = document.getElementById('ws-tbody');
+  tbody.innerHTML = workspaces.map(w => `
+    <tr data-ws="${w.id}">
+      <td>${w.id}</td>
+      <td>${NEXUS.escapeHtml(w.name)}</td>
+      <td>
+        <select data-action="assign" data-ws="${w.id}">
+          ${plansCache.map(p => `<option value="${p.id}" ${p.id === w.plan_id ? 'selected' : ''}>${NEXUS.escapeHtml(p.name)}${p.key === 'owner' ? ' 🔒' : ''}</option>`).join('')}
+        </select>
+      </td>
+      <td>${w.assigned_at ? new Date(w.assigned_at).toLocaleDateString('pt-BR') : '—'}</td>
+      <td>${w.users}</td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('select[data-action=assign]').forEach(sel => {
+    sel.addEventListener('change', async (e) => {
+      const wsId = e.target.dataset.ws;
+      const planId = parseInt(e.target.value, 10);
+      try {
+        await NEXUS.apiCall('PUT', `/api/admin/workspaces/${wsId}/plan`, { plan_id: planId });
+        e.target.style.borderColor = 'var(--up)';
+        setTimeout(() => { e.target.style.borderColor = ''; }, 1500);
+      } catch (err) {
+        alert('Erro: ' + err.message);
+      }
+    });
+  });
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+loadAll();
+</script>
+</body>
+</html>
