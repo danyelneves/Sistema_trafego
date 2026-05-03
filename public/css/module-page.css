@@ -52,6 +52,11 @@ aside{
   color:currentColor;
 }
 .nav-icon svg{width:16px; height:16px; stroke-width:1.75;}
+.nav-text{display:flex; flex-direction:column; gap:1px; line-height:1.2; min-width:0;}
+.nav-label-text{font-size:13px;}
+.nav-desc{font-size:10.5px; color:var(--muted); opacity:.7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.nav-item:hover .nav-desc{opacity:1;}
+.nav-item.active .nav-desc{color:var(--text); opacity:.8;}
 
 /* ─── Main ──────────────────────────────────────────── */
 main{padding:24px 32px; max-width:1200px;}

@@ -35,8 +35,7 @@ Catálogo completo dos 16 módulos de negócio + 4 módulos de infraestrutura. P
 
 ---
 
-## 1. Sentinel
-
+## 1. Sentinel · Monitor de Campanhas Meta
 **O que faz:** Monitor autônomo de campanhas Meta Ads. A cada 15 minutos puxa métricas via API (CPA, CTR, ROAS, conversões) e o Gemini decide pra cada ad set se PAUSA, ESCALA ou MANTÉM. Executa a ação direto via API, sem humano. 3 níveis de tolerância configuráveis (frio/morno/quente) por workspace.
 
 **Trigger:** Vercel Cron `*/15 * * * *` → `GET /api/sentinel/cron`
@@ -60,8 +59,7 @@ Catálogo completo dos 16 módulos de negócio + 4 módulos de infraestrutura. P
 
 ---
 
-## 2. Launcher
-
+## 2. Launcher · Lançador de Campanhas
 **O que faz:** Sobe campanhas Meta novas via API com estrutura pré-validada por nicho (estética, dentista, advocacia, etc). IA monta o copy, escolhe interesses de segmentação, define orçamento.
 
 **Trigger:** Manual via UI ou via Vending Machine.
@@ -79,8 +77,7 @@ Catálogo completo dos 16 módulos de negócio + 4 módulos de infraestrutura. P
 
 ---
 
-## 3. Hive
-
+## 3. Hive · Inteligência Coletiva
 **O que faz:** "Mente de Colmeia". Coleta anomalias de alta conversão observadas em todos os workspaces da rede, IA extrai padrões e gera um boletim com lições + sugestões pra replicar nas campanhas do usuário hoje.
 
 **Arquivos:**
@@ -94,8 +91,7 @@ Catálogo completo dos 16 módulos de negócio + 4 módulos de infraestrutura. P
 
 ---
 
-## 4. Skynet
-
+## 4. Skynet · Prospecção em Massa
 **O que faz:** Prospecção em massa. Recebe nicho + cidade, busca empresas no Google Maps Places API, IA analisa o site/Instagram de cada lead (modo "Oráculo" aponta falhas reais), gera mensagem personalizada e dispara via WhatsApp (texto ou áudio sintetizado pela ElevenLabs).
 
 **Trigger:** Manual ou Vercel Cron `0 9 * * *` (campanhas de prospecção diárias).
@@ -110,8 +106,7 @@ Catálogo completo dos 16 módulos de negócio + 4 módulos de infraestrutura. P
 
 ---
 
-## 5. Market
-
+## 5. Market · Marketplace de Leads
 **O que faz:** Marketplace de leads em leilão automático. Workspaces que não conseguem responder leads no prazo viram fornecedores, outros viram compradores. Match e cobrança automáticos.
 
 **Arquivos:**
@@ -124,8 +119,7 @@ Catálogo completo dos 16 módulos de negócio + 4 módulos de infraestrutura. P
 
 ---
 
-## 6. Doppelgänger
-
+## 6. Doppelgänger · Vendedor IA Clone
 **O que faz:** Vendedor IA que conversa no WhatsApp imitando uma persona configurada por workspace. Detecta intenção de compra na conversa e injeta a tag `[GERAR_PIX]`, que o webhook intercepta e cobra via Mercado Pago direto na conversa (Ghost Checkout).
 
 **Configurável por workspace** via `workspace_settings`:
@@ -148,8 +142,7 @@ Catálogo completo dos 16 módulos de negócio + 4 módulos de infraestrutura. P
 
 ---
 
-## 7. Vending
-
+## 7. Vending · Auto-Atendimento
 **O que faz:** Self-service de campanha. Cliente entra no site público, escolhe nicho, paga (Mercado Pago), e em 5 minutos recebe campanha rodando + WhatsApp configurado. Onboarding 100% automatizado.
 
 **Arquivos:**
@@ -183,8 +176,7 @@ Catálogo completo dos 16 módulos de negócio + 4 módulos de infraestrutura. P
 
 ---
 
-## 9. Lazarus
-
+## 9. Lazarus · Recuperação de Leads
 **O que faz:** "Ressurreição" de leads/carrinhos. Detecta:
 - Carrinhos abandonados (sem pagamento em 30 min)
 - Leads frios (>14 dias sem resposta)
@@ -201,8 +193,7 @@ IA escreve mensagem empática contextualizada com o histórico do lead (não é 
 
 ---
 
-## 10. Forge
-
+## 10. Forge · Construtor de Landing Pages
 **O que faz:** Gera landing pages completas via IA. Diferencial: a headline da LP é **dinâmica** e muda baseada no `utm_term` do anúncio que trouxe o visitante. Mesma LP, mil headlines.
 
 **Arquivos:**
@@ -221,8 +212,7 @@ IA escreve mensagem empática contextualizada com o histórico do lead (não é 
 
 ---
 
-## 11. Studio
-
+## 11. Studio · Estúdio de Voz
 **O que faz:** Clonagem de voz + síntese de áudio via ElevenLabs. Gera áudio personalizado pra disparar em WhatsApp (Lazarus, Skynet) ou pra usar em VSLs.
 
 **Arquivos:**
@@ -237,8 +227,7 @@ IA escreve mensagem empática contextualizada com o histórico do lead (não é 
 
 ---
 
-## 12. Vision
-
+## 12. Vision · Análise de Criativos
 **O que faz:** Engenharia reversa visual de criativos. Recebe URL/imagem, IA descreve cores, tipografia, layout, copy, gancho. Útil pra entender por que o criativo do concorrente performa.
 
 **Arquivos:**
@@ -249,8 +238,7 @@ IA escreve mensagem empática contextualizada com o histórico do lead (não é 
 
 ---
 
-## 13. Poltergeist
-
+## 13. Poltergeist · Operação Física Autônoma
 **O que faz:** Operação física headless. Quando uma venda fecha (ex: pizzaria, açaí), Poltergeist:
 1. Dispara comanda direto na impressora térmica (via API cloud)
 2. Chama motoboy via Uber Direct ou Lalamove
@@ -267,8 +255,7 @@ Loja sem operador humano.
 
 ---
 
-## 14. Titan
-
+## 14. Titan · Auditor Estratégico
 **O que faz:** "CEO Autônomo". Auditoria estratégica do workspace:
 1. Audita saldo Mercado Pago
 2. Identifica nicho mais lucrativo do momento via OmniRouter
@@ -286,8 +273,7 @@ Roda quando o usuário quer "expandir" — Titan fala onde investir o caixa.
 
 ---
 
-## 15. Empire
-
+## 15. Empire · Gestão de Tarefas
 **O que faz:** Kanban interno do workspace. Tasks, status, prioridade. Espionagem de criativos vinda do Chrome extension "Nexus Spy" também aterrissa aqui (board "Raio-X").
 
 **Arquivos:**
@@ -298,8 +284,7 @@ Roda quando o usuário quer "expandir" — Titan fala onde investir o caixa.
 
 ---
 
-## 16. Franchise
-
+## 16. Franchise · Sistema de Franquias
 **O que faz:** Sistema de franquias do próprio Nexus OS. Permite que terceiros criem subworkspaces (com cobrança proporcional ao volume) e revendam sob a marca deles.
 
 **Arquivos:**
