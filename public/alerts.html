@@ -143,26 +143,38 @@ async function loadConfigs() {
 async function loadLog() {
   const wrap = $('#logWrap');
   try {
-    const r = await fetch('/api/alerts/log', { credentials: 'include' });
+    const r = await fetch('/api/alerts/history', { credentials: 'include' });
     const rows = await r.json();
     if (!Array.isArray(rows) || !rows.length) {
-      wrap.innerHTML = '<div class="empty">Sem disparos recentes.</div>';
+      wrap.innerHTML = '<div class="empty">Sem disparos recentes. Faça um teste acima — o registro aparece aqui.</div>';
       return;
     }
     wrap.innerHTML = `<table class="cfg">
-      <thead><tr><th>Quando</th><th>Métrica</th><th>Valor</th><th>E-mail</th></tr></thead>
-      <tbody>${rows.slice(0, 20).map(r => `
-        <tr>
-          <td style="font-family:'JetBrains Mono',monospace; font-size:11px;">${new Date(r.fired_at || r.created_at).toLocaleString('pt-BR')}</td>
-          <td>${escHtml(r.metric || '—')}</td>
-          <td>${escHtml(String(r.value ?? '—'))}</td>
-          <td style="font-size:12px;color:var(--muted);">${escHtml(r.email || '—')}</td>
-        </tr>`).join('')}
+      <thead><tr><th>Quando</th><th>Tipo</th><th>Métrica / Status</th><th>Destinatário</th></tr></thead>
+      <tbody>${rows.slice(0, 30).map(r => {
+        const isTest = r.kind === 'test';
+        const tag = isTest
+          ? `<span class="pill ${r.rejected ? 'off' : 'on'}">${r.rejected ? 'rejeitado' : 'teste'}</span>`
+          : `<span class="pill on">KPI</span>`;
+        const detail = isTest
+          ? (r.message_id ? `<code style="font-size:10px;">${escHtml(String(r.message_id).slice(0, 32))}…</code>` : '—')
+          : `<strong>${escHtml(r.metric || '—')}</strong> · ${escHtml(r.channel || 'all')} · valor ${escHtml(String(r.value ?? '—'))}`;
+        return `<tr>
+          <td style="font-family:'JetBrains Mono',monospace; font-size:11px; white-space:nowrap;">${new Date(r.ts).toLocaleString('pt-BR')}</td>
+          <td>${tag}</td>
+          <td style="font-size:12px;">${detail}</td>
+          <td style="font-size:12px;color:var(--muted);">${escHtml(r.recipient || '—')}</td>
+        </tr>`;
+      }).join('')}
       </tbody></table>`;
   } catch (e) {
     wrap.innerHTML = `<div class="empty">Erro ao carregar: ${escHtml(e.message)}</div>`;
   }
 }
+
+// Recarrega histórico depois de cada teste enviado
+const origBtn = $('#btnTest');
+origBtn.addEventListener('click', () => setTimeout(loadLog, 1500));
 
 loadConfigs();
 loadLog();

@@ -4,6 +4,7 @@
 const express = require('express');
 const db      = require('../db');
 const mailer  = require('../services/mailer');
+const audit   = require('../utils/audit');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -76,6 +77,14 @@ router.post('/test', requireAdmin, async (req, res) => {
                 <p>Disparado por <strong>${req.user.username}</strong> em ${new Date().toLocaleString('pt-BR')}.</p>
                 <p>Os alertas de KPI estão configurados corretamente.</p>`,
     });
+    audit.log('alerts.test_sent', {
+      ...audit.fromReq(req),
+      to: email,
+      messageId: info?.messageId,
+      accepted: info?.accepted,
+      rejected: info?.rejected,
+      response: (info?.response || '').slice(0, 120),
+    });
     // Surface o que o servidor SMTP respondeu (messageId, accepted, rejected, response)
     res.json({
       ok: true,
@@ -106,6 +115,37 @@ router.get('/log', async (req, res) => {
       LIMIT 200
     `);
     res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+/**
+ * GET /history — combina disparos de KPI + testes manuais, ordenados por data.
+ * Pra UI mostrar "tudo que foi enviado" em uma única timeline.
+ */
+router.get('/history', async (req, res) => {
+  try {
+    const [fires, tests] = await Promise.all([
+      db.all(`
+        SELECT 'kpi' AS kind, l.sent_at AS ts, a.email AS recipient,
+               a.metric, a.channel, l.value::text AS value, NULL AS message_id, NULL AS rejected
+        FROM alert_log l
+        JOIN alert_configs a ON a.id = l.alert_id
+        ORDER BY l.sent_at DESC LIMIT 50
+      `),
+      db.all(`
+        SELECT 'test' AS kind, ts, details->>'to' AS recipient,
+               NULL AS metric, NULL AS channel, NULL AS value,
+               details->>'messageId' AS message_id,
+               (jsonb_array_length(COALESCE(details->'rejected','[]'::jsonb)) > 0) AS rejected
+        FROM audit_log
+        WHERE action = 'alerts.test_sent'
+        ORDER BY ts DESC LIMIT 50
+      `),
+    ]);
+    const merged = [...fires, ...tests]
+      .sort((a, b) => new Date(b.ts) - new Date(a.ts))
+      .slice(0, 50);
+    res.json(merged);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
