@@ -217,32 +217,35 @@ function guardHTML(req, res) {
 const _landingCache = new Map(); // key=`${scope}:${ws||0}`, value={ts, html}
 const LANDING_TTL = 30 * 1000;
 async function _renderLanding(workspaceId) {
+  // Pré-renderizado: lê HTML pronto do DB. jsdom NÃO roda em request da home.
   const key = `${workspaceId || 0}`;
   const hit = _landingCache.get(key);
   if (hit && Date.now() - hit.ts < LANDING_TTL) return hit.html;
+  const dbi = require('./db');
   try {
-    const { resolveContent } = require('./utils/landing-content');
-    const { content, source } = await resolveContent({ workspaceId });
-    // Otimização: se não há conteúdo publicado no DB E nenhuma seção opcional
-    // ativa, devolve arquivo estático sem chamar jsdom.
-    const hasOptionalSection = content?.sections && (
-      content.sections.pricing?.enabled ||
-      content.sections.testimonials?.enabled ||
-      content.sections.faq?.enabled
-    );
-    if (source === 'hardcoded' && !hasOptionalSection) {
-      const html = require('fs').readFileSync(path.join(PUBLIC, 'landing.html'), 'utf8');
-      _landingCache.set(key, { ts: Date.now(), html });
-      return html;
+    let row = null;
+    if (workspaceId) {
+      row = await dbi.get(
+        `SELECT rendered_html FROM landing_page_content WHERE scope='tenant' AND workspace_id=$1 AND is_published=true AND rendered_html IS NOT NULL`,
+        [workspaceId]
+      );
     }
-    const { render } = require('./utils/landing-render');
-    const html = render(content);
-    _landingCache.set(key, { ts: Date.now(), html });
-    return html;
+    if (!row) {
+      row = await dbi.get(
+        `SELECT rendered_html FROM landing_page_content WHERE scope='system_default' AND is_published=true AND rendered_html IS NOT NULL`
+      );
+    }
+    if (row?.rendered_html) {
+      _landingCache.set(key, { ts: Date.now(), html: row.rendered_html });
+      return row.rendered_html;
+    }
   } catch (err) {
-    log.error('landing render falhou, usando arquivo estático', err);
-    return require('fs').readFileSync(path.join(PUBLIC, 'landing.html'), 'utf8');
+    log.error('landing read DB falhou, fallback estático', err);
   }
+  // Fallback final: arquivo estático
+  const html = require('fs').readFileSync(path.join(PUBLIC, 'landing.html'), 'utf8');
+  _landingCache.set(key, { ts: Date.now(), html });
+  return html;
 }
 app.get('/', async (req, res) => {
   const html = await _renderLanding(null);
