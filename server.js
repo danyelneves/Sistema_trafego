@@ -87,6 +87,7 @@ const { requireAuth } = require('./middleware/auth');
 
 // === CORE (sempre ativo, nunca gateted) ============================
 app.use('/api/auth',       require('./routes/auth'));
+app.use('/api/admin',      require('./routes/admin'));
 app.use('/api/audit',      require('./routes/audit'));
 app.use('/api/workspaces', require('./routes/workspaces'));
 app.use('/api/campaigns',  require('./routes/campaigns'));
@@ -235,7 +236,7 @@ const MODULE_PAGES = [
   'sentinel', 'launcher', 'lazarus', 'skynet', 'doppelganger',
   'forge', 'studio', 'vending', 'market', 'franchise',
   'empire', 'poltergeist', 'titan', 'hive', 'billing',
-  'audit',
+  'audit', 'admin', 'upgrade',
 ];
 MODULE_PAGES.forEach(page => {
   app.get(`/${page}`, (req, res) => {
