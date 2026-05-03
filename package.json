@@ -12,6 +12,9 @@
     "test": "node tests/unit.js",
     "test:smoke": "node tests/smoke.js",
     "test:smoke:prod": "DOMAIN=https://nexusagencia.app node tests/smoke.js",
+    "docs:api": "node scripts/gen-api-docs.js",
+    "docs:schema": "node scripts/gen-schema-docs.js",
+    "docs:gen": "npm run docs:api && npm run docs:schema",
     "vercel-build": "echo Build OK"
   },
   "keywords": [
