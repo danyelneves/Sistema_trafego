@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const { generateWithOmniRouter } = require('../utils/omni-router');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const audit = require('../utils/audit');
 
 const PERSONA_KEYS = ['doppelganger.persona_name', 'doppelganger.persona_bio', 'doppelganger.persona_traits'];
 
@@ -120,6 +121,10 @@ router.put('/persona', requireAuth, requireAdmin, async (req, res) => {
                 );
             }
         }
+        audit.log('doppelganger.persona.updated', {
+          ...audit.fromReq(req),
+          changed: Object.keys(map).filter(k => map[k.replace('doppelganger.persona_','')] !== undefined),
+        });
         res.json({ ok: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
