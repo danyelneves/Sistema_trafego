@@ -4,6 +4,7 @@
 const express = require('express');
 const db = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const audit = require('../utils/audit');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -37,6 +38,8 @@ router.put('/', requireAdmin, async (req, res) => {
       }
     });
     await tx();
+
+    audit.log('settings.updated', { ...audit.fromReq(req), keys: Object.keys(body), changes: body });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

@@ -39,8 +39,11 @@ router.get('/alerts', async (req, res) => {
     
     // Limpeza mensal/diária de webhooks muito antigos (90 dias)
     await db.run("DELETE FROM webhook_events WHERE processed_at < NOW() - INTERVAL '90 days'");
-    
-    res.json({ ok: true, ran_at: new Date().toISOString() });
+
+    // Retenção do audit_log (default 90d, configurável via AUDIT_RETENTION_DAYS)
+    const auditDeleted = await require('../utils/audit').cleanup();
+
+    res.json({ ok: true, ran_at: new Date().toISOString(), audit_cleanup: auditDeleted });
   } catch (e) {
     console.error('[CRON] Erro ao verificar alertas:', e.message);
     res.status(500).json({ error: e.message });

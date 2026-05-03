@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audit Log · NEXUS OS</title>
+<link rel="stylesheet" href="/css/module-page.css">
+<style>
+  .filters { display:grid; grid-template-columns: repeat(4, 1fr) auto; gap:8px; margin-bottom:12px; }
+  .filters input, .filters select {
+    background:var(--bg-3); border:1px solid var(--border-2); border-radius:6px;
+    padding:8px 10px; color:var(--text); outline:none; font-size:13px;
+  }
+  .stats-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-bottom:16px; }
+  .stat-card {
+    background:var(--bg-3); border:1px solid var(--border); border-radius:6px;
+    padding:10px 12px; cursor:pointer; transition:border-color .15s;
+  }
+  .stat-card:hover { border-color: var(--accent); }
+  .stat-action { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); }
+  .stat-count { font-size:18px; font-weight:700; margin-top:2px; }
+  table.audit { width:100%; border-collapse:collapse; font-size:13px; }
+  table.audit th, table.audit td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  table.audit th { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+  td.action { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--accent); }
+  td.actor { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); }
+  td.details { font-family:'JetBrains Mono',monospace; font-size:11px; max-width:380px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  td.details:hover { white-space:normal; word-break:break-all; }
+  td.ts { color:var(--muted); font-size:11px; white-space:nowrap; }
+  .empty { padding:32px; text-align:center; color:var(--muted); }
+  .pager { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+</style>
+</head>
+<body>
+<aside id="sidebar" data-active="audit"></aside>
+<main>
+  <div class="page-header">
+    <div>
+      <h2>📜 Audit Log</h2>
+      <p>Histórico canônico de eventos do sistema. Login, mudança de configuração, pagamento recebido, persona alterada, jobs autônomos — tudo passa por aqui.</p>
+    </div>
+    <div class="page-actions">
+      <span class="badge up" id="retention-badge">retenção: 90d</span>
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Atividade nas últimas 24h</span></div>
+    <div class="stats-grid" id="stats"></div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">Eventos</span></div>
+    <div class="card">
+      <div class="filters">
+        <input id="f-action" placeholder="Filtrar por action (ex: auth.login)">
+        <input id="f-actor" placeholder="Filtrar por actor (ex: user:1)">
+        <select id="f-since">
+          <option value="">Período: tudo</option>
+          <option value="1h">Última hora</option>
+          <option value="24h" selected>Últimas 24h</option>
+          <option value="7d">Últimos 7 dias</option>
+          <option value="30d">Últimos 30 dias</option>
+        </select>
+        <select id="f-limit">
+          <option value="50" selected>50 por página</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+        </select>
+        <button class="btn btn-primary" id="btn-refresh">Aplicar</button>
+      </div>
+      <div id="rows-wrap"></div>
+      <div class="pager">
+        <button class="btn" id="btn-prev" style="background:var(--bg-3); color:var(--text); border:1px solid var(--border-2);">← Anterior</button>
+        <button class="btn" id="btn-next" style="background:var(--bg-3); color:var(--text); border:1px solid var(--border-2);">Próxima →</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="section-head"><span class="section-title">API</span></div>
+    <div class="api-doc">
+      <span class="api-method get">GET</span><span class="api-path">/api/audit?action=&actor=&since=&limit=&offset=</span>
+      <div class="api-desc">Lista paginada (admin only). Filtros: action (ILIKE), actor (ILIKE), since (ISO ou "1h"/"24h"/"7d"/"30d").</div>
+    </div>
+    <div class="api-doc">
+      <span class="api-method get">GET</span><span class="api-path">/api/audit/stats</span>
+      <div class="api-desc">Contagem por action nas últimas 24h. Top 30.</div>
+    </div>
+  </section>
+</main>
+<script src="/js/sidebar.js"></script>
+<script src="/js/module-helpers.js"></script>
+<script>
+let offset = 0;
+
+function sinceToIso(v) {
+  if (!v) return '';
+  const m = { '1h':3600e3, '24h':86400e3, '7d':7*86400e3, '30d':30*86400e3 };
+  if (m[v]) return new Date(Date.now() - m[v]).toISOString();
+  return v;
+}
+
+function fmtTs(ts) {
+  const d = new Date(ts);
+  return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+async function loadStats() {
+  try {
+    const data = await NEXUS.apiCall('GET', '/api/audit/stats');
+    const grid = document.getElementById('stats');
+    if (!data.rows.length) { grid.innerHTML = '<div class="empty">Sem atividade nas últimas 24h.</div>'; return; }
+    grid.innerHTML = data.rows.map(r => `
+      <div class="stat-card" data-action="${NEXUS.escapeHtml(r.action)}">
+        <div class="stat-action">${NEXUS.escapeHtml(r.action)}</div>
+        <div class="stat-count">${r.count}</div>
+      </div>
+    `).join('');
+    grid.querySelectorAll('.stat-card').forEach(el => {
+      el.addEventListener('click', () => {
+        document.getElementById('f-action').value = el.dataset.action;
+        offset = 0; loadRows();
+      });
+    });
+  } catch (err) {
+    document.getElementById('stats').innerHTML = `<div class="empty">Erro: ${NEXUS.escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadRows() {
+  const params = new URLSearchParams();
+  const action = document.getElementById('f-action').value.trim();
+  const actor  = document.getElementById('f-actor').value.trim();
+  const since  = sinceToIso(document.getElementById('f-since').value);
+  const limit  = document.getElementById('f-limit').value;
+  if (action) params.set('action', action);
+  if (actor)  params.set('actor', actor);
+  if (since)  params.set('since', since);
+  params.set('limit', limit);
+  params.set('offset', offset);
+
+  try {
+    const data = await NEXUS.apiCall('GET', '/api/audit?' + params.toString());
+    const wrap = document.getElementById('rows-wrap');
+    if (!data.rows.length) {
+      wrap.innerHTML = '<div class="empty">Nenhum evento para os filtros aplicados.</div>';
+      return;
+    }
+    wrap.innerHTML = `
+      <table class="audit">
+        <thead><tr>
+          <th>Quando</th><th>Action</th><th>Actor</th><th>WS</th><th>IP</th><th>Detalhes</th>
+        </tr></thead>
+        <tbody>
+          ${data.rows.map(r => `
+            <tr>
+              <td class="ts">${fmtTs(r.ts)}</td>
+              <td class="action">${NEXUS.escapeHtml(r.action)}</td>
+              <td class="actor">${NEXUS.escapeHtml(r.actor || '')}</td>
+              <td class="ts">${r.workspace_id ?? '—'}</td>
+              <td class="ts">${NEXUS.escapeHtml(r.ip || '—')}</td>
+              <td class="details" title="${NEXUS.escapeHtml(JSON.stringify(r.details))}">${NEXUS.escapeHtml(JSON.stringify(r.details))}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    document.getElementById('rows-wrap').innerHTML = `<div class="empty">Erro: ${NEXUS.escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById('btn-refresh').addEventListener('click', () => { offset = 0; loadRows(); });
+document.getElementById('btn-prev').addEventListener('click', () => {
+  const lim = parseInt(document.getElementById('f-limit').value, 10);
+  offset = Math.max(0, offset - lim); loadRows();
+});
+document.getElementById('btn-next').addEventListener('click', () => {
+  const lim = parseInt(document.getElementById('f-limit').value, 10);
+  offset += lim; loadRows();
+});
+
+loadStats(); loadRows();
+</script>
+</body>
+</html>

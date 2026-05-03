@@ -83,6 +83,7 @@ app.use('/api/import', express.json({ limit: '50mb' }), express.urlencoded({ lim
 // API Routes
 // ------------------------------------------------------------
 app.use('/api/auth',       require('./routes/auth'));
+app.use('/api/audit',      require('./routes/audit'));
 app.use('/api/workspaces', require('./routes/workspaces'));
 app.use('/api/campaigns',  require('./routes/campaigns'));
 app.use('/api/metrics',    require('./routes/metrics'));
@@ -228,6 +229,7 @@ const MODULE_PAGES = [
   'sentinel', 'launcher', 'lazarus', 'skynet', 'doppelganger',
   'forge', 'studio', 'vending', 'market', 'franchise',
   'empire', 'poltergeist', 'titan', 'hive', 'billing',
+  'audit',
 ];
 MODULE_PAGES.forEach(page => {
   app.get(`/${page}`, (req, res) => {

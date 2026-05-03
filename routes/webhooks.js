@@ -89,6 +89,10 @@ router.post('/kiwify/:wsId', checkKiwifyRateLimit, async (req, res) => {
       `, [wsId, url, utm_source, utm_campaign]);
       
       console.log(`[WEBHOOK] Kiwify Venda Registrada! R$${value} Workspace: ${wsId}`);
+      require('../utils/audit').log('payment.kiwify.received', {
+        workspaceId: wsId, actor: 'webhook:kiwify',
+        amount: value, order_id: payload.order_id, product: payload.Product?.name,
+      });
 
       // INICIO WA AUTOMATION (Speed-to-lead)
       try {

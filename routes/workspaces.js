@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const audit = require('../utils/audit');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -17,6 +18,7 @@ router.post('/', requireAdmin, async (req, res) => {
   if (!name) return res.status(400).json({ error: 'name é obrigatório' });
   try {
     const row = await db.get('INSERT INTO workspaces(name) VALUES($1) RETURNING *', name);
+    audit.log('workspace.created', { ...audit.fromReq(req), new_workspace_id: row.id, name });
     res.status(201).json(row);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -30,6 +32,7 @@ router.put('/:id/branding', requireAdmin, async (req, res) => {
       'UPDATE workspaces SET name = $1, logo_url = $2, theme_color = $3 WHERE id = $4',
       name, logo_url || null, theme_color || '#00F0FF', id
     );
+    audit.log('workspace.branding.updated', { ...audit.fromReq(req), target_workspace_id: Number(id), name, theme_color });
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

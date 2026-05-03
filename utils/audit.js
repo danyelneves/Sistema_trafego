@@ -1,59 +1,80 @@
 /**
- * utils/audit.js — registro de ações sensíveis para auditoria e investigação.
+ * utils/audit.js — log canônico de eventos do sistema.
  *
- * Uso:
- *   const audit = require('../utils/audit');
- *   await audit.log('billing.upgrade', {
- *     workspaceId: req.user.workspace_id,
- *     userId: req.user.id,
- *     plan_name,
- *     amount: price,
- *     ip: req.ip,
- *   });
+ * Tabela: audit_log (criada via migrations/2026_audit_log.sql + 2026_audit_log_unify.sql)
+ * Schema: id, ts, action, workspace_id, user_id, ip, actor, details (JSONB)
  *
- * A tabela audit_log é criada na primeira chamada (idempotente).
- * Nunca quebra a request principal — falhas de log apenas viram warning.
+ * Uso simples (signature legada, retrocompatível):
+ *   audit.log('billing.upgrade.approved', { workspaceId, userId, ip, plan, amount });
+ *
+ * Uso novo (com actor explícito pra eventos sem user — system/scheduled-task/webhook):
+ *   audit.log('cleanup.shim_removed', { actor: 'scheduled-task:foo', workspaceId, pr_url });
+ *
+ * Helpers:
+ *   audit.fromReq(req)      → { userId, ip, workspaceId, actor }
+ *   audit.cleanup()         → deleta entries > AUDIT_RETENTION_DAYS (default 90)
+ *
+ * Fire-and-forget: erros viram warning no logger, nunca quebram a request.
  */
 const db = require('../db');
 const log = require('../middleware/logger');
 
-let _ensured = false;
+const RETENTION_DAYS = parseInt(process.env.AUDIT_RETENTION_DAYS || '90', 10);
 
-async function ensureTable() {
-  if (_ensured) return;
-  try {
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS audit_log (
-        id BIGSERIAL PRIMARY KEY,
-        ts TIMESTAMPTZ DEFAULT NOW(),
-        action VARCHAR(100) NOT NULL,
-        workspace_id INTEGER,
-        user_id INTEGER,
-        ip VARCHAR(64),
-        details JSONB
-      )
-    `);
-    await db.run('CREATE INDEX IF NOT EXISTS idx_audit_log_action_ts ON audit_log(action, ts DESC)');
-    await db.run('CREATE INDEX IF NOT EXISTS idx_audit_log_workspace_ts ON audit_log(workspace_id, ts DESC)');
-    _ensured = true;
-  } catch (err) {
-    log.error('audit: falha ao criar tabela', err);
+const SECRET_PATTERNS = /apikey|api_key|secret|token|password|credit|hash/i;
+function maskSecrets(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const out = Array.isArray(obj) ? [] : {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (SECRET_PATTERNS.test(k) && typeof v === 'string') {
+      out[k] = v.length > 6 ? `${v.slice(0, 3)}***${v.slice(-2)}` : '***';
+    } else if (v && typeof v === 'object') {
+      out[k] = maskSecrets(v);
+    } else {
+      out[k] = v;
+    }
   }
+  return out;
 }
 
 async function logAudit(action, details = {}) {
   try {
-    await ensureTable();
-    const { workspaceId, userId, ip, ...rest } = details;
+    const { workspaceId, userId, ip, actor, ...rest } = details;
+    const safeDetails = maskSecrets(rest);
+    const finalActor = actor || (userId ? `user:${userId}` : 'system');
     await db.run(
-      'INSERT INTO audit_log (action, workspace_id, user_id, ip, details) VALUES ($1, $2, $3, $4, $5)',
-      [action, workspaceId || null, userId || null, ip || null, JSON.stringify(rest)]
+      'INSERT INTO audit_log (action, workspace_id, user_id, ip, actor, details) VALUES ($1, $2, $3, $4, $5, $6)',
+      [action, workspaceId || null, userId || null, ip || null, finalActor, JSON.stringify(safeDetails)]
     );
-    log.info(`audit: ${action}`, { workspaceId, userId, ...rest });
   } catch (err) {
     log.error('audit: falha ao gravar', err, { action });
     // não relança — auditoria nunca deve quebrar a operação
   }
 }
 
-module.exports = { log: logAudit };
+function fromReq(req) {
+  return {
+    userId: req?.user?.id || null,
+    workspaceId: req?.user?.workspace_id || null,
+    ip: req?.headers?.['x-forwarded-for']?.split(',')[0]?.trim()
+      || req?.ip
+      || req?.connection?.remoteAddress
+      || null,
+    actor: req?.user?.id ? `user:${req.user.id}` : 'anonymous',
+  };
+}
+
+async function cleanup() {
+  try {
+    const result = await db.run(
+      `DELETE FROM audit_log WHERE ts < NOW() - INTERVAL '${RETENTION_DAYS} days'`
+    );
+    log.info(`audit: cleanup removeu entries > ${RETENTION_DAYS}d`, { rowCount: result?.rowCount });
+    return result?.rowCount || 0;
+  } catch (err) {
+    log.error('audit: falha no cleanup', err);
+    return 0;
+  }
+}
+
+module.exports = { log: logAudit, fromReq, cleanup };
