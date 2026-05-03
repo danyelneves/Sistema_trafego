@@ -139,6 +139,11 @@ npm run dev                       # node --watch
 npm run seed                      # cria admin + 20 meses de dados demo (idempotente)
 npm run reset                     # ⚠️ DROPa tudo e recria do schema.sql
 
+# Docs auto-geradas (rodar antes de commitar mudanças em routes/ ou schema)
+npm run docs:api                  # regenera docs/auto/API.md (offline, parseia routes/*.js)
+npm run docs:schema               # regenera docs/auto/SCHEMA.md (precisa DATABASE_URL)
+npm run docs:gen                  # ambos
+
 # Testes
 npm test                          # tests/unit.js
 npm run test:smoke                # smoke local
@@ -199,3 +204,17 @@ Pra histórico granular: `git log --oneline -50` ou `SELECT * FROM audit_log ORD
 2. Audit log + Sentry costumam ter a resposta de "o que aconteceu em produção".
 3. Pra entender a *motivação* de algo, `git log -p` no arquivo. Mensagens de commit são detalhadas.
 4. RUNBOOK.md cobre operação (debug, deploy manual, rollback). Esse arquivo aqui cobre arquitetura.
+
+---
+
+## Documentação completa do sistema
+
+| Documento | Quando consultar |
+|---|---|
+| **CLAUDE.md** (este arquivo) | Convenções, gotchas, padrões |
+| [docs/MODULES.md](docs/MODULES.md) | Descrição funcional dos 16 módulos + dependências |
+| [docs/auto/API.md](docs/auto/API.md) | Lista completa dos 134 endpoints com middlewares (auto-gerado) |
+| [docs/auto/SCHEMA.md](docs/auto/SCHEMA.md) | Schema completo do Postgres com FKs e índices (auto-gerado) |
+| [RUNBOOK.md](RUNBOOK.md) | Operação: debug, rollback, incident response |
+| [NEXUS_OS_OVERVIEW.md](NEXUS_OS_OVERVIEW.md) | Pitch + visão estratégica |
+| [DEPLOY.md](DEPLOY.md) | Setup inicial Supabase + Vercel |
