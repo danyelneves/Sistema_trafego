@@ -69,15 +69,30 @@ router.post('/test', requireAdmin, async (req, res) => {
   if (!email) return res.status(400).json({ error: 'email é obrigatório' });
   if (!mailer.isConfigured()) return res.status(503).json({ error: 'SMTP não configurado (verifique SMTP_USER e SMTP_PASS no .env)' });
   try {
-    await mailer.send({
+    const info = await mailer.send({
       to:      email,
       subject: '[Teste] Nexus OS — Alertas configurados',
       html:    `<p>Este é um e-mail de teste do sistema de alertas da <strong>Nexus OS</strong>.</p>
-                <p>Os alertas de KPI estão configurados corretamente. ✓</p>`,
+                <p>Disparado por <strong>${req.user.username}</strong> em ${new Date().toLocaleString('pt-BR')}.</p>
+                <p>Os alertas de KPI estão configurados corretamente.</p>`,
     });
-    res.json({ ok: true, message: `E-mail de teste enviado para ${email}` });
+    // Surface o que o servidor SMTP respondeu (messageId, accepted, rejected, response)
+    res.json({
+      ok: true,
+      message: `Disparado para ${email}`,
+      smtp: {
+        messageId: info?.messageId,
+        accepted: info?.accepted,
+        rejected: info?.rejected,
+        response: info?.response,
+        envelope: info?.envelope,
+      },
+      hint: (info?.rejected?.length)
+        ? 'Servidor SMTP rejeitou o(s) endereço(s) — provável bounce.'
+        : 'Servidor SMTP aceitou. Se não chegou: cheque SPAM, aba Promoções, e a pasta "Enviados" do remetente.',
+    });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ ok: false, error: e.message, code: e.code, response: e.response });
   }
 });
 
