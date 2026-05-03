@@ -478,7 +478,17 @@ const OPTIONAL_SECTIONS = {
   'sections.pricing': {
     label: ICON.dollar + 'Preços / Planos (opcional)',
     fields: { tag:'Tag', title:'Título', subtitle:'Subtítulo' },
-    sub: { plans: { array: true, label: 'Planos exibidos', fields: { name:'Nome', description:'Descrição', price:'Preço (sem R$)', period:'Período (ex: /mês)', cta_label:'Texto do botão', cta_href:'Link do botão', highlight:'Destacado? (true/false)' } } },
+    sub: { plans: { array: true, label: 'Planos exibidos', fields: {
+      name:'Nome do plano',
+      tagline:'Tagline curta (1 linha — pra quem é o plano)',
+      price:'Preço (sem R$)',
+      period:'Período (ex: /mês)',
+      description:'Descrição (1-2 linhas — o que o plano entrega)',
+      features:'Features (1 por linha — formato: Título :: Descrição)',
+      cta_label:'Texto do botão',
+      cta_href:'Link do botão',
+      highlight:'Destacado? (true/false)',
+    } } },
   },
   'sections.testimonials': {
     label: ICON.message + 'Depoimentos (opcional)',
@@ -504,6 +514,15 @@ function fieldInput(name, value, label, multiline=false) {
   </div>`;
 }
 
+// Converte array [{title, desc}] -> texto "Título :: Descrição\n..." pra textarea
+function featuresToText(arr) {
+  if (!Array.isArray(arr)) return '';
+  return arr.map(f => {
+    if (typeof f === 'string') return f;
+    return f.desc ? `${f.title || ''} :: ${f.desc}` : (f.title || '');
+  }).join('\n');
+}
+
 function renderArrayBlock(path, items, fields, label) {
   let html = `<div style="margin-bottom:16px;">
     <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px;">${NEXUS.escapeHtml(label || path)}</div>`;
@@ -511,8 +530,12 @@ function renderArrayBlock(path, items, fields, label) {
     html += `<div style="background:var(--bg-2); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:8px;">
       <div style="font-size:10px; color:var(--muted); margin-bottom:6px;">Item #${idx + 1}</div>`;
     Object.entries(fields).forEach(([k, l]) => {
-      const val = item?.[k] ?? '';
-      const multiline = l.includes('Descrição') || l.includes('subtítulo') || l.includes('citação');
+      let val = item?.[k] ?? '';
+      const multiline = l.includes('Descrição') || l.includes('subtítulo') || l.includes('citação') || l.includes('1 por linha');
+      // Caso especial: features é array nested → textarea com Título :: Descrição
+      if (k === 'features' && Array.isArray(val)) {
+        val = featuresToText(val);
+      }
       html += fieldInput(`${path}.${idx}.${k}`, val, l, multiline);
     });
     html += `</div>`;
@@ -620,6 +643,13 @@ function collectForm() {
     } else if (lastKey === 'highlight') {
       // campo "true"/"false" string → boolean
       value = String(el.value).toLowerCase() === 'true';
+    } else if (lastKey === 'features' && el.tagName === 'TEXTAREA') {
+      // Parse "Título :: Descrição\n..." → [{title, desc}]
+      value = el.value.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+        const idx = line.indexOf('::');
+        if (idx === -1) return { title: line.trim() };
+        return { title: line.slice(0, idx).trim(), desc: line.slice(idx + 2).trim() };
+      });
     } else {
       value = el.value;
     }
