@@ -33,33 +33,33 @@
 
   const NAV_GROUPS = [
     { label: 'Principal', items: [
-      { id: 'dashboard', icon: 'dashboard', label: 'Dashboard', href: '/app' },
-      { id: 'services', icon: 'services', label: 'Services', href: '/services' },
+      { id: 'dashboard', icon: 'dashboard', label: 'Dashboard',     desc: 'Command center',                    href: '/app' },
+      { id: 'services',  icon: 'services',  label: 'Services',      desc: 'Status dos serviços externos',      href: '/services' },
     ]},
     { label: 'Tráfego & Vendas', items: [
-      { id: 'traffic', icon: 'traffic', label: 'Tráfego pago', href: '/traffic' },
-      { id: 'sentinel', icon: 'sentinel', label: 'Sentinel', href: '/sentinel' },
-      { id: 'launcher', icon: 'launcher', label: 'Launcher', href: '/launcher' },
-      { id: 'lazarus', icon: 'lazarus', label: 'Lázaro', href: '/lazarus' },
+      { id: 'traffic',   icon: 'traffic',   label: 'Tráfego pago',  desc: 'Painel Google Ads + Meta Ads',      href: '/traffic' },
+      { id: 'sentinel',  icon: 'sentinel',  label: 'Sentinel',      desc: 'Monitor de campanhas Meta',         href: '/sentinel' },
+      { id: 'launcher',  icon: 'launcher',  label: 'Launcher',      desc: 'Lançador de campanhas',             href: '/launcher' },
+      { id: 'lazarus',   icon: 'lazarus',   label: 'Lázaro',        desc: 'Recuperação de leads frios',        href: '/lazarus' },
     ]},
     { label: 'IA & Vendas', items: [
-      { id: 'skynet', icon: 'skynet', label: 'Skynet', href: '/skynet' },
-      { id: 'doppelganger', icon: 'doppelganger', label: 'Doppelgänger', href: '/doppelganger' },
-      { id: 'forge', icon: 'forge', label: 'Forge', href: '/forge' },
-      { id: 'studio', icon: 'studio', label: 'Studio', href: '/studio' },
+      { id: 'skynet',       icon: 'skynet',       label: 'Skynet',       desc: 'Prospecção em massa',          href: '/skynet' },
+      { id: 'doppelganger', icon: 'doppelganger', label: 'Doppelgänger', desc: 'Vendedor IA clone',            href: '/doppelganger' },
+      { id: 'forge',        icon: 'forge',        label: 'Forge',        desc: 'Construtor de landing pages',  href: '/forge' },
+      { id: 'studio',       icon: 'studio',       label: 'Studio',       desc: 'Estúdio de voz IA',            href: '/studio' },
     ]},
     { label: 'Receita', items: [
-      { id: 'vending', icon: 'vending', label: 'Vending', href: '/vending' },
-      { id: 'market', icon: 'market', label: 'Market', href: '/market' },
-      { id: 'franchise', icon: 'franchise', label: 'Franchise', href: '/franchise' },
-      { id: 'billing', icon: 'billing', label: 'Billing', href: '/billing' },
+      { id: 'vending',   icon: 'vending',   label: 'Vending',       desc: 'Auto-atendimento de vendas',        href: '/vending' },
+      { id: 'market',    icon: 'market',    label: 'Market',        desc: 'Marketplace de leads',              href: '/market' },
+      { id: 'franchise', icon: 'franchise', label: 'Franchise',     desc: 'Sistema de franquias',              href: '/franchise' },
+      { id: 'billing',   icon: 'billing',   label: 'Billing',       desc: 'Faturamento da rede',               href: '/billing' },
     ]},
     { label: 'Operacional', items: [
-      { id: 'empire', icon: 'empire', label: 'Empire', href: '/empire' },
-      { id: 'poltergeist', icon: 'poltergeist', label: 'Poltergeist', href: '/poltergeist' },
-      { id: 'titan', icon: 'titan', label: 'Titan', href: '/titan' },
-      { id: 'hive', icon: 'hive', label: 'Hive', href: '/hive' },
-      { id: 'audit', icon: 'audit', label: 'Audit Log', href: '/audit' },
+      { id: 'empire',      icon: 'empire',      label: 'Empire',      desc: 'Gestão de tarefas',               href: '/empire' },
+      { id: 'poltergeist', icon: 'poltergeist', label: 'Poltergeist', desc: 'Operação física autônoma',        href: '/poltergeist' },
+      { id: 'titan',       icon: 'titan',       label: 'Titan',       desc: 'Auditor estratégico',             href: '/titan' },
+      { id: 'hive',        icon: 'hive',        label: 'Hive',        desc: 'Inteligência coletiva',           href: '/hive' },
+      { id: 'audit',       icon: 'audit',       label: 'Audit Log',   desc: 'Log de eventos do sistema',       href: '/audit' },
     ]},
   ];
 
@@ -77,7 +77,8 @@
       group.items.forEach(item => {
         const active = item.id === activeId ? ' active' : '';
         const icon = ICONS[item.icon] || '';
-        html += `<a href="${item.href}" class="nav-item${active}"><span class="nav-icon">${icon}</span>${item.label}</a>`;
+        const desc = item.desc ? `<span class="nav-desc">${item.desc}</span>` : '';
+        html += `<a href="${item.href}" class="nav-item${active}" title="${item.desc || ''}"><span class="nav-icon">${icon}</span><span class="nav-text"><span class="nav-label-text">${item.label}</span>${desc}</span></a>`;
       });
       html += `</div>`;
     });
