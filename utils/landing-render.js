@@ -190,10 +190,133 @@ function render(content) {
     }
   }
 
+  // Seções opcionais: pricing → testimonials → faq, inseridas antes do CTA final.
+  if (c.sections) {
+    const ctaSection = doc.querySelector('section.cta-section');
+    const optHtml = renderOptionalSections(c.sections);
+    if (optHtml && ctaSection?.parentNode) {
+      const wrapper = doc.createElement('div');
+      wrapper.innerHTML = optHtml;
+      // Insere todos os children antes do CTA
+      while (wrapper.firstChild) {
+        ctaSection.parentNode.insertBefore(wrapper.firstChild, ctaSection);
+      }
+      // Adiciona CSS uma vez no <head>
+      const style = doc.createElement('style');
+      style.textContent = OPTIONAL_SECTIONS_CSS;
+      doc.head.appendChild(style);
+    }
+  }
+
   return dom.serialize();
 }
 
 function escapeAttr(s) { return String(s || '').replace(/"/g, '&quot;'); }
 function escapeText(s) { return String(s || '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+// ============================================================
+// Seções opcionais (renderizadas só quando enabled=true)
+// ============================================================
+
+function renderOptionalSections(sec) {
+  let html = '';
+  if (sec.pricing?.enabled)      html += renderPricing(sec.pricing);
+  if (sec.testimonials?.enabled) html += renderTestimonials(sec.testimonials);
+  if (sec.faq?.enabled)          html += renderFAQ(sec.faq);
+  return html;
+}
+
+function renderPricing(p) {
+  const plans = (p.plans || []).map(plan => `
+    <div class="opt-pcard ${plan.highlight ? 'opt-pcard-highlight' : ''}">
+      ${plan.highlight ? '<div class="opt-pcard-tag">Mais popular</div>' : ''}
+      <div class="opt-pcard-name">${escapeText(plan.name)}</div>
+      <div class="opt-pcard-desc">${escapeText(plan.description || '')}</div>
+      <div class="opt-pcard-price">R$ ${escapeText(plan.price)}<small>${escapeText(plan.period || '/mês')}</small></div>
+      <ul class="opt-pcard-feats">${(plan.features || []).map(f => `<li>${escapeText(f)}</li>`).join('')}</ul>
+      <a href="${escapeAttr(plan.cta_href || '/comprar')}" class="opt-pcard-btn">${escapeText(plan.cta_label || 'Começar')}</a>
+    </div>`).join('');
+  return `<section class="s opt-pricing">
+    <div class="container">
+      <div class="section-tag">${escapeText(p.tag || 'Planos')}</div>
+      <h2 class="section-title">${escapeText(p.title || 'Escolha seu plano')}</h2>
+      <p class="section-sub">${escapeText(p.subtitle || '')}</p>
+      <div class="opt-pricing-grid">${plans}</div>
+    </div>
+  </section>`;
+}
+
+function renderTestimonials(t) {
+  const cards = (t.items || []).map(it => `
+    <div class="opt-test-card">
+      <div class="opt-test-quote">"${escapeText(it.quote || '')}"</div>
+      <div class="opt-test-author">
+        ${it.avatar ? `<img class="opt-test-avatar" src="${escapeAttr(it.avatar)}" alt="${escapeAttr(it.name)}">` : `<div class="opt-test-avatar opt-test-avatar-fallback">${escapeText((it.name || '?').charAt(0))}</div>`}
+        <div>
+          <div class="opt-test-name">${escapeText(it.name || '')}</div>
+          <div class="opt-test-role">${escapeText(it.role || '')}</div>
+        </div>
+      </div>
+    </div>`).join('');
+  return `<section class="s opt-test">
+    <div class="container">
+      <div class="section-tag">${escapeText(t.tag || 'Quem usa fala')}</div>
+      <h2 class="section-title">${escapeText(t.title || 'Resultado em prova')}</h2>
+      <p class="section-sub">${escapeText(t.subtitle || '')}</p>
+      <div class="opt-test-grid">${cards}</div>
+    </div>
+  </section>`;
+}
+
+function renderFAQ(f) {
+  const items = (f.items || []).map((it, i) => `
+    <details class="opt-faq-item" ${i === 0 ? 'open' : ''}>
+      <summary>${escapeText(it.q || '')}</summary>
+      <div class="opt-faq-a">${escapeText(it.a || '')}</div>
+    </details>`).join('');
+  return `<section class="s opt-faq">
+    <div class="container" style="max-width:760px;">
+      <div class="section-tag">${escapeText(f.tag || 'FAQ')}</div>
+      <h2 class="section-title">${escapeText(f.title || 'Perguntas frequentes')}</h2>
+      ${f.subtitle ? `<p class="section-sub">${escapeText(f.subtitle)}</p>` : ''}
+      <div class="opt-faq-list">${items}</div>
+    </div>
+  </section>`;
+}
+
+const OPTIONAL_SECTIONS_CSS = `
+/* === seções opcionais (geradas pelo editor de landing) === */
+.opt-pricing-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:20px; margin-top:32px;}
+.opt-pcard{background:var(--bg-card,#15151d); border:1px solid var(--border,#222230); border-radius:14px; padding:28px 24px; position:relative; transition:transform .2s, border-color .2s;}
+.opt-pcard:hover{transform:translateY(-3px); border-color:var(--border-2,#2a2a38);}
+.opt-pcard-highlight{border-color:var(--accent,#0099ff); background:linear-gradient(135deg, rgba(0,153,255,.08), rgba(0,212,255,.02));}
+.opt-pcard-tag{position:absolute; top:-10px; left:24px; background:var(--gradient,linear-gradient(135deg,#0099ff,#00d4ff)); color:#000; padding:3px 10px; border-radius:4px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;}
+.opt-pcard-name{font-size:18px; font-weight:700; margin-bottom:6px;}
+.opt-pcard-desc{color:var(--muted,#7a7a88); font-size:13px; min-height:34px; margin-bottom:16px;}
+.opt-pcard-price{font-family:'JetBrains Mono',monospace; font-size:36px; font-weight:800; color:var(--accent,#0099ff); margin-bottom:18px; line-height:1;}
+.opt-pcard-price small{font-size:13px; color:var(--muted,#7a7a88); font-weight:400;}
+.opt-pcard-feats{list-style:none; padding:0; margin:0 0 24px 0; font-size:13px; color:var(--text-2,#b8b8c5);}
+.opt-pcard-feats li{padding:5px 0;}
+.opt-pcard-feats li::before{content:'✓ '; color:#22c55e; font-weight:700;}
+.opt-pcard-btn{display:block; width:100%; padding:11px; background:var(--gradient,linear-gradient(135deg,#0099ff,#00d4ff)); color:#000; font-weight:700; text-align:center; border-radius:8px; text-decoration:none; font-size:14px;}
+.opt-pcard-btn:hover{opacity:.9;}
+
+.opt-test-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-top:32px;}
+.opt-test-card{background:var(--bg-card,#15151d); border:1px solid var(--border,#222230); border-radius:12px; padding:24px;}
+.opt-test-quote{color:var(--text,#f0f0f5); font-size:15px; line-height:1.55; margin-bottom:20px; font-style:italic;}
+.opt-test-author{display:flex; align-items:center; gap:12px;}
+.opt-test-avatar{width:42px; height:42px; border-radius:50%; object-fit:cover;}
+.opt-test-avatar-fallback{background:var(--gradient,linear-gradient(135deg,#0099ff,#00d4ff)); color:#000; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;}
+.opt-test-name{font-weight:700; font-size:14px;}
+.opt-test-role{color:var(--muted,#7a7a88); font-size:12px;}
+
+.opt-faq-list{margin-top:32px;}
+.opt-faq-item{background:var(--bg-card,#15151d); border:1px solid var(--border,#222230); border-radius:10px; padding:0; margin-bottom:10px; overflow:hidden;}
+.opt-faq-item summary{padding:18px 22px; cursor:pointer; font-weight:600; font-size:15px; list-style:none; position:relative;}
+.opt-faq-item summary::-webkit-details-marker{display:none;}
+.opt-faq-item summary::after{content:'+'; position:absolute; right:22px; color:var(--accent,#0099ff); font-size:22px; line-height:1; transition:transform .2s;}
+.opt-faq-item[open] summary::after{transform:rotate(45deg);}
+.opt-faq-a{padding:0 22px 20px; color:var(--text-2,#b8b8c5); font-size:14px; line-height:1.6;}
+`;
 
 module.exports = { render };

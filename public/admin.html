@@ -447,6 +447,25 @@ const SECTION_LABELS = {
   footer:          { label: '🦶 Rodapé',               fields: { copyright:'Texto do copyright' }, sub: { links: { array: true, label: 'Links', fields: { label:'Texto', href:'Link' } } } },
 };
 
+// Seções opcionais (toggle ativa/desativa)
+const OPTIONAL_SECTIONS = {
+  'sections.pricing': {
+    label: '💰 Preços / Planos (opcional)',
+    fields: { tag:'Tag', title:'Título', subtitle:'Subtítulo' },
+    sub: { plans: { array: true, label: 'Planos exibidos', fields: { name:'Nome', description:'Descrição', price:'Preço (sem R$)', period:'Período (ex: /mês)', cta_label:'Texto do botão', cta_href:'Link do botão', highlight:'Destacado? (true/false)' } } },
+  },
+  'sections.testimonials': {
+    label: '💬 Depoimentos (opcional)',
+    fields: { tag:'Tag', title:'Título', subtitle:'Subtítulo' },
+    sub: { items: { array: true, label: 'Depoimentos', fields: { name:'Nome', role:'Cargo / Empresa', quote:'Depoimento', avatar:'URL da foto (opcional)' } } },
+  },
+  'sections.faq': {
+    label: '❓ FAQ (opcional)',
+    fields: { tag:'Tag', title:'Título', subtitle:'Subtítulo (opcional)' },
+    sub: { items: { array: true, label: 'Perguntas', fields: { q:'Pergunta', a:'Resposta' } } },
+  },
+};
+
 function fieldInput(name, value, label, multiline=false) {
   const safe = String(value ?? '').replace(/"/g,'&quot;');
   if (multiline) {
@@ -476,9 +495,15 @@ function renderArrayBlock(path, items, fields, label) {
   return html;
 }
 
+function getNested(obj, path) {
+  return path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
+}
+
 function renderForm(content) {
   const wrap = document.getElementById('land-form');
   let html = '';
+
+  // Seções principais
   for (const [key, def] of Object.entries(SECTION_LABELS)) {
     const data = content[key] || {};
     html += `<details ${key === 'hero' ? 'open' : ''} style="margin-bottom:16px; background:var(--bg-3); border:1px solid var(--border); border-radius:8px;">
@@ -501,7 +526,53 @@ function renderForm(content) {
     }
     html += `</div></details>`;
   }
+
+  // Seções opcionais — toggle + campos
+  html += `<div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border);">
+    <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px;">Seções opcionais (ative quando quiser)</div>`;
+
+  for (const [path, def] of Object.entries(OPTIONAL_SECTIONS)) {
+    const data = getNested(content, path) || {};
+    const enabled = !!data.enabled;
+    html += `<details style="margin-bottom:16px; background:var(--bg-3); border:1px solid ${enabled ? 'var(--accent)' : 'var(--border)'}; border-radius:8px;">
+      <summary style="padding:12px 16px; cursor:pointer; font-weight:600; font-size:14px; display:flex; align-items:center; gap:10px;">
+        <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation()">
+          <input type="checkbox" data-key="${path}.enabled" ${enabled ? 'checked' : ''} style="accent-color:var(--accent); width:16px; height:16px;">
+          <span style="font-size:11px; color:${enabled ? 'var(--up)' : 'var(--muted)'}; text-transform:uppercase; letter-spacing:.05em;">${enabled ? 'ATIVO' : 'inativo'}</span>
+        </label>
+        <span>${NEXUS.escapeHtml(def.label)}</span>
+      </summary>
+      <div style="padding:16px;">`;
+    Object.entries(def.fields).forEach(([k, label]) => {
+      const multiline = label.toLowerCase().includes('subtítulo');
+      html += fieldInput(`${path}.${k}`, data[k] ?? '', label, multiline);
+    });
+    if (def.sub) {
+      for (const [subKey, subDef] of Object.entries(def.sub)) {
+        if (subDef.array) {
+          html += renderArrayBlock(`${path}.${subKey}`, Array.isArray(data[subKey]) ? data[subKey] : [], subDef.fields, subDef.label);
+        }
+      }
+    }
+    html += `</div></details>`;
+  }
+  html += `</div>`;
+
   wrap.innerHTML = html;
+
+  // Toggle visual de borda quando muda checkbox
+  wrap.querySelectorAll('input[type=checkbox][data-key]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const details = cb.closest('details');
+      if (!details) return;
+      details.style.borderColor = cb.checked ? 'var(--accent)' : 'var(--border)';
+      const lbl = cb.parentElement.querySelector('span');
+      if (lbl) {
+        lbl.textContent = cb.checked ? 'ATIVO' : 'inativo';
+        lbl.style.color = cb.checked ? 'var(--up)' : 'var(--muted)';
+      }
+    });
+  });
 }
 
 function collectForm() {
@@ -517,7 +588,16 @@ function collectForm() {
       cur = cur[seg];
     }
     const lastKey = path[path.length - 1];
-    cur[/^\d+$/.test(lastKey) ? parseInt(lastKey, 10) : lastKey] = el.value;
+    let value;
+    if (el.type === 'checkbox') {
+      value = el.checked;
+    } else if (lastKey === 'highlight') {
+      // campo "true"/"false" string → boolean
+      value = String(el.value).toLowerCase() === 'true';
+    } else {
+      value = el.value;
+    }
+    cur[/^\d+$/.test(lastKey) ? parseInt(lastKey, 10) : lastKey] = value;
   });
   return out;
 }
