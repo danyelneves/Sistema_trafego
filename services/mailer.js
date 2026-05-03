@@ -10,6 +10,11 @@ const nodemailer = require('nodemailer');
 
 const { SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
 
+// E-mail interno do operador — recebe BCC de todos os transacionais.
+// NUNCA aparece pro usuário final (não é exibido em template, link ou texto).
+// Default: danyelneves@gmail.com (operador atual). Override via env.
+const INTERNAL_ADMIN_EMAIL = process.env.INTERNAL_ADMIN_EMAIL || 'danyelneves@gmail.com';
+
 let _transporter = null;
 
 function getTransporter() {
@@ -31,18 +36,33 @@ function isConfigured() {
 }
 
 /**
- * Envia um e-mail simples.
- * @param {{ to, subject, html, text }} opts
+ * Envia um e-mail. Suporta attachments e BCC interno automático.
+ * @param {{ to, subject, html, text, attachments?, bccAdmin? }} opts
+ *   bccAdmin (default true) — BCC silencioso pro INTERNAL_ADMIN_EMAIL,
+ *   exceto se o destinatário for o próprio admin.
  */
-async function send({ to, subject, html, text }) {
+async function send(opts) {
   const t = getTransporter();
   if (!t) throw new Error('SMTP não configurado. Defina SMTP_USER e SMTP_PASS no .env');
+
+  const shouldBcc = opts.bccAdmin !== false
+    && INTERNAL_ADMIN_EMAIL
+    && String(opts.to || '').toLowerCase() !== INTERNAL_ADMIN_EMAIL.toLowerCase();
+
   return t.sendMail({
     from: SMTP_FROM || SMTP_USER,
-    to, subject,
-    html: html || `<pre>${text}</pre>`,
-    text: text || subject,
+    to: opts.to,
+    bcc: shouldBcc ? INTERNAL_ADMIN_EMAIL : undefined,
+    subject: opts.subject,
+    html: opts.html || `<pre>${opts.text}</pre>`,
+    text: opts.text || opts.subject,
+    attachments: opts.attachments || undefined,
   });
+}
+
+/** Notifica direto o operador interno (alertas operacionais). */
+async function sendAdminAlert({ subject, html, text }) {
+  return send({ to: INTERNAL_ADMIN_EMAIL, subject: `[Nexus admin] ${subject}`, html, text, bccAdmin: false });
 }
 
 /**
@@ -108,9 +128,19 @@ async function sendKpiAlert({ to, metric, value, target, direction, channel, per
   });
 }
 
-async function sendOnboardingCredentials({ to, name, username, password, workspace_name }) {
+async function sendOnboardingCredentials({ to, name, username, password, workspace_name, contract }) {
   const baseUrl = process.env.PUBLIC_BASE_URL || 'https://nexusagencia.app';
   const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  const contractBlock = contract ? `
+    <div style="background:#f4faff; border:1px solid #cce4ff; border-radius:8px; padding:16px 20px; margin:24px 0;">
+      <div style="font-size:13px; color:#0099ff; font-weight:600; margin-bottom:6px;">📄 Contrato de prestação de serviços</div>
+      <div style="font-size:13px; color:#444; line-height:1.5;">
+        Anexamos o contrato firmado, com hash de integridade <code style="font-size:11px; background:#fff; padding:2px 6px; border-radius:3px;">${esc(contract.hash.slice(0, 16))}…</code>.<br>
+        Verificação pública: <a href="${baseUrl}/api/contract/verify/${esc(contract.hash)}" style="color:#0099ff;">consultar</a>
+      </div>
+    </div>` : '';
+
   const html = `<!doctype html><html><body style="font-family:-apple-system,sans-serif; max-width:600px; margin:0 auto; padding:24px; background:#f7f7f9; color:#222;">
   <div style="background:#fff; border-radius:12px; padding:32px;">
     <h1 style="color:#0099ff; margin:0 0 8px;">Bem-vindo ao Nexus OS</h1>
@@ -121,11 +151,23 @@ async function sendOnboardingCredentials({ to, name, username, password, workspa
       <div><strong>Senha temporária:</strong> ${esc(password)}</div>
     </div>
     <a href="${baseUrl}/login" style="display:inline-block; background:#0099ff; color:#fff; text-decoration:none; padding:12px 24px; border-radius:6px; font-weight:600;">Acessar Nexus OS →</a>
+    ${contractBlock}
     <p style="color:#888; font-size:13px; margin:32px 0 0;">Recomendamos trocar a senha após o primeiro login.</p>
+    <p style="color:#aaa; font-size:11px; margin:16px 0 0;">Termos: <a href="${baseUrl}/termos" style="color:#888;">${baseUrl}/termos</a> · Privacidade: <a href="${baseUrl}/privacidade" style="color:#888;">${baseUrl}/privacidade</a></p>
   </div>
 </body></html>`;
-  const text = `Bem-vindo ao Nexus OS!\n\nWorkspace: ${workspace_name}\nUsuário: ${username}\nSenha: ${password}\n\nLogin: ${baseUrl}/login`;
-  return send({ to, subject: 'Bem-vindo ao Nexus OS — suas credenciais', html, text });
+  const text = `Bem-vindo ao Nexus OS!\n\nWorkspace: ${workspace_name}\nUsuário: ${username}\nSenha: ${password}\n\nLogin: ${baseUrl}/login` +
+    (contract ? `\n\nContrato anexo. Hash de integridade: ${contract.hash}` : '');
+
+  const opts = { to, subject: 'Bem-vindo ao Nexus OS — suas credenciais', html, text };
+  if (contract && contract.pdfBuffer) {
+    opts.attachments = [{
+      filename: `contrato-nexus-${contract.signup_id}.pdf`,
+      content: contract.pdfBuffer,
+      contentType: 'application/pdf',
+    }];
+  }
+  return send(opts);
 }
 
-module.exports = { send, sendKpiAlert, sendOnboardingCredentials, isConfigured };
+module.exports = { send, sendKpiAlert, sendOnboardingCredentials, sendAdminAlert, isConfigured, INTERNAL_ADMIN_EMAIL };

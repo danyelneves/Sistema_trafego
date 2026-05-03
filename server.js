@@ -89,6 +89,8 @@ const { requireAuth } = require('./middleware/auth');
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/admin',      require('./routes/admin'));
 app.use('/api/onboarding', require('./routes/onboarding'));
+app.use(require('./routes/terms'));      // /termos, /privacidade, /api/terms/*
+app.use(require('./routes/contract'));   // /api/contract/:id/pdf, /api/contract/verify/:hash
 app.use('/api/admin/landing', require('./routes/landing-content'));
 app.use('/api/audit',      require('./routes/audit'));
 app.use('/api/workspaces', require('./routes/workspaces'));

@@ -38,7 +38,14 @@
   .btn-pay:hover{opacity:.9;}
   .btn-pay:disabled{opacity:.4; cursor:not-allowed;}
   .err{color:var(--down); font-size:13px; margin-top:8px; min-height:18px;}
+  .terms-box{margin-top:16px; padding:14px 16px; background:rgba(0,153,255,.04); border:1px solid var(--border-2); border-radius:8px; display:flex; gap:12px; align-items:flex-start;}
+  .terms-box input[type=checkbox]{margin-top:3px; accent-color:var(--accent); width:16px; height:16px; flex-shrink:0; cursor:pointer;}
+  .terms-box label{font-size:13px; color:var(--muted); line-height:1.5; cursor:pointer;}
+  .terms-box label a{color:var(--accent-2); text-decoration:none;}
+  .terms-box label a:hover{text-decoration:underline;}
   .manual{background:var(--bg-3); border:1px solid var(--border); border-radius:12px; padding:32px; text-align:center;}
+  .manual a.btn-wa-terms{display:inline-block; margin-top:18px; font-size:13px; color:var(--muted);}
+  .manual a.btn-wa-terms a{color:var(--accent-2);}
   .manual h2{font-size:20px; margin-bottom:12px;}
   .manual p{color:var(--muted); font-size:14px; margin-bottom:20px;}
   .btn-wa{display:inline-flex; align-items:center; gap:8px; background:#25D366; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:700;}
@@ -93,6 +100,7 @@ function renderManual(whatsapp) {
       <h2>Auto-cadastro temporariamente desativado</h2>
       <p>Pra contratar agora, fala direto com a gente no WhatsApp. A gente te ajuda a escolher o plano e libera seu acesso na hora.</p>
       <a class="btn-wa" href="https://wa.me/${phone}?text=${msg}" target="_blank">📱 Falar no WhatsApp</a>
+      <div class="btn-wa-terms">Ao contratar, você concorda com os <a href="/termos" target="_blank">Termos de Uso</a> e <a href="/privacidade" target="_blank">Política de Privacidade</a>.</div>
     </div>`;
 }
 
@@ -113,6 +121,12 @@ function renderAuto() {
       <div class="field"><label>E-mail (será seu login)</label><input id="f-email" type="email" autocomplete="email"></div>
       <div class="field"><label>WhatsApp (opcional)</label><input id="f-phone" placeholder="(11) 99999-0000"></div>
       <div class="field"><label>Nome da sua empresa/projeto</label><input id="f-ws" placeholder="Ex: Clínica Bella Pele"></div>
+      <div class="terms-box">
+        <input type="checkbox" id="f-terms">
+        <label for="f-terms">
+          Li e aceito os <a href="/termos" target="_blank">Termos de Uso</a> e a <a href="/privacidade" target="_blank">Política de Privacidade</a> do Nexus OS. Confirmo que sou maior de 18 anos e que as informações fornecidas são verdadeiras.
+        </label>
+      </div>
       <button class="btn-pay" id="btn-pay">Ir para o pagamento →</button>
       <div class="err" id="err"></div>
     </div>`;
@@ -139,14 +153,24 @@ async function startPayment() {
   };
   if (!selected) { err.textContent = 'Selecione um plano'; return; }
   if (!body.name || !body.email) { err.textContent = 'Nome e e-mail obrigatórios'; return; }
+  if (!$('#f-terms').checked) { err.textContent = 'Você precisa aceitar os Termos de Uso e a Política de Privacidade.'; return; }
 
   const btn = $('#btn-pay');
   btn.disabled = true;
-  btn.textContent = 'Criando preferência...';
+  btn.textContent = 'Registrando aceite...';
   try {
+    // 1. Registra aceite (IP + UA capturados no servidor)
+    const accept = await fetch('/api/terms/accept', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: body.email, accepted: true }),
+    }).then(r => r.json());
+    if (!accept.ok) throw new Error(accept.error || 'falha ao registrar aceite');
+
+    // 2. Inicia signup linkado ao aceite
+    btn.textContent = 'Criando preferência...';
     const r = await fetch('/api/onboarding/start', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...body, acceptance_id: accept.acceptance_id }),
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.message || data.error || 'erro');

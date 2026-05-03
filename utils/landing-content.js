@@ -67,6 +67,8 @@ const DEFAULT_CONTENT = {
     copyright: '© 2026 Nexus · Todos os direitos reservados',
     links: [
       { label: 'Status', href: '/api/health' },
+      { label: 'Termos', href: '/termos' },
+      { label: 'Privacidade', href: '/privacidade' },
       { label: 'Login', href: '/login' },
     ],
   },

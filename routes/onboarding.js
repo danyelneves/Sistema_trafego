@@ -57,9 +57,19 @@ router.post('/start', async (req, res) => {
       });
     }
 
-    const { email, name, phone, plan_key, workspace_name } = req.body || {};
+    const { email, name, phone, plan_key, workspace_name, acceptance_id } = req.body || {};
     if (!email || !name || !plan_key) {
       return res.status(400).json({ error: 'email, name e plan_key obrigatórios' });
+    }
+    if (!acceptance_id) {
+      return res.status(400).json({ error: 'terms_not_accepted', message: 'Aceite dos Termos e Privacidade obrigatório.' });
+    }
+    // Valida que o aceite existe e bate com o email informado
+    const accept = await db.get(
+      `SELECT id, email FROM terms_acceptances WHERE id = $1`, [acceptance_id]
+    );
+    if (!accept || accept.email !== email.toLowerCase().trim()) {
+      return res.status(400).json({ error: 'invalid_acceptance', message: 'Aceite inválido ou não corresponde ao e-mail informado.' });
     }
 
     // Verifica plano existe e tá ativo
@@ -77,12 +87,18 @@ router.post('/start', async (req, res) => {
       });
     }
 
-    // Cria pending_signup
+    // Cria pending_signup linkado ao aceite
     const wsName = (workspace_name || name).trim().slice(0, 80);
     const pending = await db.get(
-      `INSERT INTO pending_signups (email, name, phone, workspace_name, plan_id)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-      [email.toLowerCase().trim(), name.trim(), phone || null, wsName, plan.id]
+      `INSERT INTO pending_signups (email, name, phone, workspace_name, plan_id, acceptance_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+      [email.toLowerCase().trim(), name.trim(), phone || null, wsName, plan.id, acceptance_id]
+    );
+
+    // Atualiza o aceite com pending_signup_id (back-reference)
+    await db.run(
+      `UPDATE terms_acceptances SET pending_signup_id = $1 WHERE id = $2`,
+      [pending.id, acceptance_id]
     );
 
     // Cria preferência MP
@@ -209,12 +225,37 @@ async function convertSignup(signup_id, payment_id) {
       WHERE id = $3
     `, [workspace_id, user_id, signup_id]);
 
+    // Linka aceite ao user criado (back-reference)
+    if (signup.acceptance_id) {
+      await db.run(
+        `UPDATE terms_acceptances SET user_id = $1 WHERE id = $2`,
+        [user_id, signup.acceptance_id]
+      );
+    }
+
+    // Congela o contrato (snapshot HTML + hash) — prova jurídica permanente
+    let contractData = null;
+    try {
+      const contracts = require('../utils/contract');
+      const sig = await contracts.signOnConvert({
+        signup, workspace_id, user_id, payment_id,
+      });
+      // Gera PDF a partir do snapshot pra anexar no email
+      const fullSig = await db.get(`SELECT * FROM contract_signatures WHERE id = $1`, [sig.id]);
+      const pdfBuffer = await contracts.renderPdf(fullSig);
+      contractData = { hash: sig.contract_hash, signup_id: signup.id, pdfBuffer };
+    } catch (cErr) {
+      log.error('onboarding.convert: falha ao congelar contrato', cErr, { signup_id });
+      audit.log('contract.sign_failed', { signup_id, error: cErr.message });
+    }
+
     audit.log('onboarding.converted', {
       signup_id, workspace_id, user_id,
       email: signup.email, payment_id,
+      contract_hash: contractData?.hash,
     });
 
-    // Manda credenciais por email (best effort)
+    // Manda credenciais + contrato anexo por email (best effort)
     try {
       await mailer.sendOnboardingCredentials({
         to: signup.email,
@@ -222,6 +263,7 @@ async function convertSignup(signup_id, payment_id) {
         username: signup.email,
         password: tempPwd,
         workspace_name: signup.workspace_name,
+        contract: contractData,
       });
     } catch (mailErr) {
       log.error('onboarding: email falhou', mailErr, { signup_id });
